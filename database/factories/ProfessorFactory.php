@@ -26,7 +26,6 @@ class ProfessorFactory extends Factory
             'email' => $faker->unique()->safeEmail,
             'address' => $faker->address,
             'city' => $faker->city,
-            'picture' => $faker->imageUrl(),
         ];
     }
 }
