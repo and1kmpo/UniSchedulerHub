@@ -9,9 +9,9 @@ class Professor extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'document', 'first_name', 'last_name', 'phone', 'email', 'address', 'city', 'picture',
-    ];
+    protected $fillable = ['document', 'first_name', 'last_name', 'phone', 'email', 'address', 'city'];
+
+
 
     public function subjects()
     {

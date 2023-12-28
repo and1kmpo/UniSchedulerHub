@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('email', 100)->unique();
             $table->string('address', 255);
             $table->string('city', 50);
-            $table->longText('picture');
             $table->timestamps();
         });
     }
