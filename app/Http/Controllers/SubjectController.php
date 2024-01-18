@@ -13,6 +13,11 @@ class SubjectController extends Controller
     public function index()
     {
         $subjects = Subject::paginate(5);
+
+        if (request()->wantsJson()) {
+            return response()->json($subjects);
+        }
+
         return inertia('Subjects/Index', ['subjects' => $subjects]);
     }
 

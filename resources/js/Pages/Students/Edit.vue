@@ -1,42 +1,48 @@
 <script>
 export default {
-    name: "ProfessorsEdit",
+    name: "StudentsEdit",
 };
 </script>
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { useForm } from "@inertiajs/vue3";
-import ProfessorForm from "@/Components/Professors/Form.vue";
+import StudentForm from "@/Components/Students/Form.vue";
 import { Inertia } from "@inertiajs/inertia";
 
 const props = defineProps({
-    professor: {
+    student: {
+        type: Object,
+        required: true,
+    },
+    programs: {
         type: Object,
         required: true,
     },
 });
 
 const form = useForm({
-    first_name: props.professor.first_name,
-    last_name: props.professor.last_name,
-    document: props.professor.document,
-    phone: props.professor.phone,
-    email: props.professor.email,
-    address: props.professor.address,
-    city: props.professor.city,
+    first_name: props.student.first_name,
+    last_name: props.student.last_name,
+    document: props.student.document,
+    phone: props.student.phone,
+    email: props.student.email,
+    address: props.student.address,
+    city: props.student.city,
+    semester: props.student.semester,
+    program_id: props.student.program_id,
 });
 
 const handleCancel = () => {
-    Inertia.visit(route("professors.index"));
+    Inertia.visit(route("students.index"));
 };
 </script>
 
 <template>
-    <AppLayout title="Edit professor">
+    <AppLayout title="Edit student">
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Edit professor
+                Edit student
             </h1>
         </template>
 
@@ -47,18 +53,19 @@ const handleCancel = () => {
                         class="bg-white overflow-hidden shadow-xl sm:rounded-lg"
                     >
                         <div class="p-6 bg-white border-b border-gray-200">
-                            <ProfessorForm
+                            <StudentForm
                                 :updating="true"
                                 :form="form"
                                 @submit="
                                     form.put(
                                         route(
-                                            'professors.update',
-                                            props.professor.id
+                                            'students.update',
+                                            props.student.id
                                         )
                                     )
                                 "
                                 :handleCancel="handleCancel"
+                                :programs="programs"
                             />
                         </div>
                     </div>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Student;
+use App\Http\Requests\StudentRequest;
+use App\Models\Program;
 
 class StudentController extends Controller
 {
@@ -11,7 +13,8 @@ class StudentController extends Controller
      */
     public function index()
     {
-        //
+        $students = Student::with('program')->paginate(5);
+        return inertia('Students/Index', ['students' => $students]);
     }
 
     /**
@@ -19,15 +22,21 @@ class StudentController extends Controller
      */
     public function create()
     {
-        //
+        $programs = Program::all()->pluck('name', 'id');
+        return inertia('Students/Create', ['programs' => $programs]);
     }
 
     /**
+     * 
      * Store a newly created resource in storage.
+     * @param App\Http\Requests\StudentRequest
+     * @return \illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StudentRequest $request)
     {
-        //
+        $validatedData = $request->validated();
+        Student::create($validatedData);
+        return redirect()->route('students.index');
     }
 
     /**
@@ -41,24 +50,34 @@ class StudentController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Student $student)
     {
-        //
+        // Obtén la lista de programas
+        $programs = Program::all()->pluck('name', 'id');
+
+        return inertia('Students/Edit', [
+            'student' => $student,
+            'programs' => $programs,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(StudentRequest $request, Student $student)
     {
-        //
+        $validatedData = $request->validated();
+        $student->update($validatedData);
+        return redirect()->route('students.index');
     }
 
     /**
+     * @param Program $program
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Student $student)
     {
-        //
+        $student->delete();
+        return redirect()->route('students.index');
     }
 }
