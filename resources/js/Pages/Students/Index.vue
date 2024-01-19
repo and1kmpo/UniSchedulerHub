@@ -60,23 +60,17 @@ const deleteStudent = (id, name) => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="flex justify-between">
-                        <Link
-                            :href="route('students.create')"
-                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            v-if="
-                                $page.props.user.permissions.includes(
-                                    'create students'
-                                )
-                            "
-                        >
-                            Create Student
+                        <Link :href="route('students.create')"
+                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white" v-if="$page.props.user.permissions.includes(
+                                'create students'
+                            )
+                                ">
+                        Create Student
                         </Link>
                     </div>
 
                     <div class="mt-4 overflow-x-auto">
-                        <table
-                            class="min-w-full bg-white shadow-md rounded-xl text-center"
-                        >
+                        <table class="min-w-full bg-white shadow-md rounded-xl text-center">
                             <thead>
                                 <tr class="bg-blue-gray-100 text-gray-700">
                                     <th class="py-3 px-4 text-center">#</th>
@@ -105,15 +99,12 @@ const deleteStudent = (id, name) => {
                                 </tr>
                             </thead>
                             <tbody class="text-blue-gray-900">
-                                <tr
-                                    class="border-b border-blue-gray-200"
-                                    v-for="(student, i) in students.data"
-                                    :key="student.id"
-                                >
+                                <tr class="border-b border-blue-gray-200" v-for="(student, i) in students.data"
+                                    :key="student.id">
                                     <td class="py-3 px-4">
                                         {{
                                             (students.current_page - 1) *
-                                                students.per_page +
+                                            students.per_page +
                                             i +
                                             1
                                         }}
@@ -147,51 +138,41 @@ const deleteStudent = (id, name) => {
                                         {{ student.program.name }}
                                     </td>
                                     <td class="py-3 px-4">
-                                        <Link
-                                            :href="
-                                                route(
-                                                    'students.edit',
-                                                    student.id
-                                                )
+                                        <Link :href="route(
+                                            'students.edit',
+                                            student.id
+                                        )
                                             "
                                             class="text-xs bg-blue-700 hover:bg-blue-400 hover:text-black rounded p-2 px-4 text-white"
-                                            v-if="
-                                                $page.props.user.permissions.includes(
-                                                    'update students'
-                                                )
-                                            "
-                                        >
-                                            <i class="fas fa-edit"></i>
+                                            v-if="$page.props.user.permissions.includes(
+                                                'update students'
+                                            )
+                                                ">
+                                        <i class="fas fa-edit"></i>
                                         </Link>
                                     </td>
                                     <td class="py-3 px-4">
-                                        <Link
-                                            @click="
-                                                deleteStudent(
-                                                    student.id,
-                                                    student.first_name
-                                                )
+                                        <Link href="#" @click="
+                                            deleteStudent(
+                                                student.id,
+                                                student.first_name
+                                            )
                                             "
                                             class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
-                                            v-if="
-                                                $page.props.user.permissions.includes(
-                                                    'delete students'
-                                                )
-                                            "
-                                        >
-                                            <i class="fas fa-trash"></i>
+                                            v-if="$page.props.user.permissions.includes(
+                                                'delete students'
+                                            )
+                                                ">
+                                        <i class="fas fa-trash"></i>
                                         </Link>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                         <div class="flex items-center justify-center m-4">
-                            <Link
-                                v-if="students.current_page > 1"
-                                :href="students.prev_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            >
-                                <i class="fa-solid fa-angles-left"></i>
+                            <Link v-if="students.current_page > 1" :href="students.prev_page_url"
+                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
+                            <i class="fa-solid fa-angles-left"></i>
                             </Link>
 
                             <div class="text-sm mx-4">
@@ -199,14 +180,10 @@ const deleteStudent = (id, name) => {
                                 {{ students.last_page }}
                             </div>
 
-                            <Link
-                                v-if="
-                                    students.current_page < students.last_page
-                                "
-                                :href="students.next_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            >
-                                <i class="fa-solid fa-angles-right"></i>
+                            <Link v-if="students.current_page < students.last_page
+                                " :href="students.next_page_url"
+                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
+                            <i class="fa-solid fa-angles-right"></i>
                             </Link>
                         </div>
                     </div>

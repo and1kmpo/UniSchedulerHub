@@ -2,7 +2,7 @@
     <AppLayout>
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Assign subjects to professor
+                Assign subjects to student
             </h1>
         </template>
 
@@ -11,18 +11,17 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="mt-4">
                         <div class="mb-4">
-                            <label for="professor" class="block text-sm font-medium text-gray-700">
-
-                                Select professor:
+                            <label for="student" class="block text-sm font-medium text-gray-700">
+                                Select student:
                             </label>
-                            <multiselect v-model="selectedProfessor" :options="professors" label="fullName" track-by="id"
-                                placeholder="Select a professor" @select="loadAssignedSubjects">
+                            <multiselect v-model="selectedStudent" :options="students" label="fullName" track-by="id"
+                                placeholder="Select a student" @select="loadAssignedSubjects">
                             </multiselect>
                         </div>
 
                         <div>
                             <h2 class="text-xl font-semibold mb-4">
-                                Professor's subjects:</h2>
+                                Student's subjects:</h2>
 
                             <template v-if="assignedSubjects.length > 0">
                                 <div class="overflow-x-auto">
@@ -49,15 +48,14 @@
 
                             <template v-else>
                                 <div class="p-4 bg-white shadow-md rounded-md">
-                                    <p class="text-gray-500" v-if="selectedProfessor">This professor has no assigned
-                                        subjects
+                                    <p class="text-gray-500" v-if="selectedStudent">This student has no assigned subjects
                                         yet.</p>
-                                    <p class="text-gray-500" v-else>Select a professor to view assigned subjects.</p>
+                                    <p class="text-gray-500" v-else>Select a student to view assigned subjects.</p>
                                 </div>
                             </template>
 
 
-                            <button @click="openModalAssignSubject" v-if="selectedProfessor && !assigningSubjects"
+                            <button @click="openModalAssignSubject" v-if="selectedStudent && !assigningSubjects"
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white mb-4">
                                 Assign more subjects
                             </button>
@@ -66,7 +64,7 @@
                             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeAssignSubjectModal">
                                 <div class="p-6 min-h-[500px] flex flex-col items-center">
                                     <div class="flex justify-between items-center w-full mb-4">
-                                        <h2 class="text-2xl font-semibold">Assign subjects to the Professor</h2>
+                                        <h2 class="text-2xl font-semibold">Assign subjects to the Student</h2>
                                         <span class="cursor-pointer" @click="closeAssignSubjectModal">
                                             <i class="fas fa-times text-gray-400 hover:text-black"></i>
                                         </span>
@@ -101,35 +99,35 @@ import Multiselect from 'vue-multiselect';
 import Modal from '@/Components/Modal.vue';
 import Swal from 'sweetalert2';
 
-const selectedProfessor = ref(null);
-const professors = ref([]);
+const selectedStudent = ref(null);
+const students = ref([]);
 const assignedSubjects = ref([]);
 const isModalOpen = ref(false);
 const selectedSubjects = ref([]);
 const availableSubjects = ref([]);
 const assigningSubjects = ref(false);
 
-// Get the list of professors when the component loads
+// Get the list of students when the component loads
 onMounted(async () => {
     try {
-        const response = await axios.get('/professors');
-        professors.value = response.data.data.map(professor => ({
-            ...professor,
-            fullName: `${professor.first_name} ${professor.last_name}  -  ${professor.document}`
+        const response = await axios.get('/students');
+        students.value = response.data.data.map(student => ({
+            ...student,
+            fullName: `${student.first_name} ${student.last_name}  -  ${student.document}`
         }));
 
-        await loadAllSubjects();
+        await loadSubjectsWithProfessorAssigned();
     } catch (error) {
-        console.error('Error getting list of professors:', error);
+        console.error('Error getting list of students:', error);
     }
 });
 
-// Load assigned subjects when a professor is selected
+// Load assigned subjects when a student is selected
 const loadAssignedSubjects = async () => {
     try {
-        if (selectedProfessor.value) {
-            const professorId = selectedProfessor.value.id;
-            const response = await axios.get(`/professor-assigned-subjects/${professorId}`);
+        if (selectedStudent.value) {
+            const studentId = selectedStudent.value.id;
+            const response = await axios.get(`/student-assigned-subjects/${studentId}`);
             assignedSubjects.value = response.data;
         } else {
             assignedSubjects.value = [];
@@ -139,23 +137,10 @@ const loadAssignedSubjects = async () => {
     }
 };
 
-const loadAllSubjects = async () => {
+const loadSubjectsWithProfessorAssigned = async () => {
     try {
-        const response = await axios.get('/subjects');
-        const totalPages = response.data.last_page;
-
-        let allSubjects = [];
-
-        // Add the subjects of the current page to the array
-        allSubjects = [...allSubjects, ...response.data.data];
-
-        // Make requests for the remaining pages (if there is more than one page). Since the backend returns the subject list paginated
-        for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
-            const nextPageResponse = await axios.get(`/subjects?page=${currentPage}`);
-            allSubjects = [...allSubjects, ...nextPageResponse.data.data];
-        }
-
-        availableSubjects.value = allSubjects;
+        const response = await axios.get('/subjects-with-professors');
+        availableSubjects.value = response.data;
 
     } catch (error) {
         console.error('Error getting all subjects', error);
@@ -172,7 +157,6 @@ const closeAssignSubjectModal = () => {
 
 const assignSelectedSubjects = async () => {
     try {
-
         const result = await Swal.fire({
             title: 'Confirm Assignment',
             text: 'Are you sure you want to assign the selected subjects?',
@@ -187,42 +171,41 @@ const assignSelectedSubjects = async () => {
         if (result.isConfirmed) {
             assigningSubjects.value = true;
 
-            if (selectedProfessor.value) {
-                const professorId = selectedProfessor.value.id;
+            if (selectedStudent.value) {
+                const studentId = selectedStudent.value.id;
                 const subjectsIds = selectedSubjects.value.map(subject => subject.id);
 
-
-                console.log('Professor ID:', professorId);
-                console.log('Subject IDs:', selectedSubjects.value);
-                //Request to assign the selected subjects to the selected professor
-                await axios.post(`/professors-assign-subject`, {
-                    professor_id: professorId,
+                // Request to assign the selected subjects to the selected student
+                await axios.post(`/students-assign-subject`, {
+                    student_id: studentId,
                     subject_ids: subjectsIds
                 });
 
                 // Reload assigned subjects after assignment
                 await loadAssignedSubjects();
                 selectedSubjects.value = [];
-
             } else {
-                console.error("No professor has been selected.");
+                console.error("No student has been selected.");
             }
-            // Muestra un SweetAlert de éxito
-            Swal.fire('Assigned subjects', 'Selected subjects have been successfully assigned.', 'success');
+
             // Close modal after assignment
             closeAssignSubjectModal();
+
+            // Show success SweetAlert
+            Swal.fire('Assigned subjects', 'Selected subjects have been successfully assigned.', 'success');
         }
     } catch (error) {
         console.error('Error when assigning subjects:', error);
+        Swal.fire('Error', 'Error when assigning subjects.', 'error');
     } finally {
         assigningSubjects.value = false;
     }
-
 };
+
 const confirmUnassignSubject = (subjectId) => {
     Swal.fire({
         title: "You're sure?",
-        text: 'This action will unassign the subject to the professor.',
+        text: 'This action will unassign the subject to the student.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -238,10 +221,7 @@ const confirmUnassignSubject = (subjectId) => {
 
 const unassignSubject = async (subjectId) => {
     try {
-        // Make a request to unassign the subject
-        const response = await axios.delete(`/unassign-subject-professor/${selectedProfessor.value.id}/${subjectId}`);
-
-        // If the subject unassignment is successful, reload the assigned subjects
+        const response = await axios.delete(`/unassign-subject-student/${selectedStudent.value.id}/${subjectId}`);
         if (response.data.success) {
             await loadAssignedSubjects();
             Swal.fire('Unassigned subject', response.data.message, 'success');
@@ -253,5 +233,7 @@ const unassignSubject = async (subjectId) => {
         Swal.fire('Error', 'Error when unassigning subject.', 'error');
     }
 };
+
+
 </script>
   

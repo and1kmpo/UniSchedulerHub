@@ -20,8 +20,15 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/students', StudentController::class);
     Route::resource('/roles', RoleController::class);
 
+    Route::get('/subjects-with-professors', [SubjectController::class, 'getSubjectsWithProfessors']);
+
     Route::get('/professor-assigned-subjects/{professorId}', [ProfessorController::class, 'getAssignedSubjects']);
     Route::get('/professors-assign-subject', [ProfessorController::class, 'assignSubjectForm'])->name('professors.assignSubjectForm');
     Route::post('/professors-assign-subject', [ProfessorController::class, 'assignSubjects'])->name('professors.assignSubjects');
-    Route::delete('/unassign-subject/{professorId}/{subjectId}', [ProfessorController::class, 'unassignSubject']);
+    Route::delete('/unassign-subject-professor/{professorId}/{subjectId}', [ProfessorController::class, 'unassignSubject']);
+
+    Route::get('/student-assigned-subjects/{studentId}', [StudentController::class, 'getAssignedSubjects']);
+    Route::get('/students-assign-subject', [StudentController::class, 'assignSubjectForm'])->name('students.assignSubjectForm');
+    Route::post('/students-assign-subject', [StudentController::class, 'assignSubjects'])->name('students.assignSubjects');
+    Route::delete('/unassign-subject-student/{studentId}/{subjectId}', [StudentController::class, 'unassignSubject']);
 });

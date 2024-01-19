@@ -76,4 +76,12 @@ class SubjectController extends Controller
         $subject->delete();
         return redirect()->route('subject.index');
     }
+
+    public function getSubjectsWithProfessors()
+    {
+        // Get only subjects with an assigned professor
+        $subjectsWithProfessors = Subject::has('professors')->get();
+
+        return response()->json($subjectsWithProfessors);
+    }
 }

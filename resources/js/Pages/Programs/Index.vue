@@ -60,23 +60,17 @@ const deleteProgram = (id, name) => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="flex justify-between">
-                        <Link
-                            :href="route('programs.create')"
-                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            v-if="
-                                $page.props.user.permissions.includes(
-                                    'create programs'
-                                )
-                            "
-                        >
-                            Create Program
+                        <Link :href="route('programs.create')"
+                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white" v-if="$page.props.user.permissions.includes(
+                                'create programs'
+                            )
+                                ">
+                        Create Program
                         </Link>
                     </div>
 
                     <div class="mt-4">
-                        <table
-                            class="min-w-full bg-white shadow-md rounded-xl text-center"
-                        >
+                        <table class="min-w-full bg-white shadow-md rounded-xl text-center">
                             <thead>
                                 <tr class="bg-blue-gray-100 text-gray-700">
                                     <th class="py-3 px-4 text-center">#</th>
@@ -93,15 +87,12 @@ const deleteProgram = (id, name) => {
                                 </tr>
                             </thead>
                             <tbody class="text-blue-gray-900">
-                                <tr
-                                    class="border-b border-blue-gray-200"
-                                    v-for="(program, i) in programs.data"
-                                    :key="program.id"
-                                >
+                                <tr class="border-b border-blue-gray-200" v-for="(program, i) in programs.data"
+                                    :key="program.id">
                                     <td class="py-3 px-4">
                                         {{
                                             (programs.current_page - 1) *
-                                                programs.per_page +
+                                            programs.per_page +
                                             i +
                                             1
                                         }}
@@ -113,51 +104,41 @@ const deleteProgram = (id, name) => {
                                         {{ program.description }}
                                     </td>
                                     <td class="py-3 px-4">
-                                        <Link
-                                            :href="
-                                                route(
-                                                    'programs.edit',
-                                                    program.id
-                                                )
+                                        <Link :href="route(
+                                            'programs.edit',
+                                            program.id
+                                        )
                                             "
                                             class="text-xs bg-blue-700 hover:bg-blue-400 hover:text-black rounded p-2 px-4 text-white"
-                                            v-if="
-                                                $page.props.user.permissions.includes(
-                                                    'update programs'
-                                                )
-                                            "
-                                        >
-                                            <i class="fas fa-edit"></i>
+                                            v-if="$page.props.user.permissions.includes(
+                                                'update programs'
+                                            )
+                                                ">
+                                        <i class="fas fa-edit"></i>
                                         </Link>
                                     </td>
                                     <td class="py-3 px-4">
-                                        <Link
-                                            @click="
-                                                deleteProgram(
-                                                    program.id,
-                                                    program.name
-                                                )
+                                        <Link href="#" @click="
+                                            deleteProgram(
+                                                program.id,
+                                                program.name
+                                            )
                                             "
                                             class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
-                                            v-if="
-                                                $page.props.user.permissions.includes(
-                                                    'delete programs'
-                                                )
-                                            "
-                                        >
-                                            <i class="fas fa-trash"></i>
+                                            v-if="$page.props.user.permissions.includes(
+                                                'delete programs'
+                                            )
+                                                ">
+                                        <i class="fas fa-trash"></i>
                                         </Link>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                         <div class="flex items-center justify-center m-4">
-                            <Link
-                                v-if="programs.current_page > 1"
-                                :href="programs.prev_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            >
-                                <i class="fa-solid fa-angles-left"></i>
+                            <Link v-if="programs.current_page > 1" :href="programs.prev_page_url" href="#"
+                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
+                            <i class="fa-solid fa-angles-left"></i>
                             </Link>
 
                             <div class="text-sm mx-4">
@@ -165,14 +146,10 @@ const deleteProgram = (id, name) => {
                                 {{ programs.last_page }}
                             </div>
 
-                            <Link
-                                v-if="
-                                    programs.current_page < programs.last_page
-                                "
-                                :href="programs.next_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                            >
-                                <i class="fa-solid fa-angles-right"></i>
+                            <Link v-if="programs.current_page < programs.last_page
+                                " :href="programs.next_page_url"
+                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
+                            <i class="fa-solid fa-angles-right"></i>
                             </Link>
                         </div>
                     </div>

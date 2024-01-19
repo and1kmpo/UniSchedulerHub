@@ -13,6 +13,8 @@ defineProps({
 });
 
 const showingNavigationDropdown = ref(false);
+const showingProfessorsStudentsDropdown = ref(false);
+
 
 const switchToTeam = (team) => {
     router.put(
@@ -89,7 +91,6 @@ const logout = () => {
                                     </template>
                                     <template #content>
                                         <div class="w-48">
-                                            <!-- Ajusta el ancho según sea necesario -->
                                             <DropdownLink :href="route('professors.index')">
                                                 Index
                                             </DropdownLink>
@@ -127,7 +128,7 @@ const logout = () => {
                                             <DropdownLink :href="route('students.index')">
                                                 Index
                                             </DropdownLink>
-                                            <DropdownLink :href="route('students.index')">
+                                            <DropdownLink :href="route('students.assignSubjectForm')">
                                                 Assign Subject
                                             </DropdownLink>
                                         </div>

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Http\Requests\StudentRequest;
 use App\Models\Program;
+use App\Models\Subject;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class StudentController extends Controller
 {
@@ -14,6 +17,11 @@ class StudentController extends Controller
     public function index()
     {
         $students = Student::with('program')->paginate(5);
+
+        if (request()->wantsJson()) {
+            return response()->json($students);
+        }
+
         return inertia('Students/Index', ['students' => $students]);
     }
 
@@ -79,5 +87,75 @@ class StudentController extends Controller
     {
         $student->delete();
         return redirect()->route('students.index');
+    }
+
+    public function assignSubjectForm()
+    {
+        $students = Student::all();
+        return inertia('Students/AssignSubject', ['students' => $students]);
+    }
+
+    public function getAssignedSubjects($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+        $assignedSubjects = $student ? $student->subjects : [];
+
+        return response()->json($assignedSubjects);
+    }
+
+    public function assignSubjects(Request $request)
+    {
+        try {
+            $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'subject_ids' => 'required|array',
+            ]);
+
+            $studentId = $request->input('student_id');
+            $subjectIds = $request->input('subject_ids');
+
+            $student = Student::findOrFail($studentId);
+
+            // Obtener las asignaturas con el professor_id
+            $subjects = Subject::whereIn('id', $subjectIds)->get(['id']);
+
+            // Iterar sobre las asignaturas y asignarlas al estudiante con el professor_id correspondiente
+            foreach ($subjects as $subject) {
+                // Obtener el professor_id de la asignatura a través de la relación directa
+                $professorId = $subject->professors()->pluck('professors.id')->first();
+
+                if ($professorId !== null) {
+                    // Asignar la asignatura al estudiante y establecer el professor_id en la tabla pivote
+                    $student->subjects()->syncWithoutDetaching([$subject->id => ['professor_id' => $professorId]]);
+                } else {
+                    // Manejar el caso en que no se encuentra el professor_id para la asignatura
+                    Log::warning("No professor_id found for subject with ID: {$subject->id}");
+                }
+            }
+
+            return redirect()->route('students.assignSubjectForm')->with('success', 'Successfully assigned subjects.');
+        } catch (\Exception $exception) {
+            Log::error('Error when assigning subject: ' . $exception->getMessage());
+
+            return back()->with('error', 'Error when assigning subject: ' . $exception->getMessage());
+        }
+    }
+
+
+    public function unassignSubject($studentId, $subjectId)
+    {
+        try {
+            Log::info('Unassigning subject...');
+
+            $student = Student::findOrFail($studentId);
+            $student->subjects()->detach($subjectId);
+
+            Log::info('Subject unassigned successfully.');
+
+            return response()->json(['success' => true, 'message' => 'Subject successfully unassigned.']);
+        } catch (\Exception $exception) {
+            Log::error('Error when unassigning subject: ' . $exception->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error when unassigning subject.'], 500);
+        }
     }
 }

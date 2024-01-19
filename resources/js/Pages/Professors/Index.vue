@@ -141,7 +141,7 @@ const deleteProfessor = (id, name) => {
                                         </Link>
                                     </td>
                                     <td class="py-3 px-4">
-                                        <Link @click="
+                                        <Link href="#" @click="
                                             deleteProfessor(
                                                 professor.id,
                                                 professor.first_name
@@ -159,7 +159,7 @@ const deleteProfessor = (id, name) => {
                             </tbody>
                         </table>
                         <div class="flex items-center justify-center m-4">
-                            <Link v-if="professors.current_page > 1" :href="professors.prev_page_url"
+                            <Link href="#" v-if="professors.current_page > 1" :href="professors.prev_page_url"
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
                             <i class="fa-solid fa-angles-left"></i>
                             </Link>

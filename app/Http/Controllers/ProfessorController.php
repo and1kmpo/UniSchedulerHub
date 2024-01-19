@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfessorRequest;
 use Illuminate\Http\Request;
 use App\Models\Professor;
-use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
+
 
 class ProfessorController extends Controller
 {
@@ -82,9 +81,9 @@ class ProfessorController extends Controller
             $professor = Professor::findOrFail($professorId);
             $professor->subjects()->syncWithoutDetaching($subjectIds);
 
-            return redirect()->route('professors.assignSubjectForm')->with('success', 'Asignaturas asignadas con éxito.');
+            return redirect()->route('professors.assignSubjectForm')->with('success', 'Successfully assigned subjects.');
         } catch (\Exception $exception) {
-            return back()->with('error', 'Error al asignar asignaturas: ' . $exception->getMessage());
+            return back()->with('error', 'Error when assigning subject: ' . $exception->getMessage());
         }
     }
 
@@ -94,9 +93,9 @@ class ProfessorController extends Controller
             $professor = Professor::findOrFail($professorId);
             $professor->subjects()->detach($subjectId);
 
-            return response()->json(['success' => true, 'message' => 'Asignatura desasignada con éxito.']);
+            return response()->json(['success' => true, 'message' => 'Subject successfully unassigned.']);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error al desasignar asignatura.'], 500);
+            return response()->json(['success' => false, 'message' => 'Error when unassigning subject.'], 500);
         }
     }
 }
