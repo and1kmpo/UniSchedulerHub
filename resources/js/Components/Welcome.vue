@@ -1,7 +1,10 @@
 <script setup>
-import ApplicationLogo from "@/Components/ApplicationLogo.vue";
+import BarChart from "@/Components/ChartComponent.vue";
+import AssignmentsReport from "@/Components/AssignmentsReport.vue";
+
 </script>
 
 <template>
-    <h1>Hello world!</h1>
+    <AssignmentsReport></AssignmentsReport>
+    <BarChart></BarChart>
 </template>
