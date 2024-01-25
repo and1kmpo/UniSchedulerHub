@@ -1,8 +1,16 @@
 <template>
     <div class="container mt-5">
-        <h2 class="mb-4 text-center">Distribution of subjects by knowledge area</h2>
+        <h2 class="mb-4 text-center">Total students per program</h2>
         <div v-if="loaded">
             <Bar id="my-chart-id" :options="chartOptions" :data="chartData" />
+            <div v-if="hasProgramsWithoutStudents" class="text-center mt-3">
+                <p class="text-red-500 text-xs flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
+                    Some programs have no students enrolled. Please note that the corresponding bar may be very small and
+                    difficult to visualize on the chart.
+                </p>
+            </div>
+
         </div>
         <div v-else>
             <p>Loading...</p>
@@ -31,11 +39,12 @@ export default {
     data() {
         return {
             loaded: false,
+            hasProgramsWithoutStudents: false,
             chartData: {
                 labels: [],
                 datasets: [
                     {
-                        label: 'Number of subjects',
+                        label: 'Number of students',
                         backgroundColor: '',
                         data: []
                     }
@@ -56,36 +65,23 @@ export default {
         }
     },
     async mounted() {
-        // Inicializa una variable para almacenar todas las asignaturas
-        let allSubjects = [];
+        try {
+            let response = await axios.get('/students-program-report');
 
-        // Realiza una petición inicial para obtener la primera página de asignaturas
-        let response = await axios.get('/subjects');
+            const chartLabels = response.data.map(program => program.name);
+            const chartData = response.data.map(program => program.student_count || 0);
 
-        // Agrega los datos de la primera página a la variable allSubjects
-        allSubjects = [...allSubjects, ...response.data.data];
+            this.chartData.labels = chartLabels;
+            this.chartData.datasets[0].data = chartData;
+            this.chartData.datasets[0].backgroundColor = chartLabels.map(() => getRandomHexColor());
 
-        // Itera sobre las páginas restantes
-        while (response.data.next_page_url) {
-            // Realiza una nueva petición para obtener la siguiente página de asignaturas
-            response = await axios.get(response.data.next_page_url);
+            // Verifica si hay programas sin estudiantes
+            this.hasProgramsWithoutStudents = chartData.some(count => count === 0);
 
-            // Agrega los datos de la página actual a la variable allSubjects
-            allSubjects = [...allSubjects, ...response.data.data];
+            this.loaded = true;
+        } catch (error) {
+            console.error('Error fetching data:', error);
         }
-
-        const areasCount = {};
-        allSubjects.forEach((allSubjects) => {
-            const area = allSubjects.knowledge_area;
-            areasCount[area] = (areasCount[area] || 0) + 1;
-        })
-
-        this.chartData.labels = Object.keys(areasCount);
-        this.chartData.datasets[0].data = Object.values(areasCount);
-        this.chartData.datasets[0].backgroundColor = this.chartData.labels.map(() => getRandomHexColor());
-
-        this.loaded = true;
-
     }
 }
 </script>
