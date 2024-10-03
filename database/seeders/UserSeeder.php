@@ -21,11 +21,18 @@ class UserSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
-        $editor = User::create([
-            'name' => 'editor',
-            'email' => 'editor@sas.com',
-            'password' => Hash::make('editor')
+        $student = User::create([
+            'name' => 'student',
+            'email' => 'student@sas.com',
+            'password' => Hash::make('student')
         ]);
-        $editor->assignRole('editor');
+        $student->assignRole('student');
+
+        $professor = User::create([
+            'name' => 'professor',
+            'email' => 'professor@sas.com',
+            'password' => Hash::make('professor')
+        ]);
+        $professor->assignRole('professor');
     }
 }

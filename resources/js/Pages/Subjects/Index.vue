@@ -20,32 +20,41 @@ defineProps({
 
 const deleteSubject = (id, name) => {
     Swal.fire({
-        title: '¿Are you sure to delete "' + name + '"?',
-        text: "You won't be able to reverse this",
+        title: 'Are you sure you want to delete "' + name + '"?',
+        text: "This action cannot be undone",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#4338CA",
+        confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: '<i class="fas fa-trash"></i> Yes, delete',
-        cancelButtonText: '<i class="fas fa-ban"></i> No, cancel',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
     }).then((result) => {
         if (result.isConfirmed) {
-            // Utiliza el ID del programa en la URL de la solicitud DELETE
-            Inertia.delete(route("subjects.destroy", { subject: id }))
+            // Use the subject ID in the DELETE request URL
+            axios.delete(`/subjects/${id}`)
                 .then(() => {
                     Swal.fire(
-                        'Deleted"',
-                        "Subject deleted successfully!",
-                        "success"
-                    );
+                        'Deleted',
+                        response.data.message,
+                        'success'
+                    ).then(() => {
+                        location.reload();
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
-                    Swal.fire("Error", "Error deleting program", "error");
+                    Swal.fire(
+                        'Error',
+                        error.response.data.error,
+                        'error'
+                    );
                 });
         }
     });
 };
+
+
+
 </script>
 
 <template>
@@ -69,7 +78,7 @@ const deleteSubject = (id, name) => {
                         </Link>
                     </div>
 
-                    <div class="mt-4">
+                    <div class="mt-4 overflow-x-auto">
                         <table class="min-w-full bg-white shadow-md rounded-xl text-center">
                             <thead>
                                 <tr class="bg-blue-gray-100 text-gray-700">

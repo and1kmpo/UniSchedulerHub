@@ -49,7 +49,6 @@ export default {
     async mounted() {
         try {
             let response = await axios.get('/students-semester-report');
-            console.log(response);
 
             const chartLabels = response.data.map(entry => 'Semester ' + entry.semester);
             const chartData = response.data.map(entry => entry.student_count || 0);

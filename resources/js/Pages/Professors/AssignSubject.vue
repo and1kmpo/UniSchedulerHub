@@ -113,7 +113,18 @@ const assigningSubjects = ref(false);
 onMounted(async () => {
     try {
         const response = await axios.get('/professors');
-        professors.value = response.data.data.map(professor => ({
+        const totalPages = response.data.last_page;
+
+        let allProfessors = response.data.data;
+
+        for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
+            const nextPageResponse = await axios.get(`/professors?page=${currentPage}`);
+            allProfessors = [...allProfessors, ...nextPageResponse.data.data];
+        }
+
+        console.log(allProfessors)
+
+        professors.value = allProfessors.map(professor => ({
             ...professor,
             fullName: `${professor.first_name} ${professor.last_name}  -  ${professor.document}`
         }));

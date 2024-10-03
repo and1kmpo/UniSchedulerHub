@@ -116,6 +116,14 @@ class StudentController extends Controller
 
             $student = Student::findOrFail($studentId);
 
+            // Obtener el total de créditos de las asignaturas seleccionadas
+            $totalCredits = Subject::whereIn('id', $subjectIds)->sum('credits');
+
+            // Validar que el estudiante cumpla con el mínimo de 7 créditos
+            if ($totalCredits < 7) {
+                return response()->json(['error' => 'The selected subjects do not meet the minimum requirement of 7 credits.'], 422);
+            }
+
             // Obtener las asignaturas con el professor_id
             $subjects = Subject::whereIn('id', $subjectIds)->get(['id']);
 
@@ -133,11 +141,11 @@ class StudentController extends Controller
                 }
             }
 
-            return redirect()->route('students.assignSubjectForm')->with('success', 'Successfully assigned subjects.');
+            return response()->json(['success' => true, 'message' => 'Successfully assigned subjects.'], 200);
         } catch (\Exception $exception) {
             Log::error('Error when assigning subject: ' . $exception->getMessage());
 
-            return back()->with('error', 'Error when assigning subject: ' . $exception->getMessage());
+            return response()->json(['error' => 'Error when assigning subject: ' . $exception->getMessage()], 500);
         }
     }
 

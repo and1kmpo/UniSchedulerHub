@@ -31,17 +31,19 @@ const deleteProgram = (id, name) => {
     }).then((result) => {
         if (result.isConfirmed) {
             // Utiliza el ID del programa en la URL de la solicitud DELETE
-            Inertia.delete(route("programs.destroy", { program: id }))
+            axios.delete(`/programs/${id}`)
                 .then(() => {
                     Swal.fire(
                         'Deleted"',
                         "Program deleted successfully!",
                         "success"
-                    );
+                    ).then(() => {
+                        location.reload();
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
-                    Swal.fire("Error", "Error deleting program", "error");
+                    Swal.fire("Error", error.response.data.error, "error");
                 });
         }
     });
@@ -69,7 +71,7 @@ const deleteProgram = (id, name) => {
                         </Link>
                     </div>
 
-                    <div class="mt-4">
+                    <div class="mt-4 overflow-x-auto">
                         <table class="min-w-full bg-white shadow-md rounded-xl text-center">
                             <thead>
                                 <tr class="bg-blue-gray-100 text-gray-700">

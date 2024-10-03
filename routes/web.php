@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProfessorSubjectController;
 use App\Http\Controllers\ProgramController;
@@ -18,7 +20,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/subjects', SubjectController::class);
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
-    Route::resource('/roles', RoleController::class);
 
     Route::get('/subjects-with-professors', [SubjectController::class, 'getSubjectsWithProfessors']);
 
@@ -36,4 +37,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/students-program-report', [DashboardController::class, 'totalStudentsPerProgram'])->name('studentsPrograms.report');
     Route::get('/elective-subjects-report', [DashboardController::class, 'percentageElectiveSubjects'])->name('electiveSubjects.report');
     Route::get('/students-semester-report', [DashboardController::class, 'studentsPerSemester'])->name('studentsSemester.report');
+
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
 });

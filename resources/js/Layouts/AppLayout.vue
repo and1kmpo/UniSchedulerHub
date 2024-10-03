@@ -14,7 +14,8 @@ defineProps({
 
 const showingNavigationDropdown = ref(false);
 const showingProfessorsStudentsDropdown = ref(false);
-
+const toggleProfessorsMenu = ref(false);
+const toggleStudentsMenu = ref(false);
 
 const switchToTeam = (team) => {
     router.put(
@@ -31,7 +32,9 @@ const switchToTeam = (team) => {
 const logout = () => {
     router.post(route("logout"));
 };
+
 </script>
+
 
 
 
@@ -147,11 +150,11 @@ const logout = () => {
                             </div>
 
                             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex" v-if="$page.props.user.permissions.includes(
-                                'read roles'
+                                'view admin'
                             )
                                 ">
-                                <NavLink :href="route('roles.index')" :active="route().current('roles.*')">
-                                    Roles
+                                <NavLink :href="route('admin.index')" :active="route().current('admin.*')">
+                                    Admin
                                 </NavLink>
                             </div>
                         </div>
@@ -337,85 +340,110 @@ const logout = () => {
                 <div :class="{
                     block: showingNavigationDropdown,
                     hidden: !showingNavigationDropdown,
-                }" class="sm:hidden">
+                }" class="sm:hidden flex flex-col"> <!-- Contenedor flex vertical -->
                     <div class="pt-2 pb-3 space-y-1">
+                        <!-- Dashboard -->
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes(
-                        'read programs'
-                    )
-                        ">
+                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('read programs')">
+                        <!-- Programs -->
                         <ResponsiveNavLink :href="route('programs.index')" :active="route().current('programs')">
                             Programs
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes(
-                        'read professors'
-                    )
-                        ">
-                        <ResponsiveNavLink :href="route('professors.index')" :active="route().current('professors')">
-                            Professors
-                        </ResponsiveNavLink>
+                    <div class="pt-2 pb-3 space-y-1 ml-4" v-if="$page.props.user.permissions.includes('read professors')">
+                        <!-- Professors -->
+                        <div @click="toggleProfessorsMenu = !toggleProfessorsMenu" class="cursor-pointer">
+                            <a>
+                                Professors <i class="fa-solid fa-caret-down"></i>
+                            </a>
+                            <div v-show="toggleProfessorsMenu">
+                                <!-- Professors Index -->
+                                <ResponsiveNavLink :href="route('professors.index')"
+                                    :active="route().current('professors.index')">
+                                    Index
+                                </ResponsiveNavLink>
+                                <!-- Assign Subjects to Professors -->
+                                <ResponsiveNavLink :href="route('professors.assignSubjectForm')"
+                                    :active="route().current('professors.assignSubjectForm')">
+                                    Assign Subjects
+                                </ResponsiveNavLink>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes(
-                        'read students'
-                    )
-                        ">
-                        <ResponsiveNavLink :href="route('students.index')" :active="route().current('students')">
-                            Students
-                        </ResponsiveNavLink>
+                    <div class="pt-2 pb-3 space-y-1 ml-4" v-if="$page.props.user.permissions.includes('read students')">
+                        <!-- Students -->
+                        <div @click="toggleStudentsMenu = !toggleStudentsMenu" class="cursor-pointer">
+                            <a>
+                                Students <i class="fa-solid fa-caret-down"></i>
+                            </a>
+                            <div v-show="toggleStudentsMenu">
+                                <!-- Students Index -->
+                                <ResponsiveNavLink :href="route('students.index')"
+                                    :active="route().current('students.index')">
+                                    Index
+                                </ResponsiveNavLink>
+                                <!-- Assign Subjects to Students -->
+                                <ResponsiveNavLink :href="route('students.assignSubjectForm')"
+                                    :active="route().current('students.assignSubjectForm')">
+                                    Assign Subjects
+                                </ResponsiveNavLink>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes(
-                        'read subjects'
-                    )
-                        ">
+                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('read subjects')">
+                        <!-- Subjects -->
                         <ResponsiveNavLink :href="route('subjects.index')" :active="route().current('subjects')">
                             Subjects
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('read roles')
-                        ">
-                        <ResponsiveNavLink :href="route('roles.index')" :active="route().current('roles')">
-                            Roles
+                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('view admin')">
+                        <!-- Admin -->
+                        <ResponsiveNavLink :href="route('admin.index')" :active="route().current('admin')">
+                            Admin
                         </ResponsiveNavLink>
                     </div>
+
                     <!-- Responsive Settings Options -->
                     <div class="pt-4 pb-1 border-t border-gray-200">
                         <div class="flex items-center px-4">
-                            <div v-if="$page.props.jetstream.managesProfilePhotos
-                                " class="shrink-0 me-3">
-                                <img class="h-10 w-10 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url
-                                    " :alt="$page.props.auth.user.name" />
+                            <div v-if="$page.props.jetstream.managesProfilePhotos" class="shrink-0 me-3">
+                                <!-- User Avatar -->
+                                <img class="h-10 w-10 rounded-full object-cover"
+                                    :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name" />
                             </div>
-
                             <div>
+                                <!-- User Name -->
                                 <div class="font-medium text-base text-gray-800">
                                     {{ $page.props.auth.user.name }}
                                 </div>
+                                <!-- User Email -->
                                 <div class="font-medium text-sm text-gray-500">
                                     {{ $page.props.auth.user.email }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-3 space-y-1">
+                        <div class="mt-3 space-y-1 flex flex-col"> <!-- Contenedor flex vertical -->
+                            <!-- Profile -->
                             <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">
                                 Profile
                             </ResponsiveNavLink>
 
+                            <!-- API Tokens -->
                             <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')"
                                 :active="route().current('api-tokens.index')">
                                 API Tokens
                             </ResponsiveNavLink>
 
-                            <!-- Authentication -->
+                            <!-- Log Out -->
                             <form method="POST" @submit.prevent="logout">
                                 <ResponsiveNavLink as="button">
                                     Log Out
@@ -424,46 +452,32 @@ const logout = () => {
 
                             <!-- Team Management -->
                             <template v-if="$page.props.jetstream.hasTeamFeatures">
-                                <div class="border-t border-gray-200" />
-
-                                <div class="block px-4 py-2 text-xs text-gray-400">
-                                    Manage Team
-                                </div>
+                                <div class="border-t border-gray-200"></div>
 
                                 <!-- Team Settings -->
-                                <ResponsiveNavLink :href="route(
-                                    'teams.show',
-                                    $page.props.auth.user.current_team
-                                )
-                                    " :active="route().current('teams.show')">
+                                <ResponsiveNavLink :href="route('teams.show', $page.props.auth.user.current_team)"
+                                    :active="route().current('teams.show')">
                                     Team Settings
                                 </ResponsiveNavLink>
 
+                                <!-- Create New Team -->
                                 <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')"
                                     :active="route().current('teams.create')">
                                     Create New Team
                                 </ResponsiveNavLink>
 
                                 <!-- Team Switcher -->
-                                <template v-if="$page.props.auth.user.all_teams.length >
-                                    1
-                                    ">
-                                    <div class="border-t border-gray-200" />
-
+                                <template v-if="$page.props.auth.user.all_teams.length > 1">
+                                    <div class="border-t border-gray-200"></div>
                                     <div class="block px-4 py-2 text-xs text-gray-400">
                                         Switch Teams
                                     </div>
-
-                                    <template v-for="team in $page.props.auth.user
-                                        .all_teams" :key="team.id">
+                                    <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
                                         <form @submit.prevent="switchToTeam(team)">
                                             <ResponsiveNavLink as="button">
                                                 <div class="flex items-center">
-                                                    <svg v-if="team.id ==
-                                                        $page.props.auth
-                                                            .user
-                                                            .current_team_id
-                                                        " class="me-2 h-5 w-5 text-green-400"
+                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id"
+                                                        class="me-2 h-5 w-5 text-green-400"
                                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                         stroke-width="1.5" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -479,6 +493,7 @@ const logout = () => {
                         </div>
                     </div>
                 </div>
+
             </nav>
 
             <!-- Page Heading -->

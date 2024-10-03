@@ -5,6 +5,7 @@ use App\Models\Student;
 use App\Models\Professor;
 use App\Models\Subject;
 use App\Models\Program;
+use App\Models\User;
 use Database\Seeders\RolSeeder;
 use Database\Seeders\UserSeeder;
 
