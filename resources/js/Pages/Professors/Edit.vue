@@ -60,7 +60,6 @@ const handleCancel = () => {
                                 "
                                 :handleCancel="handleCancel"
                             />
-                            {{ props.professor.id }}
                         </div>
                     </div>
                 </div>

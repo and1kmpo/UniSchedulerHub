@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('email', 100)->unique();
             $table->string('address', 255);
             $table->string('city', 50);
-            $table->longText('picture');
             $table->integer('semester');
             $table->foreignId('program_id')->constrained();
             $table->timestamps();

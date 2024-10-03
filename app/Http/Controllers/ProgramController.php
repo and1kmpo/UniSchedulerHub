@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Program;
 use App\Http\Requests\ProgramRequest;
+use App\Models\Student;
 
+use function Laravel\Prompts\error;
 
 class ProgramController extends Controller
 {
@@ -76,6 +78,12 @@ class ProgramController extends Controller
      */
     public function destroy(Program $program)
     {
+        $hasStudents = $program->students()->exists();
+
+        if ($hasStudents) {
+            return response()->json(['error' => 'This program has associated students and cannot be eliminated.'], 422);
+        }
+
         $program->delete();
         return redirect()->route('programs.index');
     }

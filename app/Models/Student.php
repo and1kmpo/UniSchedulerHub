@@ -17,7 +17,6 @@ class Student extends Model
         'email',
         'address',
         'city',
-        'picture',
         'semester',
         'program_id',
     ];

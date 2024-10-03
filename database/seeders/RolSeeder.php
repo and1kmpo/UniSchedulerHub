@@ -15,7 +15,10 @@ class RolSeeder extends Seeder
     public function run(): void
     {
         $role_admin = Role::create(['name' => 'admin']);
-        $role_editor = Role::create(['name' => 'editor']);
+        $role_student = Role::create(['name' => 'student']);
+        $role_professor = Role::create(['name' => 'professor']);
+
+        $permission_view_dashboard = Permission::create(['name' => 'view dashboard']);
 
         $permission_create_role = Permission::create(['name' => 'create roles']);
         $permission_read_role = Permission::create(['name' => 'read roles']);
@@ -62,29 +65,21 @@ class RolSeeder extends Seeder
             $permission_create_subject,
             $permission_read_subject,
             $permission_update_subject,
-            $permission_delete_subject
+            $permission_delete_subject,
+            $permission_view_dashboard
         ];
 
-        $permissions_editor = [
-            $permission_create_professor,
+        $permissions_student = [
             $permission_read_professor,
-            $permission_update_professor,
-            $permission_delete_professor,
-            $permission_create_program,
             $permission_read_program,
-            $permission_update_program,
-            $permission_delete_program,
-            $permission_create_student,
             $permission_read_student,
-            $permission_update_student,
-            $permission_delete_student,
-            $permission_create_subject,
             $permission_read_subject,
-            $permission_update_subject,
-            $permission_delete_subject
         ];
+
+        $permissions_professor = [];
 
         $role_admin->syncPermissions($permissions_admin);
-        $role_editor->syncPermissions($permissions_editor);
+        $role_student->syncPermissions($permissions_student);
+        $role_professor->syncPermissions($permissions_professor);
     }
 }

@@ -11,8 +11,6 @@ class Professor extends Model
 
     protected $fillable = ['document', 'first_name', 'last_name', 'phone', 'email', 'address', 'city'];
 
-
-
     public function subjects()
     {
         return $this->belongsToMany(Subject::class, 'professor_subject');
