@@ -20,8 +20,7 @@
                         </div>
 
                         <div>
-                            <h2 class="text-xl font-semibold mb-4">
-                                Student's subjects:</h2>
+                            <h2 class="text-xl font-semibold mb-4">Student's subjects:</h2>
 
                             <template v-if="assignedSubjects.length > 0">
                                 <div class="overflow-x-auto">
@@ -43,22 +42,26 @@
                                                         class="text-xs text-red-700 hover:text-red-500 focus:outline-none">Unassign</button>
                                                 </td>
                                             </tr>
+                                            <tr class="bg-gray-100">
+                                                <td class="px-4 py-2 font-semibold text-gray-800">Total credits
+                                                    assigned:</td>
+                                                <td class="px-4 py-2 font-semibold text-indigo-700">{{
+                                                    totalAssignedCredits }}</td>
+                                                <td class="px-4 py-2"></td>
+                                            </tr>
                                         </tbody>
-                                        <span class="font-semibold text-red-700">Total credits
-                                            student:10</span>
                                     </table>
+
                                 </div>
                             </template>
 
                             <template v-else>
                                 <div class="p-4 bg-white shadow-md rounded-md">
                                     <p class="text-gray-500" v-if="selectedStudent">This student has no assigned
-                                        subjects
-                                        yet.</p>
+                                        subjects yet.</p>
                                     <p class="text-gray-500" v-else>Select a student to view assigned subjects.</p>
                                 </div>
                             </template>
-
 
                             <button @click="openModalAssignSubject" v-if="selectedStudent && !assigningSubjects"
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white mb-4">
@@ -87,8 +90,7 @@
                                         class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">Assign</button>
                                     <div class="mb-4">
                                         <p class="text-sm font-medium text-gray-700">Total Credits: {{ selectedCredits
-                                            }}
-                                        </p>
+                                            }}</p>
                                     </div>
                                 </div>
                             </Modal>
@@ -102,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Multiselect from 'vue-multiselect';
@@ -118,33 +120,27 @@ const availableSubjects = ref([]);
 const assigningSubjects = ref(false);
 const selectedCredits = ref(0);
 
-const calculateSelectedCredits = () => {
-    let totalCredits = 0;
-    selectedSubjects.value.forEach(subject => {
-        totalCredits += subject.credits;
-    });
-    selectedCredits.value = totalCredits;
-};
-
-// Observador para recalcular los créditos seleccionados cada vez que cambian las materias seleccionadas
-watch(selectedSubjects, () => {
-    calculateSelectedCredits();
+const totalAssignedCredits = computed(() => {
+    return assignedSubjects.value.reduce((total, subject) => total + subject.credits, 0);
 });
 
-// Get the list of students when the component loads
+const calculateSelectedCredits = () => {
+    selectedCredits.value = selectedSubjects.value.reduce((total, subject) => total + subject.credits, 0);
+};
+
+// Watcher for recalculating selected credits
+watch(selectedSubjects, calculateSelectedCredits);
+
 onMounted(async () => {
     try {
         const response = await axios.get('/students');
         const totalPages = response.data.last_page;
 
         let allStudents = response.data.data;
-
         for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
             const nextPageResponse = await axios.get(`/students?page=${currentPage}`);
             allStudents = [...allStudents, ...nextPageResponse.data.data];
         }
-
-        console.log(allStudents);
 
         students.value = allStudents.map(student => ({
             ...student,
@@ -157,13 +153,11 @@ onMounted(async () => {
     }
 });
 
-// Load assigned subjects when a student is selected
 const loadAssignedSubjects = async () => {
     try {
         if (selectedStudent.value) {
             const studentId = selectedStudent.value.id;
             const response = await axios.get(`/student-assigned-subjects/${studentId}`);
-
             assignedSubjects.value = response.data;
         } else {
             assignedSubjects.value = [];
@@ -181,7 +175,6 @@ const loadSubjectsWithProfessorAssigned = async () => {
             name: `${subject.name}  (Credits: ${subject.credits})`,
             credits: subject.credits
         }));
-
     } catch (error) {
         console.error('Error getting all subjects', error);
     }
@@ -215,40 +208,24 @@ const assignSelectedSubjects = async () => {
                 const studentId = selectedStudent.value.id;
                 const subjectsIds = selectedSubjects.value.map(subject => subject.id);
 
-                // Request to assign the selected subjects to the selected student
                 const response = await axios.post(`/students-assign-subject`, {
                     student_id: studentId,
                     subject_ids: subjectsIds
                 });
 
-                // Check if all conditions are met
                 if (response.status === 200 && response.data.success) {
-                    // Reload assigned subjects after assignment
                     await loadAssignedSubjects();
                     selectedSubjects.value = [];
-
-                    // Close modal after assignment
                     closeAssignSubjectModal();
 
-                    // Show success SweetAlert
                     Swal.fire({
                         title: 'Assigned subjects',
                         text: 'Selected subjects have been successfully assigned.',
                         icon: 'success',
                         confirmButtonColor: '#3085d6',
                         confirmButtonText: 'OK'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Reload assigned subjects after assignment
-                            loadAssignedSubjects();
-                            selectedSubjects.value = [];
-
-                            // Close modal after assignment
-                            closeAssignSubjectModal();
-                        }
                     });
                 } else {
-                    // Show error SweetAlert if conditions are not met
                     Swal.fire({
                         title: 'Error',
                         text: response.data.error || 'Error when assigning subjects.',
@@ -269,36 +246,62 @@ const assignSelectedSubjects = async () => {
     }
 };
 
-
-const confirmUnassignSubject = (subjectId) => {
-    Swal.fire({
-        title: "You're sure?",
-        text: 'This action will unassign the subject to the student.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: '<i class="fa-solid fa-check"></i> Yes, unassign',
-        cancelButtonText: '<i class="fa-solid fa-ban"></i> Cancel',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            unassignSubject(subjectId);
-        }
-    });
-};
-
-const unassignSubject = async (subjectId) => {
+const confirmUnassignSubject = async (subjectId) => {
     try {
-        const response = await axios.delete(`/unassign-subject-student/${selectedStudent.value.id}/${subjectId}`);
-        if (response.data.success) {
-            await loadAssignedSubjects();
-            Swal.fire('Unassigned subject', response.data.message, 'success');
-        } else {
-            Swal.fire('Error', response.data.message, 'error');
+        const result = await Swal.fire({
+            title: 'Confirm Unassignment',
+            text: 'Are you sure you want to unassign this subject?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: '<i class="fa-solid fa-trash"></i> Yes, unassign',
+            cancelButtonText: '<i class="fa-solid fa-ban"></i> Cancel',
+        });
+
+        if (result.isConfirmed) {
+            const response = await axios.delete(`/unassign-subject-student/${selectedStudent.value.id}/${subjectId}`, {
+                student_id: selectedStudent.value.id,
+                subject_id: subjectId
+            });
+
+            if (response.status === 200 && response.data.success) {
+                // Si la desasignación es exitosa
+                assignedSubjects.value = assignedSubjects.value.filter(subject => subject.id !== subjectId);
+                Swal.fire({
+                    title: 'Subject Unassigned',
+                    text: 'The subject has been successfully unassigned.',
+                    icon: 'success',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                // Si el servidor retorna un error (aunque con estado 200)
+                Swal.fire({
+                    title: 'Error',
+                    text: response.data.error || 'Error when unassigning subject.',
+                    icon: 'error',
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'OK'
+                });
+            }
         }
     } catch (error) {
-        console.error('Error when unassigning subject:', error);
-        Swal.fire('Error', 'Error when unassigning subject.', 'error');
+        // Si ocurre un error, como la violación de la regla de los 7 créditos mínimos
+        if (error.response && error.response.status === 422 && error.response.data.error) {
+            Swal.fire({
+                title: 'Cannot Unassign Subject',
+                text: error.response.data.error, // Mostrar el mensaje del controlador (ej. "Cannot unassign this subject. The student must have at least 7 credits assigned.")
+                icon: 'error',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            // Para otros errores no controlados
+            console.error('Error when unassigning subject:', error);
+            Swal.fire('Error', 'Error when unassigning subject.', 'error');
+        }
     }
 };
+
 </script>

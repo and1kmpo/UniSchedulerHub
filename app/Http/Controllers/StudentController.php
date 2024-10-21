@@ -156,6 +156,14 @@ class StudentController extends Controller
             Log::info('Unassigning subject...');
 
             $student = Student::findOrFail($studentId);
+            $totalCredits = $student->subjects->sum('credits');
+            $subject = Subject::findOrFail($subjectId);
+            $subjectCredits = $subject->credits;
+
+            if(($totalCredits - $subjectCredits) < 7){
+                return response()->json(['error' => 'Cannot unassign this subject. The student must have at least 7 credits assigned.'], 422);
+            }
+
             $student->subjects()->detach($subjectId);
 
             Log::info('Subject unassigned successfully.');
