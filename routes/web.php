@@ -1,13 +1,10 @@
 <?php
 
-use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
-use App\Http\Controllers\ProfessorSubjectController;
 use App\Http\Controllers\ProgramController;
-use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoleAndPermissionController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 
@@ -27,6 +24,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/professors-assign-subject', [ProfessorController::class, 'assignSubjectForm'])->name('professors.assignSubjectForm');
     Route::post('/professors-assign-subject', [ProfessorController::class, 'assignSubjects'])->name('professors.assignSubjects');
     Route::delete('/unassign-subject-professor/{professorId}/{subjectId}', [ProfessorController::class, 'unassignSubject']);
+    Route::post('/unassign-selected-subjects', [ProfessorController::class, 'unassignSelectedSubjects']);
 
     Route::get('/student-assigned-subjects/{studentId}', [StudentController::class, 'getAssignedSubjects']);
     Route::get('/students-assign-subject', [StudentController::class, 'assignSubjectForm'])->name('students.assignSubjectForm');
@@ -38,6 +36,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/elective-subjects-report', [DashboardController::class, 'percentageElectiveSubjects'])->name('electiveSubjects.report');
     Route::get('/students-semester-report', [DashboardController::class, 'studentsPerSemester'])->name('studentsSemester.report');
 
-    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+    Route::middleware(['auth:sanctum', 'role:superadmin'])->group(function () {
+        Route::post('/assign-role/{user}', [RoleAndPermissionController::class, 'assignRoleToUser']);
+        Route::delete('/remove-role/{user}', [RoleAndPermissionController::class, 'removeRoleFromUser']);
+    });
 });

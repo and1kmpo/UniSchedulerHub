@@ -14,6 +14,7 @@ class RolSeeder extends Seeder
      */
     public function run(): void
     {
+
         $role_admin = Role::create(['name' => 'admin']);
         $role_student = Role::create(['name' => 'student']);
         $role_professor = Role::create(['name' => 'professor']);
@@ -45,30 +46,6 @@ class RolSeeder extends Seeder
         $permission_update_subject = Permission::create(['name' => 'update subjects']);
         $permission_delete_subject = Permission::create(['name' => 'delete subjects']);
 
-        $permissions_admin = [
-            $permission_create_role,
-            $permission_read_role,
-            $permission_update_role,
-            $permission_delete_role,
-            $permission_create_professor,
-            $permission_read_professor,
-            $permission_update_professor,
-            $permission_delete_professor,
-            $permission_create_program,
-            $permission_read_program,
-            $permission_update_program,
-            $permission_delete_program,
-            $permission_create_student,
-            $permission_read_student,
-            $permission_update_student,
-            $permission_delete_student,
-            $permission_create_subject,
-            $permission_read_subject,
-            $permission_update_subject,
-            $permission_delete_subject,
-            $permission_view_dashboard
-        ];
-
         $permissions_student = [
             $permission_read_professor,
             $permission_read_program,
@@ -76,9 +53,15 @@ class RolSeeder extends Seeder
             $permission_read_subject,
         ];
 
-        $permissions_professor = [];
+        $permissions_professor = [
+            $permission_read_professor,
+            $permission_update_professor,
+            $permission_read_student,
+            $permission_update_student,
+            $permission_view_dashboard
+        ];
 
-        $role_admin->syncPermissions($permissions_admin);
+        $role_admin->syncPermissions(Permission::all());
         $role_student->syncPermissions($permissions_student);
         $role_professor->syncPermissions($permissions_professor);
     }

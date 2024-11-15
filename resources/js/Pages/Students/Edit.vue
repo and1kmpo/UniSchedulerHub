@@ -7,6 +7,7 @@ export default {
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { useForm } from "@inertiajs/vue3";
+import { onMounted } from "vue";
 import StudentForm from "@/Components/Students/Form.vue";
 import { Inertia } from "@inertiajs/inertia";
 
@@ -21,17 +22,22 @@ const props = defineProps({
     },
 });
 
-const form = useForm({
-    first_name: props.student.first_name,
-    last_name: props.student.last_name,
-    document: props.student.document,
-    phone: props.student.phone,
-    email: props.student.email,
-    address: props.student.address,
-    city: props.student.city,
-    semester: props.student.semester,
-    program_id: props.student.program_id,
+onMounted(() => {
+    console.log("User_ID", props.student.student.first_name);
 });
+
+const form = useForm({
+    first_name: props.student.student.first_name,
+    last_name: props.student.student.last_name,
+    document: props.student.student.document,
+    phone: props.student.student.phone,
+    email: props.student.student.email,
+    address: props.student.student.address,
+    city: props.student.student.city,
+    semester: props.student.student.semester,
+    program_id: props.student.student.program_id,
+});
+
 
 const handleCancel = () => {
     Inertia.visit(route("students.index"));
@@ -49,24 +55,16 @@ const handleCancel = () => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div
-                        class="bg-white overflow-hidden shadow-xl sm:rounded-lg"
-                    >
+                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
-                            <StudentForm
-                                :updating="true"
-                                :form="form"
-                                @submit="
-                                    form.put(
-                                        route(
-                                            'students.update',
-                                            props.student.id
-                                        )
+                            <StudentForm :updating="true" :form="form" @submit="
+                                form.put(
+                                    route(
+                                        'students.update',
+                                        props.student.student.user_id
                                     )
-                                "
-                                :handleCancel="handleCancel"
-                                :programs="programs"
-                            />
+                                )
+                                " :handleCancel="handleCancel" :programs="programs" />
                         </div>
                     </div>
                 </div>

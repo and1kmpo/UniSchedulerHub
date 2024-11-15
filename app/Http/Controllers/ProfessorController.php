@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Subject;
+use App\Models\Professor;
 use App\Http\Requests\ProfessorRequest;
 use Illuminate\Http\Request;
-use App\Models\Professor;
+
 
 
 class ProfessorController extends Controller
@@ -14,7 +17,7 @@ class ProfessorController extends Controller
      */
     public function index()
     {
-        $professors = Professor::paginate(5);
+        $professors = User::role('Professor')->with('professor')->paginate(5);
 
         if (request()->wantsJson()) {
             return response()->json($professors);
@@ -30,26 +33,56 @@ class ProfessorController extends Controller
 
     public function store(ProfessorRequest $request)
     {
-        $validatedData = $request->validated();
-        Professor::create($validatedData);
+        $validatedData = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'document' => 'required|string',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'phone' => 'nullable|string',
+            'address' => 'nullable|string',
+            'city' => 'nullable|string',
+        ]);
+
+        $user = User::create(
+            [
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
+                'password' => bcrypt($validatedData['password']),
+            ]
+        );
+
+        $user->assignRole('Professor');
+
+        $user->professor()->create([
+            'document' => $validatedData['document'],
+            'first_name' => $validatedData['first_name'],
+            'last_name' => $validatedData['last_name'],
+            'phone' => $validatedData['phone'],
+            'address' => $validatedData['address'],
+            'city' => $validatedData['city'],
+        ]);
+
         return redirect()->route('professors.index');
     }
 
-    public function edit(Professor $professor)
+    public function edit(User $professor)
     {
-        return inertia('Professors/Edit', ['professor' => $professor]);
+        return inertia('Professors/Edit', ['professor' => $professor->load('professor')]);
     }
 
-    public function update(ProfessorRequest $request, Professor $professor)
+    public function update(ProfessorRequest $request, User $professor)
     {
         $validatedData = $request->validated();
-        $professor->update($validatedData);
+
+        $professor->professor()->update($validatedData);
         return redirect()->route('professors.index');
     }
 
-    public function destroy(Professor $professor)
+    public function destroy(User  $professor)
     {
-        $professor->delete();
+        $professor->professor()->delete();
         return redirect()->route('professors.index');
     }
 
@@ -96,6 +129,23 @@ class ProfessorController extends Controller
             return response()->json(['success' => true, 'message' => 'Subject successfully unassigned.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error when unassigning subject.'], 500);
+        }
+    }
+
+    public function unassignSelectedSubjects(Request $request)
+    {
+        try {
+            $request->validate([
+                'professor_id' => 'required|exists:professors,id',
+                'subject_ids' => 'required|array',
+            ]);
+
+            $professor = Professor::findOrFail($request->professor_id);
+            $professor->subjects()->detach($request->subject_ids);
+
+            return response()->json(['success' => true, 'message' => 'Subjects successfully unassigned.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error when unassigning subjects.'], 500);
         }
     }
 }

@@ -13,18 +13,13 @@ return new class extends Migration
     {
         Schema::create('student_subject_professor', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('student_id');
-            $table->foreign('student_id')->references('id')->on('students')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->unsignedBigInteger('subject_id');
-            $table->foreign('subject_id')->references('id')->on('subjects')->onUpdate('cascade');
-
-            $table->unsignedBigInteger('professor_id');
-            $table->foreign('professor_id')->references('id')->on('professors')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('subject_id')->constrained();
+            $table->foreignId('professor_id')->constrained()->cascadeOnDelete();
+            $table->unique(['student_id', 'subject_id']); // Asegura que un estudiante no repita la misma asignatura con diferentes profesores
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */
