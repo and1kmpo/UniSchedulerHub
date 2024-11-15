@@ -18,7 +18,6 @@ defineProps({
     },
 });
 
-
 const deleteProfessor = (id, name) => {
     Swal.fire({
         title: '¿Are you sure to delete "' + name + '"?',
@@ -65,7 +64,7 @@ const deleteProfessor = (id, name) => {
                             class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white" v-if="$page.props.user.permissions.includes(
                                 'create professors'
                             )
-                                ">
+                            ">
                         Create Professor
 
                         </Link>
@@ -91,13 +90,15 @@ const deleteProfessor = (id, name) => {
                                     <tr v-for="(professor, i) in professors.data" :key="professor.id">
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ (professors.current_page - 1) *
                                             professors.per_page + i + 1
-                                        }}</td>
-                                        <td class="py-3 px-4">{{ professor.document }}</td>
-                                        <td class="py-3 px-4">{{ professor.first_name }} {{ professor.last_name }}</td>
-                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.phone }}</td>
+                                            }}</td>
+                                        <td class="py-3 px-4">{{ professor.professor.document }}</td>
+                                        <td class="py-3 px-4">{{ professor.professor.first_name }} {{
+                                            professor.professor.last_name }}</td>
+                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.phone }}</td>
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ professor.email }}</td>
-                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.address }}</td>
-                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.city }}</td>
+                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.address }}
+                                        </td>
+                                        <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.city }}</td>
                                         <td class="py-3 px-4">
                                             <div class="flex justify-center sm:justify-end space-x-2">
                                                 <Link :href="route('professors.edit', professor.id)"
@@ -109,7 +110,8 @@ const deleteProfessor = (id, name) => {
                                         </td>
                                         <td class="py-3 px-4">
                                             <div class="flex justify-center sm:justify-end space-x-2">
-                                                <Link href="#" @click="deleteProfessor(professor.id, professor.first_name)"
+                                                <Link href="#"
+                                                    @click="deleteProfessor(professor.id, professor.first_name)"
                                                     class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
                                                     v-if="$page.props.user.permissions.includes('delete professors')">
                                                 <i class="fas fa-trash"></i>
@@ -131,7 +133,8 @@ const deleteProfessor = (id, name) => {
                                 <div class="text-sm mx-2">
                                     Page {{ professors.current_page }} of {{ professors.last_page }}
                                 </div>
-                                <Link v-if="professors.current_page < professors.last_page" :href="professors.next_page_url"
+                                <Link v-if="professors.current_page < professors.last_page"
+                                    :href="professors.next_page_url"
                                     class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white ml-2">
                                 <i class="fa-solid fa-angles-right"></i>
                                 </Link>

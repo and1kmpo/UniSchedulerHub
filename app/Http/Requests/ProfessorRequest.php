@@ -22,23 +22,14 @@ class ProfessorRequest extends FormRequest
      */
     public function rules(): array
     {
-        $professorId = $this->route('professor') ?? null;
+        $professorId = $this->route('professor')->professor->id ?? null;
 
         return [
-            'document' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('professors', 'document')->ignore($professorId),
-            ],
+            'document' => ['required', 'string', 'max:20', Rule::unique('professors', 'document')->ignore($professorId),],
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
             'phone' => 'required|string|max:15',
-            'email' => [
-                'required',
-                'email',
-                Rule::unique('professors', 'email')->ignore($professorId),
-            ],
+            'email' => ['required', 'email', Rule::unique('professors', 'email')->ignore($professorId),],
             'address' => 'required|string|max:255',
             'city' => 'required|string|max:50',
         ];

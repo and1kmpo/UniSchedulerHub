@@ -9,7 +9,21 @@ class Professor extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['document', 'first_name', 'last_name', 'phone', 'email', 'address', 'city'];
+    protected $fillable = [
+        'user_id',
+        'document',
+        'email',
+        'first_name',
+        'last_name',
+        'phone',
+        'address',
+        'city',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function subjects()
     {

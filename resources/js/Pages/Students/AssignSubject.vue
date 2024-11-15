@@ -14,9 +14,9 @@
                             <label for="student" class="block text-sm font-medium text-gray-700">
                                 Select student:
                             </label>
-                            <multiselect v-model="selectedStudent" :options="students" label="fullName" track-by="id"
+                            <!-- <multiselect v-model="selectedStudent" :options="students" label="fullName" track-by="id"
                                 placeholder="Select a student" @select="loadAssignedSubjects">
-                            </multiselect>
+                            </multiselect> -->
                         </div>
 
                         <div>
@@ -81,10 +81,10 @@
                                         <label for="selectedSubjects" class="block text-sm font-medium text-gray-700">
                                             Select subjects:
                                         </label>
-                                        <multiselect v-model="selectedSubjects" :options="availableSubjects"
+                                        <!--  <multiselect v-model="selectedSubjects" :options="availableSubjects"
                                             label="name" track-by="id" :multiple="true" placeholder="Select subjects"
                                             style="width: 100%;" :maxHeight="300">
-                                        </multiselect>
+                                        </multiselect> -->
                                     </div>
                                     <button @click="assignSelectedSubjects"
                                         class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">Assign</button>
@@ -107,7 +107,7 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
 import AppLayout from "@/Layouts/AppLayout.vue";
-import Multiselect from 'vue-multiselect';
+/* import Multiselect from 'vue-multiselect'; */
 import Modal from '@/Components/Modal.vue';
 import Swal from 'sweetalert2';
 

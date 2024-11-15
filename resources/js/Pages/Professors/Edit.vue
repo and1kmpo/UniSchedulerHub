@@ -18,13 +18,13 @@ const props = defineProps({
 });
 
 const form = useForm({
-    first_name: props.professor.first_name,
-    last_name: props.professor.last_name,
-    document: props.professor.document,
-    phone: props.professor.phone,
-    email: props.professor.email,
-    address: props.professor.address,
-    city: props.professor.city,
+    first_name: props.professor.professor.first_name,
+    last_name: props.professor.professor.last_name,
+    document: props.professor.professor.document,
+    phone: props.professor.professor.phone,
+    email: props.professor.professor.email,
+    address: props.professor.professor.address,
+    city: props.professor.professor.city,
 });
 
 const handleCancel = () => {
@@ -43,23 +43,16 @@ const handleCancel = () => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div
-                        class="bg-white overflow-hidden shadow-xl sm:rounded-lg"
-                    >
+                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
-                            <ProfessorForm
-                                :updating="true"
-                                :form="form"
-                                @submit="
-                                    form.put(
-                                        route(
-                                            'professors.update',
-                                            props.professor.id
-                                        )
+                            <ProfessorForm :updating="true" :form="form" @submit="
+                                form.put(
+                                    route(
+                                        'professors.update',
+                                        props.professor.id
                                     )
-                                "
-                                :handleCancel="handleCancel"
-                            />
+                                )
+                                " :handleCancel="handleCancel" />
                         </div>
                     </div>
                 </div>

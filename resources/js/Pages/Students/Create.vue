@@ -1,36 +1,39 @@
 <script>
 export default {
-    name: "StudentCreate",
+    name: "StudentCreate"
 };
 </script>
 
 <script setup>
-import 'vue-multiselect/dist/vue-multiselect.css';
-import { ref, inject } from 'vue';
 import AppLayout from "@/Layouts/AppLayout.vue";
-import Multiselect from 'vue-multiselect';
-import { defineProps } from "vue";
+import { useForm } from "@inertiajs/vue3";
+import StudentForm from "@/Components/Students/Form.vue";
+import { Inertia } from "@inertiajs/inertia";
 
 defineProps({
-    subjects: {
-        type: Array,
+    programs: {
+        type: Object,
         required: true,
     },
 });
 
-const value = ref(null);
-const options = ref([]);
+const form = useForm({
+    document: "",
+    first_name: "",
+    last_name: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    picture: "",
+    semester: "",
+    program_id: "",
+});
 
-// Obtener el objeto $page
-const $page = inject('$page');
-
-// Utiliza pluck para obtener un array asociativo de id y name
-options.value = $page.props.subjects.pluck('name', 'id').all();
-
-// Mostrar en la consola el objeto subjects
-console.log($page.props.subjects);
+const handleCancel = () => {
+    Inertia.visit(route("students.index"));
+};
 </script>
-
 
 <template>
     <AppLayout title="Create student">
@@ -42,9 +45,6 @@ console.log($page.props.subjects);
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div>
-                    {{ "programs" + programs }}
-                </div>
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
