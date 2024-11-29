@@ -20,8 +20,6 @@ class StudentFactory extends Factory
     {
         return [
             'document' => $this->faker->unique()->numberBetween(1000000, 9999999),
-            'first_name' => $this->faker->firstName,
-            'last_name' => $this->faker->lastName,
             'phone' => $this->faker->numberBetween(1000000000, 9999999999),
             'address' => $this->faker->address,
             'city' => $this->faker->city,

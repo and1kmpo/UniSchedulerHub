@@ -2,11 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RoleAndPermissionController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\UserController;
 
 Route::get('/', [DashboardController::class, 'index']);
 
@@ -17,6 +20,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/subjects', SubjectController::class);
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
+    Route::resource('/users', UserController::class);
+    Route::resource('/roles', RoleController::class);
+    Route::resource('/permissions', PermissionController::class);
+
+    Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+    Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
 
     Route::get('/subjects-with-professors', [SubjectController::class, 'getSubjectsWithProfessors']);
 

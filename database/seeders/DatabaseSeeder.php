@@ -28,14 +28,13 @@ class DatabaseSeeder extends Seeder
         $students = Student::factory(10)->make()->each(function ($student) use ($programs) {
             // Crear el usuario correspondiente para el estudiante
             $user = User::factory()->create([
+                'name' => fake()->name(),
                 'email' => $student->document . '@sas.com',
-                'name' => $student->first_name . ' ' . $student->last_name,
             ]);
             $user->assignRole('student');
 
             // Asocia el user_id al estudiante y luego guarda
             $student->user_id = $user->id;
-            $student->email = $student->email ?? $student->document . '@sas.com';
             $student->program_id = $programs->random()->id;
             $student->save();
         });
@@ -44,14 +43,13 @@ class DatabaseSeeder extends Seeder
         $professors = Professor::factory(5)->make()->each(function ($professor) {
             // Crear el usuario correspondiente para el profesor
             $user = User::factory()->create([
+                'name' => fake()->name(),
                 'email' => $professor->document . '@sas.com',
-                'name' => $professor->first_name . ' ' . $professor->last_name,
             ]);
             $user->assignRole('professor');
 
             // Asocia el user_id al profesor y luego guarda
             $professor->user_id = $user->id;
-            $professor->email = $professor->email ?? $professor->document . '@sas.com';
             $professor->save();
         });
 

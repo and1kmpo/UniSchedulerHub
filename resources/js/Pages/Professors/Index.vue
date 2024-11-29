@@ -18,6 +18,7 @@ defineProps({
     },
 });
 
+
 const deleteProfessor = (id, name) => {
     Swal.fire({
         title: '¿Are you sure to delete "' + name + '"?',
@@ -59,20 +60,9 @@ const deleteProfessor = (id, name) => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="p-6 bg-white border-b border-gray-200">
-                    <div class="flex justify-between">
-                        <Link :href="route('professors.create')"
-                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white" v-if="$page.props.user.permissions.includes(
-                                'create professors'
-                            )
-                            ">
-                        Create Professor
-
-                        </Link>
-                    </div>
-
                     <div class="mt-4 overflow-x-auto">
                         <div class="sm:overflow-x-auto">
-                            <table class="min-w-full bg-white shadow-md rounded-xl text-cente">
+                            <table class="min-w-full bg-white shadow-md rounded-xl text-center">
                                 <thead>
                                     <tr class="bg-blue-gray-100 text-gray-700">
                                         <th class="py-3 px-4 hidden sm:table-cell">#</th>
@@ -82,8 +72,6 @@ const deleteProfessor = (id, name) => {
                                         <th class="py-3 px-4 hidden sm:table-cell">Email</th>
                                         <th class="py-3 px-4 hidden sm:table-cell">Address</th>
                                         <th class="py-3 px-4 hidden sm:table-cell">City</th>
-                                        <th class="py-3 px-4 text-center">Edit</th>
-                                        <th class="py-3 px-4 text-center">Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody class="text-blue-gray-900 divide-y divide-blue-gray-200">
@@ -92,32 +80,12 @@ const deleteProfessor = (id, name) => {
                                             professors.per_page + i + 1
                                             }}</td>
                                         <td class="py-3 px-4">{{ professor.professor.document }}</td>
-                                        <td class="py-3 px-4">{{ professor.professor.first_name }} {{
-                                            professor.professor.last_name }}</td>
+                                        <td class="py-3 px-4">{{ professor.name }} </td>
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.phone }}</td>
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ professor.email }}</td>
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.address }}
                                         </td>
                                         <td class="py-3 px-4 hidden sm:table-cell">{{ professor.professor.city }}</td>
-                                        <td class="py-3 px-4">
-                                            <div class="flex justify-center sm:justify-end space-x-2">
-                                                <Link :href="route('professors.edit', professor.id)"
-                                                    class="text-xs bg-blue-700 hover:bg-blue-400 hover:text-black rounded p-2 px-4 text-white"
-                                                    v-if="$page.props.user.permissions.includes('update professors')">
-                                                <i class="fas fa-edit"></i>
-                                                </Link>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <div class="flex justify-center sm:justify-end space-x-2">
-                                                <Link href="#"
-                                                    @click="deleteProfessor(professor.id, professor.first_name)"
-                                                    class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
-                                                    v-if="$page.props.user.permissions.includes('delete professors')">
-                                                <i class="fas fa-trash"></i>
-                                                </Link>
-                                            </div>
-                                        </td>
                                     </tr>
                                 </tbody>
                             </table>

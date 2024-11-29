@@ -1,0 +1,419 @@
+<template>
+    <div>
+        <button @click="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded mb-2">
+            Add User
+        </button>
+
+        <!-- Tabla de usuarios -->
+        <table class="min-w-full table-auto dark:bg-gray-800 dark:text-white">
+            <thead class="bg-gray-200 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-2 text-center">ID</th>
+                    <th class="px-4 py-2 text-center">Name</th>
+                    <th class="px-4 py-2 text-center">Email</th>
+                    <th class="px-4 py-2 text-center">Role</th>
+                    <th class="px-4 py-2 text-center">Status</th>
+                    <th class="px-4 py-2 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="user in users.data" :key="user.id" class="border-t dark:border-gray-700">
+                    <td class="px-4 py-2 text-center">{{ user.id }}</td>
+                    <td class="px-4 py-2 text-center">{{ user.name }}</td>
+                    <td class="px-4 py-2 text-center">{{ user.email }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <span v-for="role in user.roles" :key="role.id">{{ role.name }}</span>
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <label class="inline-flex items-center me-5 cursor-pointer">
+                            <input type="checkbox" value="" class="sr-only peer" :checked="user.status === '1'"
+                                @change="toggleStatus(user)">
+                            <div
+                                class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-300 dark:border-gray-600 peer-checked:bg-purple-600">
+                            </div>
+                            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">{{ user.status ===
+                                '1' ? 'Active' : user.status === '2' ?
+                                'Inactive' :
+                                'No data status' }}</span>
+                        </label>
+                    </td>
+                    <td class="px-4 py-2 flex gap-4 justify-center text-center">
+                        <button @click="editUser(user)"
+                            class="dark:text-indigo-400 text-indigo-800 transition ease-in-out  hover:-translate-y-1 hover:scale-110 duration-300">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button @click="deleteUser(user)"
+                            class="text-red-600 dark:text-red-400 hover:text-red-800 transition ease-in-out  hover:-translate-y-1 hover:scale-110 duration-300">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Paginación -->
+        <div class="mt-4 flex flex-wrap justify-center items-center gap-2">
+            <!-- Botón de página anterior -->
+            <button @click="changePage(users.prev_page_url)" :disabled="!users.prev_page_url"
+                class="px-4 py-2 border rounded bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition">
+                <i class="fas fa-angles-left"></i>
+            </button>
+
+            <!-- Texto de página actual -->
+            <span class="px-4 py-2 text-center">
+                {{ users.current_page }} of {{ users.last_page }}
+            </span>
+
+
+            <!-- Botón de página siguiente -->
+            <button @click="changePage(users.next_page_url)" :disabled="!users.next_page_url"
+                class="px-4 py-2 border rounded bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition">
+                <i class="fas fa-angles-right"></i>
+            </button>
+        </div>
+
+        <!-- Modal para creación -->
+        <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-lg p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ form.id ? 'Edit User' :
+                        'Create User' }}</h2>
+                    <button @click="closeModal" class="text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form @submit.prevent="form.id ? updateUser() : createUser()">
+                    <div class="mb-4">
+                        <label for="name" class="block text-gray-700 dark:text-gray-300">Name:</label>
+                        <input v-model="form.name" type="text" id="name"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" required />
+                    </div>
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 dark:text-gray-300">Email:</label>
+                        <input v-model="form.email" type="email" id="email"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" required />
+                    </div>
+                    <div class="mb-4">
+                        <label for="document" class="block text-gray-700 dark:text-gray-300">Document:</label>
+                        <input v-model="form.document" type="text" id="document"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
+                            pattern="\d*">
+                    </div>
+                    <div class="mb-4">
+                        <label for="phone" class="block text-gray-700 dark:text-gray-300">Phone:</label>
+                        <input v-model="form.phone" type="text" id="phone"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
+                            pattern="\d*" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="address" class="block text-gray-700 dark:text-gray-300">Address:</label>
+                        <input v-model="form.address" type="text" id="address"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="city" class="block text-gray-700 dark:text-gray-300">City:</label>
+                        <input v-model="form.city" type="text" id="city"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="role" class="block text-gray-700 dark:text-gray-300">Role:</label>
+                        <select v-model="form.role" id="role"
+                            class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500">
+                            <option value="student">Student</option>
+                            <option value="professor">Professor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+
+                    </div>
+
+                    <!-- Campos dinámicos -->
+                    <div v-if="form.role === 'student'">
+                        <div class="mb-4">
+                            <label for="semester" class="block text-gray-700 dark:text-gray-300">Semester:</label>
+                            <input v-model="form.semester" type="number" id="semester"
+                                class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
+                        </div>
+                        <div class="mb-4">
+                            <label for="program_id" class="block text-gray-700 dark:text-gray-300">Program ID:</label>
+                            <input v-model="form.program_id" type="number" id="program_id"
+                                class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md">
+                        {{ form.id ? 'Update' : 'Save' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import Swal from 'sweetalert2';
+export default {
+    props: {
+        users: Object,
+    },
+    data() {
+        return {
+            isModalOpen: false,
+            form: {
+                name: "",
+                email: "",
+                role: "",
+                semester: null,
+                program_id: null,
+                document: "",
+                phone: "",
+                address: "",
+                city: ""
+            },
+        };
+    },
+    methods: {
+        openModal(mode) {
+            if (mode === "create") {
+                // Reiniciar el formulario para la creación de un nuevo usuario
+                this.form = {
+                    id: null, // Asegura que no hay ID en modo creación
+                    name: "",
+                    email: "",
+                    role: "",
+                    semester: null,
+                    program_id: null,
+                    document: "",
+                    phone: "",
+                    address: "",
+                    city: ""
+                };
+            }
+            this.isModalOpen = true;
+        },
+        closeModal() {
+            this.isModalOpen = false;
+        },
+        async createUser() {
+            try {
+                const response = await axios.post('/users', this.form);
+                this.$inertia.reload({ only: ['users'] });
+                Swal.fire({
+                    title: 'Success!',
+                    text: response.data.message,
+                    icon: 'success',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                this.closeModal();
+            } catch (error) {
+                if (error.response && error.response.status === 422) {
+                    // Captura errores de validación
+                    this.errors = error.response.data.errors;
+
+                    // Mostrar errores con SweetAlert y agregar íconos
+                    let errorMessages = Object.values(this.errors)
+                        .flat() // Aplanar los arrays de mensajes
+                        .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`) // Agregar ícono antes del mensaje
+                        .join(''); // Combinar en un solo string
+
+                    Swal.fire({
+                        title: 'Validation Errors',
+                        html: errorMessages, // Usar `html` en lugar de `text` para incluir íconos
+                        icon: 'error',
+                    });
+                } else if (error.response) {
+                    // Captura otros errores
+                    Swal.fire('Error', error.response.data.error, 'error');
+                } else {
+                    console.error("Error:", error);
+                    alert("Failed to create user. Please try again.");
+                }
+            }
+        }
+        ,
+        async changePage(url) {
+            if (!url) return;
+
+            try {
+                // Utiliza Inertia.js para navegar a la nueva página
+                this.$inertia.get(url);
+            } catch (error) {
+                console.error('Error loading page:', error);
+            }
+        },
+        async deleteUser(user) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "This action is irreversible!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await axios.delete(`/users/${user.id}`);
+                    this.$inertia.reload({ only: ['users'] });
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: response.data.message,
+                        icon: 'success',
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
+                } catch (error) {
+                    if (error.response && error.response.status === 422) {
+                        // Errores de validación
+                        const errorMessages = Object.values(error.response.data.errors)
+                            .flat()
+                            .map(message => `<div><i class="fas fa-exclamation-circle"></i> ${message}</div>`)
+                            .join('');
+
+                        Swal.fire({
+                            title: 'Validation Errors',
+                            html: errorMessages,
+                            icon: 'error',
+                        });
+                    } else if (error.response) {
+                        // Otros errores del servidor
+                        Swal.fire({
+                            title: 'Error!',
+                            text: error.response.data.error,
+                            icon: 'error',
+                        });
+                    } else {
+                        // Error general
+                        console.error("Error:", error);
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to delete user. Please try again later.',
+                            icon: 'error',
+                        });
+                    }
+                }
+            }
+        }
+        ,
+        async editUser(user) {
+            try {
+                const response = await axios.get(`/users/${user.id}/edit`);
+                const userData = response.data;
+
+                // Preasignar datos básicos del usuario
+                this.form = {
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    role: userData.roles[0]?.name || "",
+                    document: "",
+                    phone: "",
+                    address: "",
+                    city: "",
+                    semester: null,
+                    program_id: null,
+                };
+
+                // Dependiendo del rol, asignar los datos adicionales
+                if (this.form.role === "professor" && userData.professor) {
+                    Object.assign(this.form, {
+                        document: userData.professor.document,
+                        phone: userData.professor.phone,
+                        address: userData.professor.address,
+                        city: userData.professor.city,
+                    });
+                } else if (this.form.role === "student" && userData.student) {
+                    Object.assign(this.form, {
+                        document: userData.student.document,
+                        phone: userData.student.phone,
+                        address: userData.student.address,
+                        city: userData.student.city,
+                        semester: userData.student.semester,
+                        program_id: userData.student.program_id,
+                    });
+                }
+                this.openModal("edit");
+            } catch (error) {
+                alert("Failed to load user data.");
+            }
+        },
+        async updateUser() {
+            try {
+                const response = await axios.put(`/users/${this.form.id}`, this.form);
+                Swal.fire({
+                    title: 'Success!',
+                    text: response.data.message,
+                    icon: 'success',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                this.$inertia.reload({ only: ['users'] });
+                this.closeModal();
+            } catch (error) {
+                if (error.response && error.response.status === 422) {
+                    // Captura errores de validación
+                    this.errors = error.response.data.errors;
+
+                    // Mostrar errores con SweetAlert, incluyendo un ícono en cada línea
+                    let errorMessages = Object.values(this.errors)
+                        .flat() // Aplanar los arrays de mensajes
+                        .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`)  // Agregar ícono a cada mensaje
+                        .join('<br/>'); // Combinarlos en un solo string separado por líneas
+
+                    Swal.fire({
+                        title: 'Validation Errors',
+                        html: errorMessages, // Usar html en lugar de text para mostrar los íconos
+                        icon: 'error',
+                    });
+                } else if (error.response) {
+                    // Captura otros errores
+                    Swal.fire('Error', error.response.data.error, 'error');
+                } else {
+                    console.error("Error:", error);
+                    alert("Failed to create user. Please try again.");
+                }
+            }
+        }
+        ,
+        async toggleStatus(user) {
+            try {
+                // Determinar la ruta a usar
+                const route = user.status === '1'
+                    ? `/users/${user.id}/deactivate`
+                    : `/users/${user.id}/activate`;
+
+                // Realizar la solicitud al backend
+                const response = await axios.patch(route);
+
+                // Actualizar el estado localmente
+                user.status = user.status === '1' ? '2' : '1';
+
+                // Mostrar una alerta de confirmación usando SweetAlert2
+                Swal.fire({
+                    icon: 'success',
+                    title: response.data.message,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    toast: true, // Opcional para mostrar como un toast
+                    position: 'top-end', // Opcional para posicionar como toast
+                });
+            } catch (error) {
+                // Mostrar una alerta de error usando SweetAlert2
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error updating status. Please try again.',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                });
+                console.error(error);
+            }
+        }
+
+    },
+}
+</script>
