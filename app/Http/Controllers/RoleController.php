@@ -2,63 +2,67 @@
 
 namespace App\Http\Controllers;
 
+use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $roles = Role::with(['permissions'])->paginate(10);
+        //dd($users);
+
+        // Verificamos si la solicitud es JSON
+        if (request()->wantsJson()) {
+            return response()->json($roles);
+        }
+        return response()->json($roles, 201);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Crear un nuevo rol
     public function store(Request $request)
     {
-        //
+        $request->validate(['name' => 'required|unique:roles,name']);
+
+        // Especifica el guard_name
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'web',
+        ]);
+
+        return response()->json($role, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    // Asignar un permiso a un rol
+    public function assignPermissionToRole(Request $request, Role $role)
     {
-        //
+        $permissionName = $request->input('permission');
+        $permission = Permission::where('name', $permissionName)->first();
+
+        if (!$permission) {
+            return response()->json(['error' => 'Permission not found.'], 404);
+        }
+
+        $role->givePermissionTo($permission);
+
+        return response()->json(['message' => 'Permission assigned successfully']);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    // Asignar varios permisos a un rol
+    public function updatePermissions(Request $request, Role $role)
     {
-        //
+        $permissions = $request->input('permissions', []);
+        $role->syncPermissions($permissions);
+
+        return response()->json(['message' => 'Permissions updated successfully']);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    // Eliminar un rol
+    public function destroy(Role $role)
     {
-        //
-    }
+        $role->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json(['message' => 'Role deleted successfully']);
     }
 }

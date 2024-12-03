@@ -21,8 +21,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
     Route::resource('/users', UserController::class);
+    Route::get('/users/search/{data}', [UserController::class, 'searchUser']);
     Route::resource('/roles', RoleController::class);
     Route::resource('/permissions', PermissionController::class);
+    Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
 
     Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
     Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
@@ -44,9 +46,4 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/students-program-report', [DashboardController::class, 'totalStudentsPerProgram'])->name('studentsPrograms.report');
     Route::get('/elective-subjects-report', [DashboardController::class, 'percentageElectiveSubjects'])->name('electiveSubjects.report');
     Route::get('/students-semester-report', [DashboardController::class, 'studentsPerSemester'])->name('studentsSemester.report');
-
-    Route::middleware(['auth:sanctum', 'role:superadmin'])->group(function () {
-        Route::post('/assign-role/{user}', [RoleAndPermissionController::class, 'assignRoleToUser']);
-        Route::delete('/remove-role/{user}', [RoleAndPermissionController::class, 'removeRoleFromUser']);
-    });
 });

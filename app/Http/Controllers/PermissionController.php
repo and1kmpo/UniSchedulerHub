@@ -2,63 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 
 class PermissionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
-    }
+        $permissions = Permission::paginate(10);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        // Verificamos si la solicitud es JSON
+        if (request()->wantsJson()) {
+            return response()->json($permissions);
+        }
+        return response()->json($permissions, 201);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Crear un nuevo permiso
     public function store(Request $request)
     {
-        //
+        $request->validate(['name' => 'required|unique:permissions,name']);
+
+        $permission = Permission::create(['name' => $request->name]);
+
+        return response()->json($permission, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    // Eliminar un permiso
+    public function destroy(Permission $permission)
     {
-        //
-    }
+        $permission->delete();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json(['message' => 'Permission deleted successfully']);
     }
 }

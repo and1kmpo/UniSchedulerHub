@@ -66,6 +66,7 @@ class User extends Authenticatable
         return $this->hasOne(Student::class);
     }
 
+
     const STATUS_ACTIVE = '1';
     const STATUS_INACTIVE = '2';
 

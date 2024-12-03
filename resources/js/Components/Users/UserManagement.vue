@@ -1,8 +1,31 @@
 <template>
     <div>
-        <button @click="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded mb-2">
-            Add User
-        </button>
+
+        <div class="w-full flex items-center space-x-4 mb-4">
+            <!-- Botón para agregar usuario -->
+            <button @click="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded">
+                Add User
+            </button>
+            <!-- Formulario de búsqueda -->
+            <form class="flex-1 relative">
+                <label for="default-search"
+                    class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                        </svg>
+                    </div>
+                    <input type="search" id="default-search" v-model="searchQuery" class=" block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg
+                        bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600
+                        dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="Search user..." />
+                </div>
+            </form>
+        </div>
+
 
         <!-- Tabla de usuarios -->
         <table class="min-w-full table-auto dark:bg-gray-800 dark:text-white">
@@ -60,7 +83,7 @@
             </button>
 
             <!-- Texto de página actual -->
-            <span class="px-4 py-2 text-center">
+            <span class="px-4 py-2 text-center dark:text-white">
                 {{ users.current_page }} of {{ users.last_page }}
             </span>
 
@@ -174,9 +197,8 @@ export default {
     methods: {
         openModal(mode) {
             if (mode === "create") {
-                // Reiniciar el formulario para la creación de un nuevo usuario
                 this.form = {
-                    id: null, // Asegura que no hay ID en modo creación
+                    id: null,
                     name: "",
                     email: "",
                     role: "",
@@ -206,39 +228,7 @@ export default {
                 });
                 this.closeModal();
             } catch (error) {
-                if (error.response && error.response.status === 422) {
-                    // Captura errores de validación
-                    this.errors = error.response.data.errors;
-
-                    // Mostrar errores con SweetAlert y agregar íconos
-                    let errorMessages = Object.values(this.errors)
-                        .flat() // Aplanar los arrays de mensajes
-                        .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`) // Agregar ícono antes del mensaje
-                        .join(''); // Combinar en un solo string
-
-                    Swal.fire({
-                        title: 'Validation Errors',
-                        html: errorMessages, // Usar `html` en lugar de `text` para incluir íconos
-                        icon: 'error',
-                    });
-                } else if (error.response) {
-                    // Captura otros errores
-                    Swal.fire('Error', error.response.data.error, 'error');
-                } else {
-                    console.error("Error:", error);
-                    alert("Failed to create user. Please try again.");
-                }
-            }
-        }
-        ,
-        async changePage(url) {
-            if (!url) return;
-
-            try {
-                // Utiliza Inertia.js para navegar a la nueva página
-                this.$inertia.get(url);
-            } catch (error) {
-                console.error('Error loading page:', error);
+                this.handleFormErrors(error);
             }
         },
         async deleteUser(user) {
@@ -255,68 +245,38 @@ export default {
 
             if (result.isConfirmed) {
                 try {
-                    const response = await axios.delete(`/users/${user.id}`);
+                    await axios.delete(`/users/${user.id}`);
                     this.$inertia.reload({ only: ['users'] });
                     Swal.fire({
                         title: 'Deleted!',
-                        text: response.data.message,
+                        text: 'User deleted successfully.',
                         icon: 'success',
                         timer: 3000,
                         timerProgressBar: true,
                     });
                 } catch (error) {
-                    if (error.response && error.response.status === 422) {
-                        // Errores de validación
-                        const errorMessages = Object.values(error.response.data.errors)
-                            .flat()
-                            .map(message => `<div><i class="fas fa-exclamation-circle"></i> ${message}</div>`)
-                            .join('');
-
-                        Swal.fire({
-                            title: 'Validation Errors',
-                            html: errorMessages,
-                            icon: 'error',
-                        });
-                    } else if (error.response) {
-                        // Otros errores del servidor
-                        Swal.fire({
-                            title: 'Error!',
-                            text: error.response.data.error,
-                            icon: 'error',
-                        });
-                    } else {
-                        // Error general
-                        console.error("Error:", error);
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to delete user. Please try again later.',
-                            icon: 'error',
-                        });
-                    }
+                    Swal.fire('Error', 'Error deleting user.', 'error');
                 }
             }
-        }
-        ,
+        },
         async editUser(user) {
             try {
                 const response = await axios.get(`/users/${user.id}/edit`);
                 const userData = response.data;
 
-                // Preasignar datos básicos del usuario
                 this.form = {
                     id: userData.id,
                     name: userData.name,
                     email: userData.email,
                     role: userData.roles[0]?.name || "",
+                    semester: null,
+                    program_id: null,
                     document: "",
                     phone: "",
                     address: "",
                     city: "",
-                    semester: null,
-                    program_id: null,
                 };
 
-                // Dependiendo del rol, asignar los datos adicionales
                 if (this.form.role === "professor" && userData.professor) {
                     Object.assign(this.form, {
                         document: userData.professor.document,
@@ -336,84 +296,62 @@ export default {
                 }
                 this.openModal("edit");
             } catch (error) {
-                alert("Failed to load user data.");
+                Swal.fire('Error', 'Failed to load user data.', 'error');
             }
         },
         async updateUser() {
             try {
-                const response = await axios.put(`/users/${this.form.id}`, this.form);
+                await axios.put(`/users/${this.form.id}`, this.form);
+                this.$inertia.reload({ only: ['users'] });
                 Swal.fire({
                     title: 'Success!',
-                    text: response.data.message,
+                    text: 'User updated successfully.',
                     icon: 'success',
                     timer: 3000,
-                    timerProgressBar: true
+                    timerProgressBar: true,
                 });
-                this.$inertia.reload({ only: ['users'] });
                 this.closeModal();
             } catch (error) {
-                if (error.response && error.response.status === 422) {
-                    // Captura errores de validación
-                    this.errors = error.response.data.errors;
-
-                    // Mostrar errores con SweetAlert, incluyendo un ícono en cada línea
-                    let errorMessages = Object.values(this.errors)
-                        .flat() // Aplanar los arrays de mensajes
-                        .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`)  // Agregar ícono a cada mensaje
-                        .join('<br/>'); // Combinarlos en un solo string separado por líneas
-
-                    Swal.fire({
-                        title: 'Validation Errors',
-                        html: errorMessages, // Usar html en lugar de text para mostrar los íconos
-                        icon: 'error',
-                    });
-                } else if (error.response) {
-                    // Captura otros errores
-                    Swal.fire('Error', error.response.data.error, 'error');
-                } else {
-                    console.error("Error:", error);
-                    alert("Failed to create user. Please try again.");
-                }
+                this.handleFormErrors(error);
             }
-        }
-        ,
+        },
         async toggleStatus(user) {
             try {
-                // Determinar la ruta a usar
                 const route = user.status === '1'
                     ? `/users/${user.id}/deactivate`
                     : `/users/${user.id}/activate`;
 
-                // Realizar la solicitud al backend
-                const response = await axios.patch(route);
-
-                // Actualizar el estado localmente
+                await axios.patch(route);
                 user.status = user.status === '1' ? '2' : '1';
-
-                // Mostrar una alerta de confirmación usando SweetAlert2
                 Swal.fire({
                     icon: 'success',
-                    title: response.data.message,
+                    title: 'Status updated!',
+                    toast: true,
+                    position: 'top-end',
                     timer: 3000,
                     timerProgressBar: true,
-                    showConfirmButton: false,
-                    toast: true, // Opcional para mostrar como un toast
-                    position: 'top-end', // Opcional para posicionar como toast
                 });
             } catch (error) {
-                // Mostrar una alerta de error usando SweetAlert2
+                Swal.fire('Error', 'Error updating status.', 'error');
+            }
+        },
+        handleFormErrors(error) {
+            if (error.response && error.response.status === 422) {
+                const errorMessages = Object.values(error.response.data.errors)
+                    .flat()
+                    .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`)
+                    .join('<br/>');
+
                 Swal.fire({
+                    title: 'Validation Errors',
+                    html: errorMessages,
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error updating status. Please try again.',
-                    timer: 3000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
                 });
-                console.error(error);
+            } else {
+                console.error("Error:", error);
+                Swal.fire('Error', 'An unexpected error occurred.', 'error');
             }
         }
-
     },
-}
+};
 </script>

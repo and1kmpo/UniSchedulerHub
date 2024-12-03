@@ -28,6 +28,22 @@ class UserController extends Controller
         ]);
     }
 
+    public function searchUser($data)
+    {
+        $users = User::where('name', 'LIKE', '%' . $data . '%')
+            ->with(['professor', 'student', 'roles'])
+            ->paginate(10);
+
+        if (request()->wantsJson()) {
+            return response()->json($users);
+        }
+
+        return inertia('Users/Index', [
+            'users' => $users,
+        ]);
+    }
+
+
     /**
      * Show the form for creating a new resource.
      */
