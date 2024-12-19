@@ -14,9 +14,10 @@
                             <label for="student" class="block text-sm font-medium text-gray-700">
                                 Select student:
                             </label>
-                            <!-- <multiselect v-model="selectedStudent" :options="students" label="fullName" track-by="id"
-                                placeholder="Select a student" @select="loadAssignedSubjects">
-                            </multiselect> -->
+                            <!-- Reemplazo de v-select por un select convencional -->
+                            <v-select v-model="selectedStudent" :options="students"
+                                :reduce="student => student.student.id" label="fullName" @input="handleStudentChange"
+                                placeholder="Select a student" class="w-full" />
                         </div>
 
                         <div>
@@ -81,10 +82,10 @@
                                         <label for="selectedSubjects" class="block text-sm font-medium text-gray-700">
                                             Select subjects:
                                         </label>
-                                        <!--  <multiselect v-model="selectedSubjects" :options="availableSubjects"
-                                            label="name" track-by="id" :multiple="true" placeholder="Select subjects"
-                                            style="width: 100%;" :maxHeight="300">
-                                        </multiselect> -->
+                                        <!-- Reemplazo de v-select por un select convencional -->
+                                        <v-select v-model="selectedSubjects" :options="availableSubjects"
+                                            :reduce="subject => subject.id" label="name" multiple
+                                            placeholder="Select subjects" class="w-full" />
                                     </div>
                                     <button @click="assignSelectedSubjects"
                                         class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">Assign</button>
@@ -107,9 +108,10 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
 import AppLayout from "@/Layouts/AppLayout.vue";
-/* import Multiselect from 'vue-multiselect'; */
 import Modal from '@/Components/Modal.vue';
 import Swal from 'sweetalert2';
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
 
 const selectedStudent = ref(null);
 const students = ref([]);
@@ -125,11 +127,31 @@ const totalAssignedCredits = computed(() => {
 });
 
 const calculateSelectedCredits = () => {
-    selectedCredits.value = selectedSubjects.value.reduce((total, subject) => total + subject.credits, 0);
+    selectedCredits.value = selectedSubjects.value.reduce((total, subjectId) => {
+        const subject = availableSubjects.value.find(sub => sub.id === subjectId);
+        const credits = subject ? subject.credits : 0; // Si no encuentra la asignatura, usa 0
+        return total + credits;
+    }, 0);
 };
 
-// Watcher for recalculating selected credits
+
+
+// Watcher for recalculating selected credits and selectedStudent
+watch(selectedStudent, async (newValue) => {
+    if (newValue) {
+        await loadAssignedSubjects();
+    } else {
+        assignedSubjects.value = [];
+    }
+});
+
+// Watcher para selectedSubjects
 watch(selectedSubjects, calculateSelectedCredits);
+
+
+const handleStudentChange = async () => {
+    await loadAssignedSubjects(); // Carga las asignaturas del estudiante seleccionado.
+};
 
 onMounted(async () => {
     try {
@@ -144,7 +166,7 @@ onMounted(async () => {
 
         students.value = allStudents.map(student => ({
             ...student,
-            fullName: `${student.first_name} ${student.last_name}  -  ${student.document}`
+            fullName: `${student.name} -  ${student.student.document}`
         }));
 
         await loadSubjectsWithProfessorAssigned();
@@ -156,9 +178,18 @@ onMounted(async () => {
 const loadAssignedSubjects = async () => {
     try {
         if (selectedStudent.value) {
-            const studentId = selectedStudent.value.id;
+            const studentId = selectedStudent.value;
             const response = await axios.get(`/student-assigned-subjects/${studentId}`);
-            assignedSubjects.value = response.data;
+
+            assignedSubjects.value = response.data.map(subject => ({
+                id: subject.id,
+                name: subject.name,
+                credits: subject.credits,
+            }));
+
+            // Preselecciona las materias ya asignadas
+            selectedSubjects.value = response.data.map(subject => subject.id);
+
         } else {
             assignedSubjects.value = [];
         }
@@ -172,21 +203,26 @@ const loadSubjectsWithProfessorAssigned = async () => {
         const response = await axios.get('/subjects-with-professors');
         availableSubjects.value = response.data.map(subject => ({
             id: subject.id,
-            name: `${subject.name}  (Credits: ${subject.credits})`,
-            credits: subject.credits
+            name: `${subject.name} (Credits: ${subject.credits})`,
+            credits: Number(subject.credits) || 0, // Asegúrate de que los créditos sean numéricos
         }));
     } catch (error) {
         console.error('Error getting all subjects', error);
     }
 };
 
-const openModalAssignSubject = () => {
-    isModalOpen.value = true;
+const openModalAssignSubject = async () => {
+    if (selectedStudent.value) {
+        // Asegúrate de que las asignaturas asignadas estén actualizadas
+        await loadAssignedSubjects();
+    }
+    isModalOpen.value = true; // Ahora abre el modal
 };
 
 const closeAssignSubjectModal = () => {
     isModalOpen.value = false;
 };
+
 
 const assignSelectedSubjects = async () => {
     try {
@@ -205,12 +241,14 @@ const assignSelectedSubjects = async () => {
             assigningSubjects.value = true;
 
             if (selectedStudent.value) {
-                const studentId = selectedStudent.value.id;
-                const subjectsIds = selectedSubjects.value.map(subject => subject.id);
+                const studentId = selectedStudent.value;
+                const subjectsIds = selectedSubjects.value;
 
+                // Aquí estamos enviando también los créditos seleccionados
                 const response = await axios.post(`/students-assign-subject`, {
                     student_id: studentId,
-                    subject_ids: subjectsIds
+                    subject_ids: subjectsIds,
+                    total_credits: selectedCredits.value // Enviar el total de créditos al back-end
                 });
 
                 if (response.status === 200 && response.data.success) {
@@ -223,7 +261,9 @@ const assignSelectedSubjects = async () => {
                         text: 'Selected subjects have been successfully assigned.',
                         icon: 'success',
                         confirmButtonColor: '#3085d6',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'OK',
+                        timer: 2000,
+                        timerProgressBar: true
                     });
                 } else {
                     Swal.fire({
@@ -260,8 +300,8 @@ const confirmUnassignSubject = async (subjectId) => {
         });
 
         if (result.isConfirmed) {
-            const response = await axios.delete(`/unassign-subject-student/${selectedStudent.value.id}/${subjectId}`, {
-                student_id: selectedStudent.value.id,
+            const response = await axios.delete(`/unassign-subject-student/${selectedStudent.value}/${subjectId}`, {
+                student_id: selectedStudent.value,
                 subject_id: subjectId
             });
 
@@ -273,7 +313,9 @@ const confirmUnassignSubject = async (subjectId) => {
                     text: 'The subject has been successfully unassigned.',
                     icon: 'success',
                     confirmButtonColor: '#3085d6',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true
                 });
             } else {
                 // Si el servidor retorna un error (aunque con estado 200)
@@ -303,5 +345,4 @@ const confirmUnassignSubject = async (subjectId) => {
         }
     }
 };
-
 </script>

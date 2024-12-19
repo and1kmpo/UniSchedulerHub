@@ -66,7 +66,7 @@ const deleteProgram = (id, name) => {
                             class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white" v-if="$page.props.user.permissions.includes(
                                 'create programs'
                             )
-                                ">
+                            ">
                         Create Program
                         </Link>
                     </div>
@@ -115,7 +115,7 @@ const deleteProgram = (id, name) => {
                                             v-if="$page.props.user.permissions.includes(
                                                 'update programs'
                                             )
-                                                ">
+                                            ">
                                         <i class="fas fa-edit"></i>
                                         </Link>
                                     </td>
@@ -130,7 +130,7 @@ const deleteProgram = (id, name) => {
                                             v-if="$page.props.user.permissions.includes(
                                                 'delete programs'
                                             )
-                                                ">
+                                            ">
                                         <i class="fas fa-trash"></i>
                                         </Link>
                                     </td>
@@ -149,7 +149,7 @@ const deleteProgram = (id, name) => {
                             </div>
 
                             <Link v-if="programs.current_page < programs.last_page
-                                " :href="programs.next_page_url"
+                            " :href="programs.next_page_url"
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
                             <i class="fa-solid fa-angles-right"></i>
                             </Link>

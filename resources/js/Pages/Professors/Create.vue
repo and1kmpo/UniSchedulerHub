@@ -12,8 +12,7 @@ import { Inertia } from "@inertiajs/inertia";
 
 const form = useForm({
     document: "",
-    first_name: "",
-    last_name: "",
+    name: "",
     phone: "",
     email: "",
     address: "",

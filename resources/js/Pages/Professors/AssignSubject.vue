@@ -14,13 +14,6 @@
                             <label for="professor" class="block text-sm font-medium text-gray-700">
                                 Select professor:
                             </label>
-                            <!-- <select id="professor" v-model="selectedProfessor" @change="handleProfessorChange"
-                                class="block w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                <option value="" disabled>Select a professor</option>
-                                <option v-for="professor in professors" :key="professor.id" :value="professor">
-                                    {{ professor.fullName }}
-                                </option>
-                            </select> -->
 
                             <v-select :options="professors" label="fullName" :reduce="professor => professor.id"
                                 v-model="selectedProfessor" @input="handleProfessorChange"
@@ -164,8 +157,6 @@ onMounted(async () => {
 });
 
 watch(selectedProfessor, async (newVal) => {
-    console.log('Watcher - Selected Professor ID:', newVal);
-
     if (newVal) {
         await loadAssignedSubjects();
     }
@@ -179,11 +170,8 @@ const loadProfessors = async () => {
 
         professors.value = allProfessors.map(prof => ({
             id: prof.professor.id,
-            fullName: `${prof.professor.first_name} ${prof.professor.last_name} - ${prof.professor.document}`
+            fullName: `${prof.name}  - ${prof.professor.document}`
         }));
-
-        // Verificar la lista de profesores cargada
-        console.log('Professors Loaded:', professors.value);
     } catch (error) {
         console.error('Error loading professors:', error);
     }
@@ -214,9 +202,6 @@ const loadAllSubjects = async () => {
         // Guardamos todas las asignaturas en la variable de estado
         availableSubjects.value = allSubjects;
 
-        console.log("Total Subjects Loaded:", availableSubjects.value.length);
-        console.log("Subjects:", availableSubjects.value);
-
     } catch (error) {
         console.error('Error loading all subjects:', error);
     }
@@ -227,7 +212,6 @@ const loadAllSubjects = async () => {
 // Manejar cambio de profesor seleccionado
 const handleProfessorChange = async () => {
     // Verificar si el `selectedProfessor` tiene un valor
-    console.log('Selected Professor ID:', selectedProfessor.value);
 
     if (!selectedProfessor.value) {
         console.warn('No professor selected');
@@ -236,7 +220,6 @@ const handleProfessorChange = async () => {
 
     // Verificar el profesor seleccionado en la lista original
     const professorData = professors.value.find(prof => prof.id === selectedProfessor.value);
-    console.log('Full Professor Data:', professorData);
 
     selectedSubjectsForRemoval.value = []; // Limpia las selecciones anteriores
 
@@ -249,18 +232,15 @@ const loadAssignedSubjects = async () => {
     if (!selectedProfessor.value) return;
 
     try {
-        console.log(`Loading subjects for professor ID: ${selectedProfessor.value}`);
         const response = await axios.get(`/professor-assigned-subjects/${selectedProfessor.value}`);
 
         if (response.data) {
-            console.log('Assigned Subjects:', response.data);
             assignedSubjects.value = response.data;
         } else {
             console.warn('No subjects returned from API');
             assignedSubjects.value = [];
         }
     } catch (error) {
-        console.error('Error loading assigned subjects:', error);
         Swal.fire('Error', 'Failed to load assigned subjects.', 'error');
         assignedSubjects.value = [];
     }
@@ -309,12 +289,6 @@ const assignSelectedSubjects = async () => {
         try {
             const professorId = selectedProfessor.value;
 
-            console.log('Sending data:', {
-                professor_id: selectedProfessor.value,
-                subject_ids: selectedSubjectsForRemoval.value,
-            });
-
-
             // Enviar solicitud para asignar materias
             await axios.post('/professors-assign-subject', {
                 professor_id: professorId,
@@ -350,7 +324,6 @@ const openModalAssignSubject = async () => {
 const loadAvailableSubjects = async () => {
     try {
         const response = await axios.get('/subjects');
-        console.log(response)
         availableSubjects.value = response.data.data;
     } catch (error) {
         console.error('Error loading subjects:', error);

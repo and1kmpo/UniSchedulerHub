@@ -65,17 +65,13 @@ const logout = () => {
                                 </NavLink>
                             </div>
 
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex" v-if="$page.props.user.permissions.includes(
-                                'read programs'
-                            )
-                                ">
+                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink :href="route('programs.index')" :active="route().current('programs.*')">
                                     Programs
                                 </NavLink>
                             </div>
 
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
-                                v-if="$page.props.user.permissions.includes('read professors')">
+                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <!-- Professors Dropdown -->
                                 <Dropdown v-model:showing="showingProfessorsStudentsDropdown" class="mt-[18px]">
                                     <template #trigger>
@@ -107,8 +103,7 @@ const logout = () => {
                                 </Dropdown>
                             </div>
 
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
-                                v-if="$page.props.user.permissions.includes('read students')">
+                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <!-- Professors Dropdown -->
                                 <Dropdown v-model:showing="showingProfessorsStudentsDropdown" class="mt-[18px]">
                                     <template #trigger>
@@ -140,23 +135,18 @@ const logout = () => {
                             </div>
 
 
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex" v-if="$page.props.user.permissions.includes(
-                                'read subjects'
-                            )
-                                ">
+                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink :href="route('subjects.index')" :active="route().current('subjects.*')">
                                     Subjects
                                 </NavLink>
                             </div>
 
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex" v-if="$page.props.user.permissions.includes(
-                                'view admin'
-                            )
-                                ">
-                                <NavLink :href="route('admin.index')" :active="route().current('admin.*')">
+                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                <NavLink :href="route('users.index')" :active="route().current('users.*')">
                                     Admin
                                 </NavLink>
                             </div>
+
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -191,24 +181,24 @@ const logout = () => {
 
                                             <!-- Team Settings -->
                                             <DropdownLink :href="route(
-                                                        'teams.show',
-                                                        $page.props.auth.user
-                                                            .current_team
-                                                    )
-                                                    ">
+                                                'teams.show',
+                                                $page.props.auth.user
+                                                    .current_team
+                                            )
+                                                ">
                                                 Team Settings
                                             </DropdownLink>
 
                                             <DropdownLink v-if="$page.props.jetstream
                                                 .canCreateTeams
-                                                " :href="route('teams.create')">
+                                            " :href="route('teams.create')">
                                                 Create New Team
                                             </DropdownLink>
 
                                             <!-- Team Switcher -->
                                             <template v-if="$page.props.auth.user
                                                 .all_teams.length > 1
-                                                ">
+                                            ">
                                                 <div class="border-t border-gray-200" />
 
                                                 <div class="block px-4 py-2 text-xs text-gray-400">
@@ -216,7 +206,7 @@ const logout = () => {
                                                 </div>
 
                                                 <template v-for="team in $page.props
-                                                            .auth.user.all_teams" :key="team.id">
+                                                    .auth.user.all_teams" :key="team.id">
                                                     <form @submit.prevent="
                                                         switchToTeam(team)
                                                         ">
@@ -228,7 +218,7 @@ const logout = () => {
                                                                         .auth
                                                                         .user
                                                                         .current_team_id
-                                                                    " class="me-2 h-5 w-5 text-green-400"
+                                                                " class="me-2 h-5 w-5 text-green-400"
                                                                     xmlns="http://www.w3.org/2000/svg" fill="none"
                                                                     viewBox="0 0 24 24" stroke-width="1.5"
                                                                     stroke="currentColor">
@@ -257,12 +247,12 @@ const logout = () => {
                                     <template #trigger>
                                         <button v-if="$page.props.jetstream
                                             .managesProfilePhotos
-                                            "
+                                        "
                                             class="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
                                             <img class="h-8 w-8 rounded-full object-cover" :src="$page.props.auth.user
                                                 .profile_photo_url
                                                 " :alt="$page.props.auth.user.name
-        " />
+                                                    " />
                                         </button>
 
                                         <span v-else class="inline-flex rounded-md">
@@ -292,7 +282,7 @@ const logout = () => {
 
                                         <DropdownLink v-if="$page.props.jetstream
                                             .hasApiFeatures
-                                            " :href="route('api-tokens.index')">
+                                        " :href="route('api-tokens.index')">
                                             API Tokens
                                         </DropdownLink>
 
@@ -348,14 +338,14 @@ const logout = () => {
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('read programs')">
+                    <div class="pt-2 pb-3 space-y-1">
                         <!-- Programs -->
                         <ResponsiveNavLink :href="route('programs.index')" :active="route().current('programs')">
                             Programs
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1 ml-4" v-if="$page.props.user.permissions.includes('read professors')">
+                    <div class="pt-2 pb-3 space-y-1 ml-4">
                         <!-- Professors -->
                         <div @click="toggleProfessorsMenu = !toggleProfessorsMenu" class="cursor-pointer">
                             <a>
@@ -376,7 +366,7 @@ const logout = () => {
                         </div>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1 ml-4" v-if="$page.props.user.permissions.includes('read students')">
+                    <div class="pt-2 pb-3 space-y-1 ml-4">
                         <!-- Students -->
                         <div @click="toggleStudentsMenu = !toggleStudentsMenu" class="cursor-pointer">
                             <a>
@@ -397,16 +387,16 @@ const logout = () => {
                         </div>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('read subjects')">
+                    <div class="pt-2 pb-3 space-y-1">
                         <!-- Subjects -->
                         <ResponsiveNavLink :href="route('subjects.index')" :active="route().current('subjects')">
                             Subjects
                         </ResponsiveNavLink>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1" v-if="$page.props.user.permissions.includes('view admin')">
+                    <div class="pt-2 pb-3 space-y-1">
                         <!-- Admin -->
-                        <ResponsiveNavLink :href="route('admin.index')" :active="route().current('admin')">
+                        <ResponsiveNavLink>
                             Admin
                         </ResponsiveNavLink>
                     </div>
@@ -438,8 +428,8 @@ const logout = () => {
                             </ResponsiveNavLink>
 
                             <!-- API Tokens -->
-                            <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')"
-                                :active="route().current('api-tokens.index')">
+                            <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures"
+                                :href="route('api-tokens.index')" :active="route().current('api-tokens.index')">
                                 API Tokens
                             </ResponsiveNavLink>
 
@@ -461,8 +451,8 @@ const logout = () => {
                                 </ResponsiveNavLink>
 
                                 <!-- Create New Team -->
-                                <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')"
-                                    :active="route().current('teams.create')">
+                                <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams"
+                                    :href="route('teams.create')" :active="route().current('teams.create')">
                                     Create New Team
                                 </ResponsiveNavLink>
 
@@ -478,8 +468,8 @@ const logout = () => {
                                                 <div class="flex items-center">
                                                     <svg v-if="team.id == $page.props.auth.user.current_team_id"
                                                         class="me-2 h-5 w-5 text-green-400"
-                                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                        stroke-width="1.5" stroke="currentColor">
+                                                        xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>

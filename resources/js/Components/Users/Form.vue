@@ -45,8 +45,7 @@ defineEmits(["submit"]);
                 </select>
             </div>
 
-            <TextInput id="first_name" v-model="form.first_name" label="First Name" required />
-            <TextInput id="last_name" v-model="form.last_name" label="Last Name" required />
+            <TextInput id="name" v-model="form.name" label="Name" required />
             <TextInput id="email" type="email" v-model="form.email" label="Email" required />
             <TextInput id="document" v-model="form.document" label="Document" required />
 

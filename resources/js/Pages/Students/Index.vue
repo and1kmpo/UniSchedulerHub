@@ -122,7 +122,7 @@ const deleteStudent = (id, name) => {
                                             </td>
                                             <!-- Nombre del estudiante -->
                                             <td class="py-3 px-4">
-                                                {{ user.student.first_name }} {{ user.student.last_name }}
+                                                {{ user.name }}
 
                                             </td>
                                             <!-- Teléfono -->
@@ -131,7 +131,7 @@ const deleteStudent = (id, name) => {
                                             </td>
                                             <!-- Correo electrónico -->
                                             <td class="py-3 px-4 hidden sm:table-cell">
-                                                {{ user.student.email }}
+                                                {{ user.email }}
                                             </td>
                                             <!-- Dirección (visible en tablets y pantallas más grandes) -->
                                             <td class="py-3 px-4 hidden md:table-cell">
@@ -161,7 +161,7 @@ const deleteStudent = (id, name) => {
                                             <!-- Eliminar -->
                                             <td class="py-3 px-4">
                                                 <Link href="#"
-                                                    @click="deleteStudent(user.student.user_id, user.student.first_name + ' ' + user.student.last_name)"
+                                                    @click="deleteStudent(user.student.user_id, user.student.name)"
                                                     class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
                                                     v-if="$page.props.user.permissions.includes('delete students')">
                                                 <i class="fas fa-trash"></i>

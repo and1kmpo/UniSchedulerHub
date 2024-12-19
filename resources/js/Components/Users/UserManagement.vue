@@ -27,57 +27,64 @@
         </div>
 
 
-        <!-- Tabla de usuarios -->
-        <table class="min-w-full table-auto dark:bg-gray-800 dark:text-white">
-            <thead class="bg-gray-200 dark:bg-gray-700">
-                <tr>
-                    <th class="px-4 py-2 text-center">ID</th>
-                    <th class="px-4 py-2 text-center">Name</th>
-                    <th class="px-4 py-2 text-center">Email</th>
-                    <th class="px-4 py-2 text-center">Role</th>
-                    <th class="px-4 py-2 text-center">Status</th>
-                    <th class="px-4 py-2 text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="user in users.data" :key="user.id" class="border-t dark:border-gray-700">
-                    <td class="px-4 py-2 text-center">{{ user.id }}</td>
-                    <td class="px-4 py-2 text-center">{{ user.name }}</td>
-                    <td class="px-4 py-2 text-center">{{ user.email }}</td>
-                    <td class="px-4 py-2 text-center">
-                        <span v-for="role in user.roles" :key="role.id">{{ role.name }}</span>
-                    </td>
-                    <td class="px-4 py-2 text-center">
-                        <label class="inline-flex items-center me-5 cursor-pointer">
-                            <input type="checkbox" value="" class="sr-only peer" :checked="user.status === '1'"
-                                @change="toggleStatus(user)">
-                            <div
-                                class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-300 dark:border-gray-600 peer-checked:bg-purple-600">
-                            </div>
-                            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">{{ user.status ===
-                                '1' ? 'Active' : user.status === '2' ?
-                                'Inactive' :
-                                'No data status' }}</span>
-                        </label>
-                    </td>
-                    <td class="px-4 py-2 flex gap-4 justify-center text-center">
-                        <button @click="editUser(user)"
-                            class="dark:text-indigo-400 text-indigo-800 transition ease-in-out  hover:-translate-y-1 hover:scale-110 duration-300">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button @click="deleteUser(user)"
-                            class="text-red-600 dark:text-red-400 hover:text-red-800 transition ease-in-out  hover:-translate-y-1 hover:scale-110 duration-300">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="relative">
+            <!-- Tabla de usuarios -->
+            <table class="min-w-full table-auto dark:bg-gray-800 dark:text-white relative">
+                <thead class="bg-gray-200 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-2 text-center">ID</th>
+                        <th class="px-4 py-2 text-center">Name</th>
+                        <th class="px-4 py-2 text-center">Email</th>
+                        <th class="px-4 py-2 text-center">Role</th>
+                        <th class="px-4 py-2 text-center">Status</th>
+                        <th class="px-4 py-2 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="user in localUsers.data" :key="user.id" class="border-t dark:border-gray-700">
+                        <td class="px-4 py-2 text-center">{{ user.id }}</td>
+                        <td class="px-4 py-2 text-center">{{ user.name }}</td>
+                        <td class="px-4 py-2 text-center">{{ user.email }}</td>
+                        <td class="px-4 py-2 text-center">
+                            <span v-for="role in user.roles" :key="role.id">{{ role.name }}</span>
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <label class="inline-flex items-center me-5 cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer" :checked="user.status === '1'"
+                                    @change="toggleStatus(user)">
+                                <div
+                                    class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-300 dark:border-gray-600 peer-checked:bg-purple-600">
+                                </div>
+                                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">{{ user.status
+                                    ===
+                                    '1' ? 'Active' : user.status === '2' ? 'Inactive' : 'No data status' }}</span>
+                            </label>
+                        </td>
+                        <td class="px-4 py-2 flex gap-4 justify-center text-center">
+                            <button @click="editUser(user)"
+                                class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button @click="deleteUser(user)"
+                                class="text-red-600 dark:text-red-400 hover:text-red-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Spinner -->
+            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10">
+                <i class="fa-solid fa-spinner fa-spin-pulse text-xl text-blue-500"></i>
+            </div>
+        </div>
+
 
         <!-- Paginación -->
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2">
             <!-- Botón de página anterior -->
-            <button @click="changePage(users.prev_page_url)" :disabled="!users.prev_page_url"
+            <button @click="changePage(localUsers.prev_page_url)" :disabled="!localUsers.prev_page_url"
                 class="px-4 py-2 border rounded bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition">
                 <i class="fas fa-angles-left"></i>
             </button>
@@ -89,7 +96,7 @@
 
 
             <!-- Botón de página siguiente -->
-            <button @click="changePage(users.next_page_url)" :disabled="!users.next_page_url"
+            <button @click="changePage(localUsers.next_page_url)" :disabled="!localUsers.next_page_url"
                 class="px-4 py-2 border rounded bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition">
                 <i class="fas fa-angles-right"></i>
             </button>
@@ -174,12 +181,18 @@
 
 <script>
 import Swal from 'sweetalert2';
+import debounce from 'lodash.debounce';
+
 export default {
     props: {
         users: Object,
     },
     data() {
         return {
+            searchQuery: '',
+            loading: false,
+            localUsers: this.users,
+
             isModalOpen: false,
             form: {
                 name: "",
@@ -195,6 +208,37 @@ export default {
         };
     },
     methods: {
+        searchData() {
+            this.loading = true;
+            axios
+                .get('/users', { params: { search: this.searchQuery } })
+                .then((res) => {
+                    this.localUsers = res.data;
+                })
+                .catch((error) => {
+                    console.error('Error fetching users:', error);
+                    Swal.fire('Error', 'Failed to fetch users.', 'error');
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        changePage(url) {
+            if (!url) return;
+            this.loading = true;
+            axios
+                .get(url, { params: { search: this.searchQuery } })
+                .then((res) => {
+                    this.localUsers = res.data;
+                })
+                .catch((error) => {
+                    console.error('Error fetching users:', error);
+                    Swal.fire('Error', 'Failed to fetch users.', 'error');
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         openModal(mode) {
             if (mode === "create") {
                 this.form = {
@@ -301,7 +345,14 @@ export default {
         },
         async updateUser() {
             try {
-                await axios.put(`/users/${this.form.id}`, this.form);
+                const response = await axios.put(`/users/${this.form.id}`, this.form);
+                const updatedUser = response.data;
+
+                const index = this.localUsers.data.findIndex(user => user.id === updatedUser.id);
+                if (index !== -1) {
+                    this.localUsers.data[index] = { ...this.localUsers.data[index], ...updatedUser };
+                }
+
                 this.$inertia.reload({ only: ['users'] });
                 Swal.fire({
                     title: 'Success!',
@@ -330,6 +381,7 @@ export default {
                     position: 'top-end',
                     timer: 3000,
                     timerProgressBar: true,
+                    showConfirmButton: false
                 });
             } catch (error) {
                 Swal.fire('Error', 'Error updating status.', 'error');
@@ -353,5 +405,13 @@ export default {
             }
         }
     },
+    watch: {
+        searchQuery: debounce(function () {
+            this.searchData();
+        }, 1000),
+    },
+    mounted() {
+        console.log(this.users);
+    }
 };
 </script>

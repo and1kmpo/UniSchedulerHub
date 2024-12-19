@@ -12,29 +12,21 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['professor', 'student', 'roles'])->paginate(10);
-        //dd($users);
+        $query = User::with(['professor', 'student', 'roles']);
 
-        // Verificamos si la solicitud es JSON
-        if (request()->wantsJson()) {
-            return response()->json($users);
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%$search%")
+                    ->orWhere('email', 'LIKE', "%$search%");
+            });
         }
 
-        // Pasamos los datos a la vista Inertia
-        return inertia('Users/Index', [
-            'users' => $users
-        ]);
-    }
+        $users = $query->paginate(10);
 
-    public function searchUser($data)
-    {
-        $users = User::where('name', 'LIKE', '%' . $data . '%')
-            ->with(['professor', 'student', 'roles'])
-            ->paginate(10);
-
-        if (request()->wantsJson()) {
+        if ($request->wantsJson()) {
             return response()->json($users);
         }
 
@@ -135,10 +127,9 @@ class UserController extends Controller
     }
     public function update(Request $request, string $id)
     {
-        DB::beginTransaction(); // Inicia la transacción
+        DB::beginTransaction();
 
         try {
-            // Validar los datos del usuario
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
@@ -156,19 +147,13 @@ class UserController extends Controller
                 'program_id' => 'nullable|required_if:role,student|exists:programs,id',
             ]);
 
-            // Encontrar al usuario
             $user = User::findOrFail($id);
-
-            // Actualizar los datos básicos del usuario
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
             ]);
-
-            // Asignar o actualizar el rol del usuario
             $user->syncRoles($validated['role']);
 
-            // Actualizar el registro asociado dependiendo del rol
             if ($validated['role'] === 'professor') {
                 $user->professor()->updateOrCreate(
                     ['user_id' => $user->id],
@@ -179,7 +164,7 @@ class UserController extends Controller
                         'city' => $validated['city'],
                     ]
                 );
-                $user->student()->delete(); // Elimina el registro de estudiante si existe
+                $user->student()->delete();
             } elseif ($validated['role'] === 'student') {
                 $user->student()->updateOrCreate(
                     ['user_id' => $user->id],
@@ -192,20 +177,24 @@ class UserController extends Controller
                         'program_id' => $validated['program_id'],
                     ]
                 );
-                $user->professor()->delete(); // Elimina el registro de profesor si existe
+                $user->professor()->delete();
             }
-            // Si todo está bien, se hace commit de la transacción
+
             DB::commit();
 
-            return response()->json(['message' => 'User updated successfully'], 200);
+            // Retornar el usuario actualizado con relaciones necesarias
+            return response()->json(
+                User::with(['roles:id,name', 'professor', 'student'])->find($user->id),
+                200
+            );
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Devuelve todos los errores en formato JSON
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
         }
     }
+
 
 
     /**

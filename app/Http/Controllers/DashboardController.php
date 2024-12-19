@@ -6,6 +6,7 @@ use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,35 +28,64 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard');
     }
 
-    public function showAssignmentsReport()
+    public function showAssignmentsReport(Request $request)
     {
-        $assignments = Student::leftJoin('student_subject_professor', 'students.id', '=', 'student_subject_professor.student_id')
+        $query = Student::leftJoin('student_subject_professor', 'students.id', '=', 'student_subject_professor.student_id')
             ->leftJoin('subjects', 'student_subject_professor.subject_id', '=', 'subjects.id')
             ->leftJoin('professors', 'student_subject_professor.professor_id', '=', 'professors.id')
-            ->select('students.id as student_id', 'students.first_name', 'students.last_name', 'students.document', 'professors.first_name as professor_first_name', 'professors.last_name as professor_last_name', 'subjects.name as subject_name')
-            ->get();
+            ->leftJoin('users as student_users', 'students.user_id', '=', 'student_users.id')
+            ->leftJoin('users as professor_users', 'professors.user_id', '=', 'professor_users.id')
+            ->select(
+                'students.id as student_id',
+                'student_users.name as student_name',
+                'students.document',
+                'professor_users.name as professor_name',
+                'subjects.name as subject_name'
+            );
 
-        // Agrupar los resultados por el ID del estudiante
-        $groupedAssignments = $assignments->groupBy('student_id')->map(function ($assignments, $studentId) {
-            $studentInfo = $assignments->first(); // Tomar la información del estudiante de la primera asignatura
+        // Filtrar por búsqueda si se proporciona
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('student_users.name', 'LIKE', "%$search%")
+                    ->orWhere('students.document', 'LIKE', "%$search%")
+                    ->orWhere('subjects.name', 'LIKE', "%$search%")
+                    ->orWhere('professor_users.name', 'LIKE', "%$search%");
+            });
+        }
 
-            // Crear un nuevo objeto con la información del estudiante y las asignaturas
+        // Obtener los resultados agrupados
+        $assignments = $query->get()->groupBy('student_id')->map(function ($assignments, $studentId) {
+            $studentInfo = $assignments->first();
+
             return [
                 'student_id' => $studentId,
-                'first_name' => $studentInfo->first_name,
-                'last_name' => $studentInfo->last_name,
+                'nameStudent' => $studentInfo->student_name,
                 'document' => $studentInfo->document,
                 'subjects' => $assignments->map(function ($assignment) {
                     return [
-                        'subject_name' => $assignment->subject_name,
-                        'professor_first_name' => $assignment->professor_first_name,
-                        'professor_last_name' => $assignment->professor_last_name,
+                        'subjectName' => $assignment->subject_name,
+                        'professorName' => $assignment->professor_name ?? 'No professor assigned',
                     ];
                 })->all(),
             ];
-        })->values()->all();
+        })->values();
 
-        return response()->json($groupedAssignments);
+        // Paginar resultados manualmente
+        $perPage = 4;
+        $currentPage = $request->input('page', 1);
+        $total = $assignments->count();
+        $paginatedData = $assignments->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        return response()->json([
+            'data' => $paginatedData,
+            'current_page' => $currentPage,
+            'last_page' => ceil($total / $perPage),
+            'per_page' => $perPage,
+            'total' => $total,
+            'prev_page_url' => $currentPage > 1 ? url()->current() . '?page=' . ($currentPage - 1) : null,
+            'next_page_url' => $currentPage < ceil($total / $perPage) ? url()->current() . '?page=' . ($currentPage + 1) : null,
+        ]);
     }
 
     public function totalStudentsPerProgram()
