@@ -111,6 +111,12 @@ const searchQuery = ref("");
 const loading = ref(false); // Estado de carga real
 const typing = ref(false); // Estado mientras el usuario escribe
 
+
+const changePage = async (url) => {
+    if (!url) return; // Si la URL es nula, no hacemos nada.
+    await fetchAssignments(url); // Llama a fetchAssignments con la URL proporcionada.
+};
+
 // Función para buscar datos
 const fetchAssignments = async (url = "/assignments-report") => {
     loading.value = true;

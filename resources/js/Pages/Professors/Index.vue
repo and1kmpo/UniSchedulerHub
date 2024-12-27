@@ -7,9 +7,8 @@ export default {
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { defineProps } from "vue";
-import Swal from "sweetalert2";
 import { Link } from "@inertiajs/vue3";
-import { Inertia } from "@inertiajs/inertia";
+
 
 defineProps({
     professors: {
@@ -18,35 +17,6 @@ defineProps({
     },
 });
 
-
-const deleteProfessor = (id, name) => {
-    Swal.fire({
-        title: '¿Are you sure to delete "' + name + '"?',
-        text: "You won't be able to reverse this",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#4338CA",
-        cancelButtonColor: "#d33",
-        confirmButtonText: '<i class="fas fa-trash"></i> Yes, delete',
-        cancelButtonText: '<i class="fas fa-ban"></i> No, cancel',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Utiliza el ID del programa en la URL de la solicitud DELETE
-            Inertia.delete(route("professors.destroy", { professor: id }))
-                .then(() => {
-                    Swal.fire(
-                        'Deleted"',
-                        "Professor deleted successfully!",
-                        "success"
-                    );
-                })
-                .catch((error) => {
-                    console.error(error);
-                    Swal.fire("Error", "Error deleting professor", "error");
-                });
-        }
-    });
-};
 </script>
 
 <template>

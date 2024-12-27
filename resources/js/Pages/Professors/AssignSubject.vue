@@ -103,16 +103,6 @@
                     </div>
 
                     <div class="mb-4 w-full">
-                        <!-- <label for="selectedSubjects" class="block text-sm font-medium text-gray-700">
-                            Select subjects:
-                        </label>
-                        <select v-model="selectedSubjects" id="selectedSubjects" multiple
-                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
-                                {{ subject.name }}
-                            </option>
-                        </select> -->
-
                         <v-select :options="availableSubjects" label="name" :reduce="subject => subject.id"
                             v-model="selectedSubjects" :multiple="true"
                             placeholder="Search and select one or more subjects..." :clearable="true" />
@@ -315,11 +305,6 @@ const assignSelectedSubjects = async () => {
     }
 };
 
-// Función para abrir el modal de asignación de materias
-const openModalAssignSubject = async () => {
-    isModalOpen.value = true;
-};
-
 // Cargar todas las materias disponibles para asignar
 const loadAvailableSubjects = async () => {
     try {
@@ -328,6 +313,11 @@ const loadAvailableSubjects = async () => {
     } catch (error) {
         console.error('Error loading subjects:', error);
     }
+};
+
+// Abrir el modal de asignación de materias
+const openModalAssignSubject = async () => {
+    isModalOpen.value = true;
 };
 
 // Cerrar el modal de asignación de materias

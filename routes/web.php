@@ -21,6 +21,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
     Route::resource('/users', UserController::class);
+    Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->middleware(['auth:sanctum'])->name('user.assignments');
     Route::resource('/roles', RoleController::class);
     Route::resource('/permissions', PermissionController::class);
     Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
@@ -254,6 +256,70 @@ class UserController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getUserAssignments(Request $request)
+    {
+        $user = $request->user();
+        $role = $user->roles->first()->name;
+
+        if ($role === 'student') {
+            $assignments = DB::table('student_subject_professor')
+                ->join('professors', 'professors.id', '=', 'student_subject_professor.professor_id')
+                ->join('subjects', 'subjects.id', '=', 'student_subject_professor.subject_id')
+                ->join('users', 'users.id', '=', 'professors.user_id')
+                ->where('student_subject_professor.student_id', $user->student->id)
+                ->select(
+                    'subjects.id as subject_id',
+                    'subjects.name as subject_name',
+                    'subjects.credits',
+                    'subjects.knowledge_area',
+                    'subjects.elective',
+                    'users.name as professor_name'
+                )
+                ->get();
+
+            $totalCredits = $assignments->sum(fn($assignment) => $assignment->credits);
+
+            return inertia('Assignments/Index', [
+                'assignments' => $assignments,
+                'totalCredits' => $totalCredits,
+                'role' => $role,
+            ]);
+        } elseif ($role === 'professor') {
+            $assignments = DB::table('professor_subject')
+                ->join('subjects', 'professor_subject.subject_id', '=', 'subjects.id')
+                ->where('professor_subject.professor_id', $user->professor->id)
+                ->select(
+                    'subjects.id as subject_id',
+                    'subjects.name as subject_name',
+                    'subjects.credits',
+                )
+                ->get()
+                ->map(function ($assignment) use ($user) {
+                    // Añadir estudiantes matriculados a cada asignatura
+                    $students = DB::table('student_subject_professor')
+                        ->join('students', 'students.id', '=', 'student_subject_professor.student_id')
+                        ->join('users', 'users.id', '=', 'students.user_id')
+                        ->where('student_subject_professor.professor_id', $user->professor->id)
+                        ->where('student_subject_professor.subject_id', $assignment->subject_id)
+                        ->select(
+                            'students.id as student_id',
+                            'users.name as student_name'
+                        )
+                        ->get();
+
+                    $assignment->students = $students;
+                    return $assignment;
+                });
+
+            return inertia('Assignments/Index', [
+                'assignments' => $assignments,
+                'role' => $role,
+            ]);
+        } else {
+            return response()->json(['error' => 'Role not supported'], 403);
         }
     }
 }

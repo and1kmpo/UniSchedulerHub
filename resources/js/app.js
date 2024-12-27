@@ -6,7 +6,7 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue.m";
 import ElementPlus from "element-plus";
-import "element-plus/dist/index.css"; // Importar estilos de Element Plus
+import "element-plus/dist/index.css";
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
@@ -21,10 +21,8 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
 
-        // Usar Element Plus
         app.use(plugin).use(ZiggyVue).use(ElementPlus);
 
-        // Registrar íconos de Element Plus
         for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
             app.component(key, component);
         }
