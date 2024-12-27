@@ -21,52 +21,76 @@ class DatabaseSeeder extends Seeder
         $adminUser = User::factory()->create(['email' => 'admin@sas.com']);
         $adminUser->assignRole('admin');
 
-        // Crear programas
-        $programs = Program::factory(5)->create();
+        // Array de programas predefinidos
+        $programs = [
+            ['name' => 'Computer Science', 'description' => 'Study of computers and computational systems.'],
+            ['name' => 'Mechanical Engineering', 'description' => 'Design and manufacture of machines and systems.'],
+            ['name' => 'Business Administration', 'description' => 'Management of business operations.'],
+            ['name' => 'Psychology', 'description' => 'Study of the human mind and behavior.'],
+            ['name' => 'Biology', 'description' => 'Study of living organisms and their interactions.'],
+            ['name' => 'Mathematics', 'description' => 'Abstract science of numbers, quantities, and shapes.'],
+            ['name' => 'Civil Engineering', 'description' => 'Design and construction of infrastructure projects.'],
+            ['name' => 'Physics', 'description' => 'Study of matter, energy, and the laws of nature.'],
+            ['name' => 'Law', 'description' => 'Study of legal systems and the law.'],
+            ['name' => 'Economics', 'description' => 'Study of production, consumption, and transfer of wealth.'],
+        ];
+
+        // Insertar los programas directamente en la base de datos
+        foreach ($programs as $program) {
+            Program::create($program);
+        }
 
         // Crear estudiantes y sus usuarios
-        $students = Student::factory(10)->make()->each(function ($student) use ($programs) {
-            // Crear el usuario correspondiente para el estudiante
+        $students = Student::factory(10)->make()->each(function ($student) {
             $user = User::factory()->create([
                 'name' => fake()->name(),
                 'email' => $student->document . '@sas.com',
             ]);
             $user->assignRole('student');
 
-            // Asocia el user_id al estudiante y luego guarda
             $student->user_id = $user->id;
-            $student->program_id = $programs->random()->id;
+            $student->program_id = Program::all()->random()->id; // Asignar un programa aleatorio de los ya creados
             $student->save();
         });
 
         // Crear profesores y sus usuarios
         $professors = Professor::factory(5)->make()->each(function ($professor) {
-            // Crear el usuario correspondiente para el profesor
             $user = User::factory()->create([
                 'name' => fake()->name(),
                 'email' => $professor->document . '@sas.com',
             ]);
             $user->assignRole('professor');
 
-            // Asocia el user_id al profesor y luego guarda
             $professor->user_id = $user->id;
             $professor->save();
         });
 
-        // Crear asignaturas
-        $subjects = Subject::factory(20)->create();
+        // Crear asignaturas y asignarlas a programas
+        $subjects = Subject::factory(20)->make()->each(function ($subject) {
+            $subject->program_id = Program::all()->random()->id; // Asignar un program_id aleatorio
+            $subject->save();
+        });
 
-        // Asignar asignaturas aleatoriamente a estudiantes y profesores
+        // Asignar asignaturas a profesores y estudiantes con restricciones
         foreach ($subjects as $subject) {
-            $randomProfessors = $professors->random(rand(1, $professors->count()));
+            // Asignar a un máximo de 10 profesores
+            $randomProfessors = $professors->random(rand(1, min(10, $professors->count())));
             foreach ($randomProfessors as $professor) {
-                $professor->subjects()->syncWithoutDetaching([$subject->id]);
+                if ($professor->subjects()->count() < 10) {
+                    $professor->subjects()->syncWithoutDetaching([$subject->id]);
+                }
             }
 
+            // Asignar a estudiantes con un máximo de 20 créditos
             $randomStudents = $students->random(rand(1, $students->count()));
             foreach ($randomStudents as $student) {
-                $professor = $randomProfessors->random();
-                $student->subjects()->syncWithoutDetaching([$subject->id => ['professor_id' => $professor->id]]);
+                $currentCredits = $student->subjects()->sum('credits');
+                if ($currentCredits + $subject->credits <= 20) {
+                    $professor = $randomProfessors->random();
+                    $student->subjects()->syncWithoutDetaching([
+                        $subject->id => ['professor_id' => $professor->id],
+                    ]);
+                }
             }
         }
     }

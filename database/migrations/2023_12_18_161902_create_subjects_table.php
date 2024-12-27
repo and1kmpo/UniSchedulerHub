@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('credits');
             $table->string('knowledge_area', 100);
             $table->boolean('elective');
+            $table->foreignId('program_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

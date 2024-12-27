@@ -70,7 +70,7 @@ onMounted(() => {
                                     <th class="py-3 px-4">Subject Credits</th>
                                     <th v-if="role === 'student'" class="py-3 px-4">Elective</th>
                                     <th v-if="role === 'student'" class="py-3 px-4">Professor Name</th>
-                                    <th class="py-3 px-4">Enrolled Students</th>
+                                    <th v-if="role === 'professor'" class="py-3 px-4">Enrolled Students</th>
                                 </tr>
                             </thead>
                             <tbody class="text-blue-gray-900 divide-y divide-blue-gray-200">
@@ -86,26 +86,27 @@ onMounted(() => {
                                     <td v-if="role === 'student'" class="py-3 px-4">
                                         {{ assignment.professor_name || 'Not Assigned' }}
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td v-if="role === 'professor'" class="py-3 px-4">
                                         <button @click="openStudentsModal(assignment)"
                                             class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
                                             <i class="fa-solid fa-eye"></i> </button>
                                     </td>
                                 </tr>
-                                <tr v-if="role === 'student'" class="bg-gray-100">
-                                    <td colspan="3" class="px-4 py-2 font-semibold text-gray-800 text-right">
-                                        Total credits assigned:
-                                    </td>
-                                    <td colspan="2" class="px-4 py-2 font-semibold text-indigo-700">{{ totalCredits }}
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Contenedor para el total de créditos -->
+                    <div v-if="role === 'student'"
+                        class="mt-4 flex justify-center items-center bg-gray-100 px-4 py-2 rounded-md shadow-sm">
+                        <span class="font-semibold text-gray-800">Total credits assigned:</span>
+                        <span class="ml-2 font-semibold text-indigo-700">{{ totalCredits }}</span>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- Modal para asignar asignaturas -->
+            <!-- Modal para mostrar estudiantes matriculados en la asignatura -->
             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeStudentsModal">
                 <div class="p-6 min-h-[600px] flex flex-col items-center">
                     <div class="flex justify-between items-center w-full mb-4">
@@ -123,8 +124,9 @@ onMounted(() => {
                             <thead>
                                 <tr class="bg-blue-gray-100 text-gray-700">
                                     <th class="py-3 px-4 hidden sm:table-cell">#</th>
-                                    <th class="py-3 px-4">Student ID</th>
-                                    <th class="py-3 px-4">Student Name</th>
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Email</th>
                                 </tr>
                             </thead>
                             <tbody class="text-blue-gray-900 divide-y divide-blue-gray-200">
@@ -132,6 +134,7 @@ onMounted(() => {
                                     <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
                                     <td class="py-3 px-4">{{ student.student_id }}</td>
                                     <td class="py-3 px-4">{{ student.student_name }}</td>
+                                    <td class="py-3 px-4">{{ student.student_email }}</td>
                                 </tr>
                             </tbody>
                         </table>

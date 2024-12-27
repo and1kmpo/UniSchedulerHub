@@ -10,7 +10,8 @@ class Program extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description'
+        'name',
+        'description'
     ];
 
     public function students()

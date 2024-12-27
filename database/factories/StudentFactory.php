@@ -3,12 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Program;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Student>
- */
 class StudentFactory extends Factory
 {
     /**
@@ -24,7 +20,7 @@ class StudentFactory extends Factory
             'address' => $this->faker->address,
             'city' => $this->faker->city,
             'semester' => $this->faker->numberBetween(1, 10),
-            'program_id' => Program::factory(),
+            'program_id' => Program::inRandomOrder()->first()->id, // Selecciona un programa existente aleatoriamente
         ];
     }
 }

@@ -3,27 +3,28 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Program;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Subject>
- */
 class SubjectFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        $faker = \Faker\Factory::create();
+        $knowledgeAreas = [
+            'Mathematics',
+            'Computer Science',
+            'Humanities',
+            'Social Sciences',
+            'Natural Sciences',
+            'Engineering'
+        ];
 
         return [
-            'name' => $faker->word,
-            'description' => $faker->sentence,
-            'credits' => $faker->numberBetween(1, 5),
-            'knowledge_area' => $faker->word,
-            'elective' => $faker->boolean,
+            'name' => $this->faker->sentence(3, true),
+            'description' => $this->faker->sentence(10),
+            'credits' => $this->faker->numberBetween(2, 6),
+            'knowledge_area' => $this->faker->randomElement($knowledgeAreas),
+            'program_id' => null, // Asignado desde el seeder
+            'elective' => $this->faker->boolean(30),
         ];
     }
 }

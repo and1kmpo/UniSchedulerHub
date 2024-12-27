@@ -63,17 +63,6 @@ const deleteStudent = (id, name) => {
             <div class="py-12 ">
                 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="flex justify-between">
-                            <Link :href="route('students.create')"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white"
-                                v-if="$page.props.user.permissions.includes(
-                                    'create students'
-                                )
-                                ">
-                            Create Student
-                            </Link>
-                        </div>
-
                         <div class="mt-4 overflow-x-auto">
                             <div class="sm:overflow-x-auto">
                                 <table class="min-w-full bg-white shadow-md rounded-xl text-center">
@@ -99,8 +88,6 @@ const deleteStudent = (id, name) => {
                                             <th class="py-3 px-4 text-center hidden lg:table-cell">
                                                 Program
                                             </th>
-                                            <th class="py-3 px-4 text-center">Edit</th>
-                                            <th class="py-3 px-4 text-center">Delete</th>
                                         </tr>
                                     </thead>
                                     <!-- Cuerpo de la tabla -->
@@ -123,7 +110,6 @@ const deleteStudent = (id, name) => {
                                             <!-- Nombre del estudiante -->
                                             <td class="py-3 px-4">
                                                 {{ user.name }}
-
                                             </td>
                                             <!-- Teléfono -->
                                             <td class="py-3 px-4 hidden sm:table-cell">
@@ -148,24 +134,6 @@ const deleteStudent = (id, name) => {
                                             <!-- Programa (visible en pantallas más grandes) -->
                                             <td class="py-3 px-4 hidden lg:table-cell">
                                                 {{ user.student.program.name }}
-                                            </td>
-
-                                            <!-- Editar -->
-                                            <td class="py-3 px-4">
-                                                <Link :href="route('students.edit', user.student.user_id)"
-                                                    class="text-xs bg-blue-700 hover:bg-blue-400 hover:text-black rounded p-2 px-4 text-white"
-                                                    v-if="$page.props.user.permissions.includes('update students')">
-                                                <i class="fas fa-edit"></i>
-                                                </Link>
-                                            </td>
-                                            <!-- Eliminar -->
-                                            <td class="py-3 px-4">
-                                                <Link href="#"
-                                                    @click="deleteStudent(user.student.user_id, user.student.name)"
-                                                    class="text-xs bg-red-700 hover:bg-red-400 hover:text-black rounded p-2 px-4 text-white"
-                                                    v-if="$page.props.user.permissions.includes('delete students')">
-                                                <i class="fas fa-trash"></i>
-                                                </Link>
                                             </td>
                                         </tr>
                                     </tbody>

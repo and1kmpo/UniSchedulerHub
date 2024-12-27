@@ -306,7 +306,8 @@ class UserController extends Controller
                         ->where('student_subject_professor.subject_id', $assignment->subject_id)
                         ->select(
                             'students.id as student_id',
-                            'users.name as student_name'
+                            'users.name as student_name',
+                            'users.email as student_email'
                         )
                         ->get();
 
