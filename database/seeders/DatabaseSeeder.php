@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // Crear estudiantes y sus usuarios
-        $students = Student::factory(10)->make()->each(function ($student) {
+        $students = Student::factory(10)->create()->each(function ($student) {
             $user = User::factory()->create([
                 'name' => fake()->name(),
                 'email' => $student->document . '@sas.com',
@@ -49,12 +49,12 @@ class DatabaseSeeder extends Seeder
             $user->assignRole('student');
 
             $student->user_id = $user->id;
-            $student->program_id = Program::all()->random()->id; // Asignar un programa aleatorio de los ya creados
+            $student->program_id = Program::InRandomOrder()->first()->id; // Asignar un programa aleatorio de los ya creados
             $student->save();
         });
 
         // Crear profesores y sus usuarios
-        $professors = Professor::factory(5)->make()->each(function ($professor) {
+        $professors = Professor::factory(5)->create()->each(function ($professor) {
             $user = User::factory()->create([
                 'name' => fake()->name(),
                 'email' => $professor->document . '@sas.com',
@@ -66,10 +66,14 @@ class DatabaseSeeder extends Seeder
         });
 
         // Crear asignaturas y asignarlas a programas
-        $subjects = Subject::factory(20)->make()->each(function ($subject) {
-            $subject->program_id = Program::all()->random()->id; // Asignar un program_id aleatorio
-            $subject->save();
-        });
+        $subjects = Subject::factory(20)->create();
+        foreach ($subjects as $subject) {
+            // Asignar subject a 1 o 2 programas con semestre aleatorio
+            $randomPrograms = Program::inRandomOrder()->take(rand(1, 2))->get();
+            foreach ($randomPrograms as $program) {
+                $subject->programs()->attach($program->id, ['semester' => rand(1, 10)]);
+            }
+        }
 
         // Asignar asignaturas a profesores y estudiantes con restricciones
         foreach ($subjects as $subject) {

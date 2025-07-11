@@ -23,7 +23,6 @@ class SubjectFactory extends Factory
             'description' => $this->faker->sentence(10),
             'credits' => $this->faker->numberBetween(2, 6),
             'knowledge_area' => $this->faker->randomElement($knowledgeAreas),
-            'program_id' => null, // Asignado desde el seeder
             'elective' => $this->faker->boolean(30),
         ];
     }

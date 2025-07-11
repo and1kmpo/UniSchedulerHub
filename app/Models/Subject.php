@@ -26,4 +26,20 @@ class Subject extends Model
     {
         return $this->belongsTo(Professor::class, 'professor_id', 'id')->with('user');
     }
+
+    public function students()
+    {
+        return $this->belongsToMany(Student::class, 'student_subject_professor')
+            ->withPivot('professor_id')
+            ->withTimestamps();
+    }
+    public function programs()
+    {
+        return $this->belongsToMany(Program::class)->withPivot('semester')->withTimestamps();
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
 }

@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Subject;
 use App\Models\Professor;
 use App\Http\Requests\ProfessorRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class ProfessorController extends Controller
 {
+    public function show(string $id)
+    {
+        // Puedes dejarlo así por ahora o redireccionar
+        return redirect()->route('professors.index');
+    }
     /**
      * Display a listing of the resource.
      */
@@ -125,5 +130,36 @@ class ProfessorController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error when unassigning subjects.'], 500);
         }
+    }
+
+    public function mySubjects()
+    {
+        $professor = auth()->user()->professor;
+
+        $subjects = $professor->subjects()
+            ->with([
+                'programs' => function ($query) {
+                    $query->select('programs.id', 'programs.name');
+                },
+                'students.user'
+            ])
+            ->get();
+
+
+        return Inertia::render('Professors/MySubjects', [
+            'subjects' => $subjects
+        ]);
+    }
+
+    public function viewAllStudents(Subject $subject)
+    {
+        $this->authorize('view', $subject);
+
+        $subject->load(['students.user']);
+
+        return Inertia::render('Subjects/ViewStudents', [
+            'subject' => $subject,
+            'students' => $subject->students()->with('user', 'program')->paginate(10),
+        ]);
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\Student;
 use App\Http\Requests\StudentRequest;
+use App\Models\Grade;
 use App\Models\User;
 use App\Models\Program;
 use App\Models\Subject;
@@ -216,5 +218,78 @@ class StudentController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => 'Error when unassigning subject.'], 500);
         }
+    }
+
+    public function mySubjects()
+    {
+        $student = auth()->user()->student;
+
+        $subjects = $student->subjects()->get()->map(
+            function ($subject) {
+                $professorId = $subject->pivot->professor_id;
+                $professor = \App\Models\Professor::with('user')->find($professorId);
+
+                $subject->professor_name = optional($professor?->user)->name ?? 'Unassigned';
+                return $subject;
+            }
+        );
+
+        return Inertia::render('Students/MySubjects', [
+            'subjects' => $subjects
+        ]);
+    }
+
+    public function viewGrades($subjectId)
+    {
+        $studentId = auth()->user()->student->id;
+
+        $grade = Grade::with('state')->where('student_id', $studentId)->where('subject_id', $subjectId)->first();
+
+        $subject = Subject::findOrFail($subjectId);
+
+        return Inertia::render('Students/SubjectGrades', ['subject' => $subject, 'grade' => $grade]);
+    }
+
+    public function getGradeJson($subjectId)
+    {
+        $studentId = auth()->user()->student->id;
+
+        $grade = Grade::with('state')
+            ->where('student_id', $studentId)
+            ->where('subject_id', $subjectId)
+            ->first();
+
+        return response()->json(['grade' => $grade]);
+    }
+
+    public function gradesSummary()
+    {
+        $student = auth()->user()->student;
+
+        // Todas las asignaturas asignadas al estudiante
+        $subjects = $student->subjects()->with('grades.state')->get();
+
+        // Mapeamos cada asignatura y buscamos si tiene calificación
+        $gradesSummary = $subjects->map(function ($subject) use ($student) {
+            $grade = Grade::with('state')
+                ->where('student_id', $student->id)
+                ->where('subject_id', $subject->id)
+                ->first();
+
+            return [
+                'subject' => [
+                    'id' => $subject->id,
+                    'name' => $subject->name
+                ],
+                'partial_1'   => $grade->partial_1 ?? null,
+                'partial_2'   => $grade->partial_2 ?? null,
+                'partial_3'   => $grade->partial_3 ?? null,
+                'activities'  => $grade->activities ?? null,
+                'final_grade' => $grade->final_grade ?? null,
+                'state'       => $grade?->state,
+            ];
+        });
+
+        return response()->json(['grades' => $gradesSummary]);
     }
 }

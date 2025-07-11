@@ -1,6 +1,5 @@
 <template>
     <div>
-
         <div class="w-full flex items-center space-x-4 mb-4">
             <!-- Botón para agregar usuario -->
             <button @click="openModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded">
@@ -18,14 +17,12 @@
                                 d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                         </svg>
                     </div>
-                    <input type="search" id="default-search" v-model="searchQuery" class=" block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg
-                        bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600
-                        dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    <input type="search" id="default-search" v-model="searchQuery"
+                        class="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Search user..." />
                 </div>
             </form>
         </div>
-
 
         <div class="relative">
             <!-- Tabla de usuarios -->
@@ -46,18 +43,24 @@
                         <td class="px-4 py-2 text-center">{{ user.name }}</td>
                         <td class="px-4 py-2 text-center">{{ user.email }}</td>
                         <td class="px-4 py-2 text-center">
-                            <span v-for="role in user.roles" :key="role.id">{{ role.name }}</span>
+                            <span v-for="role in user.roles" :key="role.id">{{
+                                role.name
+                                }}</span>
                         </td>
                         <td class="px-4 py-2 text-center">
                             <label class="inline-flex items-center me-5 cursor-pointer">
                                 <input type="checkbox" value="" class="sr-only peer" :checked="user.status === '1'"
-                                    @change="toggleStatus(user)">
+                                    @change="toggleStatus(user)" />
                                 <div
                                     class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-300 dark:border-gray-600 peer-checked:bg-purple-600">
                                 </div>
-                                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">{{ user.status
-                                    ===
-                                    '1' ? 'Active' : user.status === '2' ? 'Inactive' : 'No data status' }}</span>
+                                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">{{
+                                    user.status === "1"
+                                        ? "Active"
+                                        : user.status === "2"
+                                            ? "Inactive"
+                                            : "No data status"
+                                }}</span>
                             </label>
                         </td>
                         <td class="px-4 py-2 flex gap-4 justify-center text-center">
@@ -80,7 +83,6 @@
             </div>
         </div>
 
-
         <!-- Paginación -->
         <div class="mt-4 flex flex-wrap justify-center items-center gap-2">
             <!-- Botón de página anterior -->
@@ -94,7 +96,6 @@
                 {{ users.current_page }} of {{ users.last_page }}
             </span>
 
-
             <!-- Botón de página siguiente -->
             <button @click="changePage(localUsers.next_page_url)" :disabled="!localUsers.next_page_url"
                 class="px-4 py-2 border rounded bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition">
@@ -106,8 +107,9 @@
         <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div class="bg-white dark:bg-gray-700 rounded-lg shadow-lg p-6 w-full max-w-md">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ form.id ? 'Edit User' :
-                        'Create User' }}</h2>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        {{ form.id ? "Edit User" : "Create User" }}
+                    </h2>
                     <button @click="closeModal" class="text-gray-400 hover:text-gray-900 dark:hover:text-white">
                         <i class="fas fa-times"></i>
                     </button>
@@ -127,7 +129,7 @@
                         <label for="document" class="block text-gray-700 dark:text-gray-300">Document:</label>
                         <input v-model="form.document" type="text" id="document"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
-                            pattern="\d*">
+                            pattern="\d*" />
                     </div>
                     <div class="mb-4">
                         <label for="phone" class="block text-gray-700 dark:text-gray-300">Phone:</label>
@@ -153,7 +155,6 @@
                             <option value="professor">Professor</option>
                             <option value="admin">Admin</option>
                         </select>
-
                     </div>
 
                     <!-- Campos dinámicos -->
@@ -164,14 +165,19 @@
                                 class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
                         </div>
                         <div class="mb-4">
-                            <label for="program_id" class="block text-gray-700 dark:text-gray-300">Program ID:</label>
-                            <input v-model="form.program_id" type="number" id="program_id"
-                                class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
+                            <label for="program_id" class="block text-gray-700 dark:text-gray-300">Program:</label>
+                            <select v-model="form.program_id" id="program_id"
+                                class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500">
+                                <option disabled value="">Select a program</option>
+                                <option v-for="program in programs" :key="program.id" :value="program.id">
+                                    {{ program.name }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
                     <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md">
-                        {{ form.id ? 'Update' : 'Save' }}
+                        {{ form.id ? "Update" : "Save" }}
                     </button>
                 </form>
             </div>
@@ -180,18 +186,19 @@
 </template>
 
 <script>
-import Swal from 'sweetalert2';
-import debounce from 'lodash.debounce';
+import Swal from "sweetalert2";
+import debounce from "lodash.debounce";
 
 export default {
     props: {
-        users: Object,
+        users: Object
     },
     data() {
         return {
-            searchQuery: '',
+            searchQuery: "",
             loading: false,
             localUsers: this.users,
+            programs: [],
 
             isModalOpen: false,
             form: {
@@ -203,21 +210,21 @@ export default {
                 document: "",
                 phone: "",
                 address: "",
-                city: ""
-            },
+                city: "",
+            }
         };
     },
     methods: {
         searchData() {
             this.loading = true;
             axios
-                .get('/users', { params: { search: this.searchQuery } })
+                .get("/users", { params: { search: this.searchQuery } })
                 .then((res) => {
                     this.localUsers = res.data;
                 })
                 .catch((error) => {
-                    console.error('Error fetching users:', error);
-                    Swal.fire('Error', 'Failed to fetch users.', 'error');
+                    console.error("Error fetching users:", error);
+                    Swal.fire("Error", "Failed to fetch users.", "error");
                 })
                 .finally(() => {
                     this.loading = false;
@@ -232,8 +239,8 @@ export default {
                     this.localUsers = res.data;
                 })
                 .catch((error) => {
-                    console.error('Error fetching users:', error);
-                    Swal.fire('Error', 'Failed to fetch users.', 'error');
+                    console.error("Error fetching users:", error);
+                    Swal.fire("Error", "Failed to fetch users.", "error");
                 })
                 .finally(() => {
                     this.loading = false;
@@ -251,24 +258,25 @@ export default {
                     document: "",
                     phone: "",
                     address: "",
-                    city: ""
+                    city: "",
                 };
             }
             this.isModalOpen = true;
+            this.fetchPrograms();
         },
         closeModal() {
             this.isModalOpen = false;
         },
         async createUser() {
             try {
-                const response = await axios.post('/users', this.form);
-                this.$inertia.reload({ only: ['users'] });
+                const response = await axios.post("/users", this.form);
+                this.$inertia.reload({ only: ["users"] });
                 Swal.fire({
-                    title: 'Success!',
+                    title: "Success!",
                     text: response.data.message,
-                    icon: 'success',
+                    icon: "success",
                     timer: 3000,
-                    timerProgressBar: true
+                    timerProgressBar: true,
                 });
                 this.closeModal();
             } catch (error) {
@@ -277,29 +285,29 @@ export default {
         },
         async deleteUser(user) {
             const result = await Swal.fire({
-                title: 'Are you sure?',
+                title: "Are you sure?",
                 text: "This action is irreversible!",
-                icon: 'warning',
+                icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel',
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, delete it!",
+                cancelButtonText: "Cancel",
             });
 
             if (result.isConfirmed) {
                 try {
                     await axios.delete(`/users/${user.id}`);
-                    this.$inertia.reload({ only: ['users'] });
+                    this.$inertia.reload({ only: ["users"] });
                     Swal.fire({
-                        title: 'Deleted!',
-                        text: 'User deleted successfully.',
-                        icon: 'success',
+                        title: "Deleted!",
+                        text: "User deleted successfully.",
+                        icon: "success",
                         timer: 3000,
                         timerProgressBar: true,
                     });
                 } catch (error) {
-                    Swal.fire('Error', 'Error deleting user.', 'error');
+                    Swal.fire("Error", "Error deleting user.", "error");
                 }
             }
         },
@@ -340,24 +348,32 @@ export default {
                 }
                 this.openModal("edit");
             } catch (error) {
-                Swal.fire('Error', 'Failed to load user data.', 'error');
+                Swal.fire("Error", "Failed to load user data.", "error");
             }
         },
         async updateUser() {
             try {
-                const response = await axios.put(`/users/${this.form.id}`, this.form);
+                const response = await axios.put(
+                    `/users/${this.form.id}`,
+                    this.form
+                );
                 const updatedUser = response.data;
 
-                const index = this.localUsers.data.findIndex(user => user.id === updatedUser.id);
+                const index = this.localUsers.data.findIndex(
+                    (user) => user.id === updatedUser.id
+                );
                 if (index !== -1) {
-                    this.localUsers.data[index] = { ...this.localUsers.data[index], ...updatedUser };
+                    this.localUsers.data[index] = {
+                        ...this.localUsers.data[index],
+                        ...updatedUser,
+                    };
                 }
 
-                this.$inertia.reload({ only: ['users'] });
+                this.$inertia.reload({ only: ["users"] });
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'User updated successfully.',
-                    icon: 'success',
+                    title: "Success!",
+                    text: "User updated successfully.",
+                    icon: "success",
                     timer: 3000,
                     timerProgressBar: true,
                 });
@@ -368,40 +384,52 @@ export default {
         },
         async toggleStatus(user) {
             try {
-                const route = user.status === '1'
-                    ? `/users/${user.id}/deactivate`
-                    : `/users/${user.id}/activate`;
+                const route =
+                    user.status === "1"
+                        ? `/users/${user.id}/deactivate`
+                        : `/users/${user.id}/activate`;
 
                 await axios.patch(route);
-                user.status = user.status === '1' ? '2' : '1';
+                user.status = user.status === "1" ? "2" : "1";
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Status updated!',
+                    icon: "success",
+                    title: "Status updated!",
                     toast: true,
-                    position: 'top-end',
+                    position: "top-end",
                     timer: 3000,
                     timerProgressBar: true,
-                    showConfirmButton: false
+                    showConfirmButton: false,
                 });
             } catch (error) {
-                Swal.fire('Error', 'Error updating status.', 'error');
+                Swal.fire("Error", "Error updating status.", "error");
             }
         },
         handleFormErrors(error) {
             if (error.response && error.response.status === 422) {
                 const errorMessages = Object.values(error.response.data.errors)
                     .flat()
-                    .map(msg => `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`)
-                    .join('<br/>');
+                    .map(
+                        (msg) =>
+                            `<div><i class="fas fa-exclamation-circle text-red-600"></i> ${msg}</div>`
+                    )
+                    .join("<br/>");
 
                 Swal.fire({
-                    title: 'Validation Errors',
+                    title: "Validation Errors",
                     html: errorMessages,
-                    icon: 'error',
+                    icon: "error",
                 });
             } else {
                 console.error("Error:", error);
-                Swal.fire('Error', 'An unexpected error occurred.', 'error');
+                Swal.fire("Error", "An unexpected error occurred.", "error");
+            }
+        },
+        async fetchPrograms() {
+            try {
+                const response = await axios.get('/programs');
+                this.programs = response.data;
+            } catch (error) {
+                console.log('Error fetching programs', error)
             }
         }
     },
@@ -410,8 +438,10 @@ export default {
             this.searchData();
         }, 1000),
     },
-    mounted() {
+    mounted: async function () {
         console.log(this.users);
+        console.log(this.programs);
     }
+
 };
 </script>

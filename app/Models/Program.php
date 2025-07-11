@@ -18,4 +18,9 @@ class Program extends Model
     {
         return $this->hasMany(Student::class);
     }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class)->withPivot('semester')->withTimestamps();
+    }
 }

@@ -35,4 +35,9 @@ class Professor extends Model
             ->withPivot('subject_id')
             ->withTimestamps();
     }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
 }

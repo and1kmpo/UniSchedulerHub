@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use App\Models\User;
+use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -14,28 +15,33 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
+    
+
     public function index(Request $request)
     {
         $query = User::with(['professor', 'student', 'roles']);
-
+    
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%$search%")
-                    ->orWhere('email', 'LIKE', "%$search%");
+                  ->orWhere('email', 'LIKE', "%$search%");
             });
         }
-
+    
         $users = $query->paginate(10);
-
+    
         if ($request->wantsJson()) {
-            return response()->json($users);
+            return response()->json([
+                'users' => $users
+            ]);
         }
-
+    
         return inertia('Users/Index', [
-            'users' => $users,
+            'users' => $users
         ]);
     }
+    
 
 
     /**
