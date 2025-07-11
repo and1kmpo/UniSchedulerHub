@@ -16,26 +16,26 @@ defineProps({
     <div
         class="relative min-h-screen flex flex-col justify-center items-center bg-gray-100 dark:bg-gray-900 selection:bg-red-500 selection:text-white">
 
-        <!-- Bloque de logo y nombre de la plataforma -->
+
         <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg flex flex-col items-center text-center">
             <div class="flex items-center mb-4">
-                <!-- Logo más grande y centrado -->
+
                 <div
                     class="w-20 h-20 bg-blue-500 text-white font-bold rounded-full flex items-center justify-center shadow-md text-4xl">
                     Uni
                 </div>
-                <!-- Nombre de la plataforma alineado a la derecha -->
+
                 <span class="text-5xl font-bold text-gray-800 tracking-tight">
                     Scheduler<span class="text-blue-500">Hub</span>
                 </span>
             </div>
 
-            <!-- Descripción centrada debajo del logo -->
+
             <p class="text-center text-sm text-gray-600 mt-4 max-w-sm">
                 Organize and manage your university courses effortlessly.
             </p>
 
-            <!-- Botones de login y register centrados dentro del contenedor -->
+
             <div class="mt-6 flex space-x-4">
                 <Link v-if="!$page.props.auth.user" :href="route('login')"
                     class="bg-indigo-600 text-white px-6 py-3 rounded-full hover:bg-indigo-500 transition">

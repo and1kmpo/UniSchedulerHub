@@ -18,8 +18,7 @@ const props = defineProps({
 });
 
 const form = useForm({
-    first_name: props.professor.professor.first_name,
-    last_name: props.professor.professor.last_name,
+    name: props.professor.professor.name,
     document: props.professor.professor.document,
     phone: props.professor.professor.phone,
     email: props.professor.professor.email,

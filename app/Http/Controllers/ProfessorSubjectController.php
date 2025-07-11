@@ -19,7 +19,4 @@ class ProfessorSubjectController extends Controller
 
         return response()->json($assignedSubjects);
     }
-
-    // Otros métodos que puedan ser necesarios para gestionar las asignaturas asignadas a los profesores
-    // ...
 }

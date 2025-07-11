@@ -13,17 +13,20 @@
     "@mdi/font": "^7.4.47",
     "chart.js": "^4.4.1",
     "datatables.net-dt": "^1.13.8",
+    "element-plus": "^2.9.0",
     "laravel-vite-plugin": "^1.0.0",
+    "lodash.debounce": "^4.0.8",
     "sweetalert2": "^11.10.1",
     "vite": "^5.4.0",
-    "vite-plugin-vuetify": "^2.0.0",
     "vue-chartjs": "^5.3.0",
-    "vuetify": "^3.1.0"
+    "vue-debounce": "^5.0.1",
+    "vue-select": "^4.0.0-beta.6"
   },
   "devDependencies": {
     "@inertiajs/vue3": "^1.0.0",
     "@tailwindcss/forms": "^0.5.2",
     "@tailwindcss/typography": "^0.5.2",
+    "@types/lodash.debounce": "^4.0.9",
     "@vitejs/plugin-vue": "^4.0.0",
     "autoprefixer": "^10.4.7",
     "axios": "^1.6.5",

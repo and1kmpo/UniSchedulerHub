@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Subject;
 use App\Models\Professor;
 use App\Http\Requests\ProfessorRequest;
 use Illuminate\Http\Request;
 
-
-
 class ProfessorController extends Controller
 {
+    public function show(string $id)
+    {
+        // Puedes dejarlo así por ahora o redireccionar
+        return redirect()->route('professors.index');
+    }
     /**
      * Display a listing of the resource.
      */
@@ -31,41 +35,11 @@ class ProfessorController extends Controller
         return inertia('Professors/Create');
     }
 
-    public function store(ProfessorRequest $request)
+    public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'document' => 'required|string',
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'phone' => 'nullable|string',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string',
-        ]);
-
-        $user = User::create(
-            [
-                'name' => $validatedData['name'],
-                'email' => $validatedData['email'],
-                'password' => bcrypt($validatedData['password']),
-            ]
-        );
-
-        $user->assignRole('Professor');
-
-        $user->professor()->create([
-            'document' => $validatedData['document'],
-            'first_name' => $validatedData['first_name'],
-            'last_name' => $validatedData['last_name'],
-            'phone' => $validatedData['phone'],
-            'address' => $validatedData['address'],
-            'city' => $validatedData['city'],
-        ]);
-
-        return redirect()->route('professors.index');
+        //
     }
+
 
     public function edit(User $professor)
     {
@@ -106,7 +80,16 @@ class ProfessorController extends Controller
             $request->validate([
                 'professor_id' => 'required|exists:professors,id',
                 'subject_ids' => 'required|array',
+            ], [
+                'professor_id.required' => 'A professor must be selected.',
+                'professor_id.exists' => 'The selected professor does not exist.',
+                'subject_ids.required' => 'At least one subject must be selected.',
             ]);
+
+            if (empty($request->input('professor_id'))) {
+                return response()->json(['error' => 'Professor ID is missing.'], 400);
+            }
+
 
             $professorId = $request->input('professor_id');
             $subjectIds = $request->input('subject_ids');
@@ -114,9 +97,9 @@ class ProfessorController extends Controller
             $professor = Professor::findOrFail($professorId);
             $professor->subjects()->syncWithoutDetaching($subjectIds);
 
-            return redirect()->route('professors.assignSubjectForm')->with('success', 'Successfully assigned subjects.');
+            return response()->json(['message' => 'Subjects assigned successfully.'], 200);
         } catch (\Exception $exception) {
-            return back()->with('error', 'Error when assigning subject: ' . $exception->getMessage());
+            return response()->json(['error' => 'Error when assigning subject: ' . $exception->getMessage()], 500);
         }
     }
 
@@ -147,5 +130,36 @@ class ProfessorController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error when unassigning subjects.'], 500);
         }
+    }
+
+    public function mySubjects()
+    {
+        $professor = auth()->user()->professor;
+
+        $subjects = $professor->subjects()
+            ->with([
+                'programs' => function ($query) {
+                    $query->select('programs.id', 'programs.name');
+                },
+                'students.user'
+            ])
+            ->get();
+
+
+        return Inertia::render('Professors/MySubjects', [
+            'subjects' => $subjects
+        ]);
+    }
+
+    public function viewAllStudents(Subject $subject)
+    {
+        $this->authorize('view', $subject);
+
+        $subject->load(['students.user']);
+
+        return Inertia::render('Subjects/ViewStudents', [
+            'subject' => $subject,
+            'students' => $subject->students()->with('user', 'program')->paginate(10),
+        ]);
     }
 }

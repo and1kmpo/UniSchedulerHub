@@ -23,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
     ];
 
     /**
@@ -63,5 +64,32 @@ class User extends Authenticatable
     public function student()
     {
         return $this->hasOne(Student::class);
+    }
+
+
+    const STATUS_ACTIVE = '1';
+    const STATUS_INACTIVE = '2';
+
+    //Scope para filtrar usuarios activos
+    public function ScopeActive($query)
+    {
+        return $query->where('status', self::STATUS_ACTIVE);
+    }
+
+
+    //Scope para filtrar usuarios inactivos
+    public function ScopeInactive($query)
+    {
+        return $query->where('status', self::STATUS_INACTIVE);
+    }
+
+    public function activate()
+    {
+        $this->update(['status' => self::STATUS_ACTIVE]);
+    }
+
+    public function deactivate()
+    {
+        $this->update(['status' => self::STATUS_INACTIVE]);
     }
 }

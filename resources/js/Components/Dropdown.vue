@@ -1,7 +1,9 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
+// Recibe la prop `showing` (de v-model:showing)
 const props = defineProps({
+    showing: Boolean,
     align: {
         type: String,
         default: "right",
@@ -12,11 +14,23 @@ const props = defineProps({
     },
     contentClasses: {
         type: Array,
-        default: () => ["py-1", "bg-white"],
+        default: () => ["py-1", "bg-white", "dark:bg-gray-800"],
     },
 });
 
-let open = ref(false);
+// Emite el evento `update:showing` (para v-model:showing)
+const emit = defineEmits(["update:showing"]);
+
+// Estado local del dropdown (sincronizado)
+const open = ref(props.showing);
+
+watch(() => props.showing, (val) => {
+    open.value = val;
+});
+
+watch(open, (val) => {
+    emit("update:showing", val);
+});
 
 const closeOnEscape = (e) => {
     if (open.value && e.key === "Escape") {
@@ -30,7 +44,9 @@ onUnmounted(() => document.removeEventListener("keydown", closeOnEscape));
 const widthClass = computed(() => {
     return {
         48: "w-48",
-    }[props.width.toString()];
+        60: "w-60",
+        64: "w-64",
+    }[props.width.toString()] || "w-48";
 });
 
 const alignmentClasses = computed(() => {
@@ -46,34 +62,25 @@ const alignmentClasses = computed(() => {
 });
 </script>
 
+
 <template>
     <div class="relative">
+        <!-- Trigger -->
         <div @click="open = !open">
             <slot name="trigger" />
         </div>
 
-        <!-- Full Screen Dropdown Overlay -->
+        <!-- Full screen overlay -->
         <div v-show="open" class="fixed inset-0 z-40" @click="open = false" />
 
-        <transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="transform opacity-0 scale-95"
-            enter-to-class="transform opacity-100 scale-100"
-            leave-active-class="transition ease-in duration-75"
-            leave-from-class="transform opacity-100 scale-100"
-            leave-to-class="transform opacity-0 scale-95"
-        >
-            <div
-                v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
-                style="display: none"
-                @click="open = false"
-            >
-                <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
-                    :class="contentClasses"
-                >
+        <!-- Dropdown menu -->
+        <transition enter-active-class="transition ease-out duration-200"
+            enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
+            leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
+            leave-to-class="transform opacity-0 scale-95">
+            <div v-show="open" class="absolute z-50 mt-2 rounded-md shadow-lg" :class="[widthClass, alignmentClasses]"
+                style="display: none" @click="open = false">
+                <div class="rounded-md ring-1 ring-black ring-opacity-5" :class="contentClasses">
                     <slot name="content" />
                 </div>
             </div>

@@ -23,12 +23,11 @@ const props = defineProps({
 });
 
 onMounted(() => {
-    console.log("User_ID", props.student.student.first_name);
+    console.log("User_ID", props.student.student.name);
 });
 
 const form = useForm({
-    first_name: props.student.student.first_name,
-    last_name: props.student.student.last_name,
+    name: props.student.student.name,
     document: props.student.student.document,
     phone: props.student.student.phone,
     email: props.student.student.email,

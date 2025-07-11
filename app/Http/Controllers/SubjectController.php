@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Http\Requests\SubjectRequest;
 use App\Models\Student;
 use App\Models\Subject;
@@ -46,10 +47,15 @@ class SubjectController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Subject $subject)
     {
-        //
+        $this->authorize('view', $subject); // Aquí aplica la política correctamente
+
+        return Inertia::render('Subjects/Show', [
+            'subject' => $subject,
+        ]);
     }
+
 
     /**
      * Show the form for editing the specified resource.

@@ -14,19 +14,20 @@
                             <label for="professor" class="block text-sm font-medium text-gray-700">
                                 Select professor:
                             </label>
-                            <select id="professor" v-model="selectedProfessor" @change="handleProfessorChange"
-                                class="block w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                <option value="" disabled>Select a professor</option>
-                                <option v-for="professor in professors" :key="professor.id" :value="professor">
-                                    {{ professor.fullName }}
-                                </option>
-                            </select>
+
+                            <v-select :options="professors" label="fullName" :reduce="professor => professor.id"
+                                v-model="selectedProfessor" @input="handleProfessorChange"
+                                placeholder="Search and select a professor..." :clearable="true" />
+
+
                         </div>
 
+                        <!-- Listado de Materias Asignadas -->
                         <div>
-                            <h2 class="text-xl font-semibold mb-4">Professor's subjects:</h2>
-
+                            <h2 class="text-xl font-semibold">Professor's Subjects:</h2>
                             <template v-if="assignedSubjects.length > 0">
+                                <p class="text-gray-500 text-xs">You can select the first checkbox to select all
+                                    subjects</p>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full mb-4 border-collapse border border-gray-200">
                                         <thead>
@@ -93,7 +94,7 @@
             </div>
             <!-- Modal para asignar asignaturas -->
             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeAssignSubjectModal">
-                <div class="p-6 min-h-[400px] flex flex-col items-center">
+                <div class="p-6 min-h-[600px] flex flex-col items-center">
                     <div class="flex justify-between items-center w-full mb-4">
                         <h2 class="text-2xl font-semibold">Assign Subjects to Professor</h2>
                         <span class="cursor-pointer" @click="closeAssignSubjectModal">
@@ -102,18 +103,9 @@
                     </div>
 
                     <div class="mb-4 w-full">
-                        <label for="selectedSubjects" class="block text-sm font-medium text-gray-700">
-                            Select subjects:
-                        </label>
-                        <select v-model="selectedSubjects" id="selectedSubjects" multiple
-                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
-                                {{ subject.name }}
-                            </option>
-                        </select>
-                        <p class="text-sm text-gray-500 mt-2">
-                            Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects.
-                        </p>
+                        <v-select :options="availableSubjects" label="name" :reduce="subject => subject.id"
+                            v-model="selectedSubjects" :multiple="true"
+                            placeholder="Search and select one or more subjects..." :clearable="true" />
                     </div>
 
                     <button @click="assignSelectedSubjects"
@@ -129,11 +121,13 @@
 
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Swal from 'sweetalert2';
 import Modal from '@/Components/Modal.vue';
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
 
 
 // Referencias Reactivas
@@ -149,6 +143,13 @@ const assigningSubjects = ref(false);
 // Cargar lista de profesores al montar el componente
 onMounted(async () => {
     await loadProfessors();
+    await loadAllSubjects();
+});
+
+watch(selectedProfessor, async (newVal) => {
+    if (newVal) {
+        await loadAssignedSubjects();
+    }
 });
 
 // Función para cargar profesores
@@ -159,30 +160,83 @@ const loadProfessors = async () => {
 
         professors.value = allProfessors.map(prof => ({
             id: prof.professor.id,
-            fullName: `${prof.professor.first_name} ${prof.professor.last_name} - ${prof.professor.document}`
+            fullName: `${prof.name}  - ${prof.professor.document}`
         }));
     } catch (error) {
         console.error('Error loading professors:', error);
     }
 };
 
+const loadAllSubjects = async () => {
+    let allSubjects = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+
+    try {
+        // Mientras haya más páginas, seguiremos cargando
+        while (hasMorePages) {
+            const response = await axios.get(`/subjects?page=${currentPage}`);
+            const data = response.data;
+
+            // Concatenamos las asignaturas obtenidas
+            allSubjects = [...allSubjects, ...data.data];
+
+            // Verificamos si hay más páginas
+            if (data.next_page_url) {
+                currentPage++; // Pasamos a la siguiente página
+            } else {
+                hasMorePages = false; // No hay más páginas
+            }
+        }
+
+        // Guardamos todas las asignaturas en la variable de estado
+        availableSubjects.value = allSubjects;
+
+    } catch (error) {
+        console.error('Error loading all subjects:', error);
+    }
+};
+
+
+
 // Manejar cambio de profesor seleccionado
 const handleProfessorChange = async () => {
+    // Verificar si el `selectedProfessor` tiene un valor
+
+    if (!selectedProfessor.value) {
+        console.warn('No professor selected');
+        return;
+    }
+
+    // Verificar el profesor seleccionado en la lista original
+    const professorData = professors.value.find(prof => prof.id === selectedProfessor.value);
+
     selectedSubjectsForRemoval.value = []; // Limpia las selecciones anteriores
+
     await loadAssignedSubjects();
 };
+
 
 // Función para cargar asignaturas asignadas al profesor
 const loadAssignedSubjects = async () => {
     if (!selectedProfessor.value) return;
+
     try {
-        const response = await axios.get(`/professor-assigned-subjects/${selectedProfessor.value.id}`);
-        assignedSubjects.value = response.data;
+        const response = await axios.get(`/professor-assigned-subjects/${selectedProfessor.value}`);
+
+        if (response.data) {
+            assignedSubjects.value = response.data;
+        } else {
+            console.warn('No subjects returned from API');
+            assignedSubjects.value = [];
+        }
     } catch (error) {
-        console.error('Error loading assigned subjects:', error);
         Swal.fire('Error', 'Failed to load assigned subjects.', 'error');
+        assignedSubjects.value = [];
     }
 };
+
+
 
 // Seleccionar o deseleccionar todas las asignaturas para eliminar
 const toggleSelectAll = () => {
@@ -223,7 +277,7 @@ const assignSelectedSubjects = async () => {
         assigningSubjects.value = true;
 
         try {
-            const professorId = selectedProfessor.value.id;
+            const professorId = selectedProfessor.value;
 
             // Enviar solicitud para asignar materias
             await axios.post('/professors-assign-subject', {
@@ -232,7 +286,15 @@ const assignSelectedSubjects = async () => {
             });
 
             await loadAssignedSubjects(); // Recargar materias asignadas
-            Swal.fire('Success', 'Subjects assigned successfully.', 'success');
+
+            Swal.fire({
+                title: 'Success',
+                text: 'Subjects assigned successfully.',
+                icon: 'success',
+                timer: 3000,
+                timerProgressBar: true
+            });
+
             closeAssignSubjectModal();
         } catch (error) {
             console.error('Error when assigning subjects:', error);
@@ -243,12 +305,6 @@ const assignSelectedSubjects = async () => {
     }
 };
 
-// Función para abrir el modal de asignación de materias
-const openModalAssignSubject = async () => {
-    await loadAvailableSubjects();
-    isModalOpen.value = true;
-};
-
 // Cargar todas las materias disponibles para asignar
 const loadAvailableSubjects = async () => {
     try {
@@ -257,6 +313,11 @@ const loadAvailableSubjects = async () => {
     } catch (error) {
         console.error('Error loading subjects:', error);
     }
+};
+
+// Abrir el modal de asignación de materias
+const openModalAssignSubject = async () => {
+    isModalOpen.value = true;
 };
 
 // Cerrar el modal de asignación de materias
@@ -279,9 +340,17 @@ const confirmUnassignSubject = (subjectId) => {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                await axios.delete(`/unassign-subject-professor/${selectedProfessor.value.id}/${subjectId}`);
+                await axios.delete(`/unassign-subject-professor/${selectedProfessor.value}/${subjectId}`);
                 await loadAssignedSubjects();
-                Swal.fire('Success', 'Subject has been unassigned.', 'success');
+
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Subject have been unassigned.',
+                    icon: 'success',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+
             } catch (error) {
                 console.error('Error unassigning subject:', error);
                 Swal.fire('Error', 'Failed to unassign subject.', 'error');
@@ -311,13 +380,21 @@ const confirmUnassignSelectedSubjects = async () => {
     if (result.isConfirmed) {
         try {
             await axios.post('/unassign-selected-subjects', {
-                professor_id: selectedProfessor.value.id,
+                professor_id: selectedProfessor.value,
                 subject_ids: selectedSubjectsForRemoval.value,
             });
 
             await loadAssignedSubjects();
             selectedSubjectsForRemoval.value = [];
-            Swal.fire('Success', 'Selected subjects have been unassigned.', 'success');
+
+            Swal.fire({
+                title: 'Success',
+                text: 'Selected subjects have been unassigned.',
+                icon: 'success',
+                timer: 3000,
+                timerProgressBar: true
+            });
+
         } catch (error) {
             console.error('Error unassigning subjects:', error);
             Swal.fire('Error', 'Failed to unassign subjects.', 'error');

@@ -48,15 +48,10 @@ defineEmits(["submit"]);
 
         <template #form>
             <div class="col-span-6 sm:col-span-6 space-y-2">
-                <InputLabel for="first_name" value="First name" />
-                <TextInput for="first_name" v-model="form.first_name" type="text" autocomplete="first_name"
-                    class="block w-full" placeholder="Enter the student's first name" />
-                <InputError :message="$page.props.errors.first_name" class="mt-2" />
-
-                <InputLabel for="last_name" value="Last name" />
-                <TextInput for="last_name" v-model="form.last_name" type="text" autocomplete="last_name"
-                    class="mt-1 block w-full" placeholder="Enter the student's last name" />
-                <InputError :message="$page.props.errors.last_name" class="mt-2" />
+                <InputLabel for="name" value="First name" />
+                <TextInput for="name" v-model="form.name" type="text" autocomplete="name" class="block w-full"
+                    placeholder="Enter the student's first name" />
+                <InputError :message="$page.props.errors.name" class="mt-2" />
 
                 <InputLabel for="document" value="Document" />
                 <TextInput for="document" v-model="form.document" type="number" autocomplete="document"

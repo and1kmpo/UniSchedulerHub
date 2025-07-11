@@ -10,23 +10,34 @@ class Professor extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'document',
-        'email',
-        'first_name',
-        'last_name',
+        'name',
         'phone',
+        'email',
         'address',
         'city',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     public function subjects()
     {
         return $this->belongsToMany(Subject::class, 'professor_subject');
+    }
+
+    // Relación inversa con la tabla pivot `student_subject_professor`
+    public function students()
+    {
+        return $this->belongsToMany(Student::class, 'student_subject_professor')
+            ->withPivot('subject_id')
+            ->withTimestamps();
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
     }
 }
