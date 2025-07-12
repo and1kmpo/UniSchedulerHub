@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClassGroupController;
+use App\Http\Controllers\ClassScheduleController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GradeController;
@@ -66,6 +67,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::delete('/unassign-subject-student/{studentId}/{subjectId}', [StudentController::class, 'unassignSubject']);
 
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
+
+        Route::resource('class-groups.schedules', ClassScheduleController::class)->scoped(['schedule' => 'class_schedule'])->names('class-schedules');
     });
 
     /**
