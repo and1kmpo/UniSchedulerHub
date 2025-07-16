@@ -14,7 +14,6 @@ defineProps({
 
 const page = usePage();
 const showingNavigationDropdown = ref(false);
-const showingProfessorsStudentsDropdown = ref(false);
 const toggleProfessorsMenu = ref(false);
 const toggleStudentsMenu = ref(false);
 const isDarkMode = ref(false)
@@ -64,10 +63,8 @@ function updateDarkClass() {
         root.classList.remove('dark')
     }
 }
+
 </script>
-
-
-
 
 <template>
     <div>
@@ -171,6 +168,12 @@ function updateDarkClass() {
                                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                     <NavLink :href="route('users.index')" :active="route().current('users.*')">
                                         Admin
+                                    </NavLink>
+                                </div>
+
+                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                    <NavLink :href="route('class-groups.index')" :active="route().current('users.*')">
+                                        Class Groups
                                     </NavLink>
                                 </div>
                             </template>
@@ -558,11 +561,12 @@ function updateDarkClass() {
 
             </nav>
 
-            <!-- Page Heading -->
-            <header v-if="$slots.header" class="bg-white shadow dark:bg-gray-800 transition-colors duration-300">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <!-- Page Heading (mejorado para consistencia global y UX/UI refinada) -->
+            <header v-if="$slots.header"
+                class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center">
                     <slot name="header" />
-                    <button @click="toggleDarkMode" class="flex items-center gap-2 px-3 py-1 rounded text-sm font-medium
+                    <button @click="toggleDarkMode" class="flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium
                    bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600
                    text-gray-800 dark:text-gray-200 transition">
                         <span v-if="isDarkMode">🌙 Dark</span>
@@ -570,6 +574,7 @@ function updateDarkClass() {
                     </button>
                 </div>
             </header>
+
 
 
             <!-- Page Content -->

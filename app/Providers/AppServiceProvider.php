@@ -23,8 +23,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Inertia::share([
             'auth' => function () {
+                $user = auth()->user();
+
                 return [
-                    'user' => $user ? $user->load('roles') : null,
+                    'user' => $user instanceof \App\Models\User ? $user->load('roles') : null,
                     'can' => [
                         'createPrograms' => Gate::allows('create programs'),
                         'viewPrograms' => Gate::allows('view programs'),

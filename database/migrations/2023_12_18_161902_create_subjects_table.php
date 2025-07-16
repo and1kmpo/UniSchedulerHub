@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
             $table->string('name', 100);
             $table->text('description')->nullable();
             $table->integer('credits');
             $table->string('knowledge_area', 100);
             $table->boolean('elective');
-            $table->foreignId('program_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

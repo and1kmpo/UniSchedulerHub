@@ -20,4 +20,9 @@ class ClassSchedule extends Model
     {
         return $this->hasMany(ClassSchedule::class);
     }
+
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
 }

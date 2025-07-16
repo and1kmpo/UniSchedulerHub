@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\ClassGroup;
+use App\Models\ClassSchedule;
 use Illuminate\Database\Seeder;
 use App\Models\Student;
 use App\Models\Professor;
@@ -9,13 +11,16 @@ use App\Models\Subject;
 use App\Models\Program;
 use App\Models\User;
 use Database\Seeders\RolSeeder;
+use Database\Seeders\GradeStatusSeeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run()
     {
-        // Ejecutar RolSeeder para roles y permisos
-        $this->call(RolSeeder::class);
+        $this->call([
+            RolSeeder::class,
+            GradeStatusSeeder::class
+        ]);
 
         // Crear un usuario de tipo admin y asignarle el rol
         $adminUser = User::factory()->create(['email' => 'admin@sas.com']);
@@ -97,5 +102,15 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+
+        // Crear 10 grupos de clase
+        $classGroups = ClassGroup::factory(10)->create();
+
+        // Para cada grupo, crear entre 1 y 3 horarios (sin traslapes automáticos)
+        $classGroups->each(function ($group) {
+            ClassSchedule::factory(rand(1, 3))->create([
+                'class_group_id' => $group->id
+            ]);
+        });
     }
 }

@@ -21,7 +21,8 @@ return new class extends Migration
             $table->float('partial_3')->nullable();
             $table->float('activities')->nullable();
             $table->float('attendance')->nullable();
-            $table->float('final_grade')->nullable(); // calculada
+            $table->float('final_grade')->nullable();
+            $table->foreignId('grade_status_id')->nullable()->constrained('grade_statuses');
             $table->timestamps();
 
             $table->unique(['student_id', 'subject_id']);

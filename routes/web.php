@@ -67,8 +67,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::delete('/unassign-subject-student/{studentId}/{subjectId}', [StudentController::class, 'unassignSubject']);
 
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
+        Route::resource('class-groups.schedules', ClassScheduleController::class)->names('class-schedules');
 
-        Route::resource('class-groups.schedules', ClassScheduleController::class)->scoped(['schedule' => 'class_schedule'])->names('class-schedules');
+        Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
     });
 
     /**
