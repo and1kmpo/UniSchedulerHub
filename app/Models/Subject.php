@@ -11,11 +11,24 @@ class Subject extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'description',
         'credits',
         'knowledge_area',
         'elective',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($subject) {
+            if (empty($subject->code)) {
+                $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $subject->name), 0, 3));
+                $nextNumber = self::count() + 1;
+                $subject->code = $prefix . str_pad($nextNumber, 2, '0', STR_PAD_LEFT); // Ej: MAT01
+            }
+        });
+    }
+
 
     public function professors()
     {

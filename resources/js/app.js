@@ -8,6 +8,7 @@ import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue.m";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
+import '../css/calendar.css';
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
 

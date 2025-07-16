@@ -9,94 +9,60 @@ use Inertia\Inertia;
 
 class ClassScheduleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(ClassGroup $classGroup)
+    public function index($classGroupId)
     {
+        $classGroup = ClassGroup::with(['subject', 'professor', 'schedules'])->findOrFail($classGroupId);
+
         return Inertia::render('ClassSchedules/Index', [
-            'classGroup' => $classGroup->load('subject', 'professor'),
-            'schedules' => $classGroup->schedules()->latest()->get(),
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(ClassGroup $classGroup)
-    {
-        return Inertia::render('ClassSchedules/Create', [
             'classGroup' => $classGroup,
+            'schedules' => $classGroup->schedules,
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request, ClassGroup $classGroup)
     {
-        $data = $request->validate([
-            'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'classroom' => 'nullable|string|max:255',
-        ]);
+        $data = $this->validateSchedule($request);
 
-        // Validar traslape de horarios dentro del mismo grupo
-        $conflict = $classGroup->schedules()
-            ->where('day', $data['day'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                    ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']])
-                    ->orWhere(function ($q2) use ($data) {
-                        $q2->where('start_time', '<', $data['start_time'])
-                            ->where('end_time', '>', $data['end_time']);
-                    });
-            })
-            ->exists();
-
-        if ($conflict) {
+        if ($this->hasConflict($classGroup, $data)) {
             return back()->withErrors(['start_time' => 'There is a schedule conflict.']);
         }
 
         $classGroup->schedules()->create($data);
-
-        return redirect()->route('class-schedules.index', $classGroup)->with('success', 'Schedule added');
+        return back()->with('success', 'Schedule created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(ClassGroup $classGroup, ClassSchedule $schedule)
-    {
-        return Inertia::render('ClassSchedules/Edit', [
-            'classGroup' => $classGroup,
-            'schedule' => $schedule,
-        ]);
-    }
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, ClassGroup $classGroup, ClassSchedule $schedule)
     {
-        $data = $request->validate([
+        $data = $this->validateSchedule($request);
+
+        if ($this->hasConflict($classGroup, $data, $schedule->id)) {
+            return back()->withErrors(['start_time' => 'There is a schedule conflict.']);
+        }
+
+        $schedule->update($data);
+        return back()->with('success', 'Schedule updated.');
+    }
+
+    public function destroy(ClassGroup $classGroup, ClassSchedule $schedule)
+    {
+        $schedule->delete();
+        return back()->with('success', 'Schedule deleted.');
+    }
+
+    private function validateSchedule(Request $request)
+    {
+        return $request->validate([
             'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'classroom' => 'nullable|string|max:255',
         ]);
+    }
 
-        // Evitar traslapes (excluyendo este mismo horario)
-        $conflict = $classGroup->schedules()
-            ->where('id', '!=', $schedule->id)
+    private function hasConflict($classGroup, $data, $ignoreId = null): bool
+    {
+        return $classGroup->schedules()
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
             ->where('day', $data['day'])
             ->where(function ($q) use ($data) {
                 $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
@@ -105,23 +71,28 @@ class ClassScheduleController extends Controller
                         $q2->where('start_time', '<', $data['start_time'])
                             ->where('end_time', '>', $data['end_time']);
                     });
-            })
-            ->exists();
-
-        if ($conflict) {
-            return back()->withErrors(['start_time' => 'There is a schedule conflict.']);
-        }
-
-        $schedule->update($data);
-
-        return redirect()->route('class-schedules.index', $classGroup)->with('success', 'Schedule updated');
+            })->exists();
     }
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ClassGroup $classGroup, ClassSchedule $schedule)
+
+    public function calendar($classGroupId)
     {
-        $schedule->delete();
-        return redirect()->route('class-schedules.index', $classGroup)->with('success', 'Schedule deleted');
+        $classGroup = ClassGroup::with(['schedules', 'subject', 'professor'])->findOrFail($classGroupId);
+
+        return Inertia::render('ClassSchedules/Calendar', [
+            'classGroup' => $classGroup,
+            'schedules' => $classGroup->schedules, // Pasamos eventos
+        ]);
+    }
+
+    public function schedulesJson($classGroupId)
+    {
+        $schedules = ClassSchedule::where('class_group_id', $classGroupId)->get([
+            'id',
+            'day',
+            'start_time',
+            'end_time',
+            'classroom'
+        ]);
+        return response()->json($schedules);
     }
 }
