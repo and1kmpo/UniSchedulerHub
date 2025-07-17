@@ -2,585 +2,225 @@
 import { ref, computed, onMounted } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import ApplicationMark from "@/Components/ApplicationMark.vue";
-import Banner from "@/Components/Banner.vue";
-import Dropdown from "@/Components/Dropdown.vue";
-import DropdownLink from "@/Components/DropdownLink.vue";
-import NavLink from "@/Components/NavLink.vue";
-import ResponsiveNavLink from "@/Components/ResponsiveNavLink.vue";
-
-defineProps({
-    title: String,
-});
 
 const page = usePage();
-const showingNavigationDropdown = ref(false);
-const toggleProfessorsMenu = ref(false);
-const toggleStudentsMenu = ref(false);
-const isDarkMode = ref(false)
-const userDropdownOpen = ref(false)
+const darkMode = ref(false);
+const showingMenu = ref(false);
+const userDropdownOpen = ref(false);
+const dropdownOpen = ref(null);
 
 const userRole = computed(() => {
-    return page.props.auth.user?.roles?.[0].name || null
-})
-
-const switchToTeam = (team) => {
-    router.put(
-        route("current-team.update"),
-        {
-            team_id: team.id,
-        },
-        {
-            preserveState: false,
-        }
-    );
-};
+    return page.props.auth.user?.roles?.[0].name || null;
+});
 
 const logout = () => {
     router.post(route("logout"));
 };
 
 onMounted(() => {
-    const userPref = localStorage.getItem('theme')
-    if (userPref) {
-        isDarkMode.value = userPref === 'dark'
-    } else {
-        isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-    updateDarkClass()
-})
+    // Recuperamos la preferencia de `localStorage`
+    const userPref = localStorage.getItem("theme");
+    darkMode.value = userPref === "dark" || (!userPref && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    updateDarkClass();
+});
 
+// Función para alternar el modo oscuro
 function toggleDarkMode() {
-    isDarkMode.value = !isDarkMode.value
-    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
-    updateDarkClass()
+    darkMode.value = !darkMode.value;
+    localStorage.setItem("theme", darkMode.value ? "dark" : "light");
+    updateDarkClass();
 }
 
+// Aplicar la clase `dark` al elemento raíz
 function updateDarkClass() {
-    const root = document.documentElement
-    if (isDarkMode.value) {
-        root.classList.add('dark')
+    const root = document.documentElement;
+    if (darkMode.value) {
+        root.classList.add("dark");
     } else {
-        root.classList.remove('dark')
+        root.classList.remove("dark");
     }
 }
 
+function toggleDropdown(id) {
+    dropdownOpen.value = dropdownOpen.value === id ? null : id;
+}
 </script>
 
 <template>
     <div>
 
-        <Head :title="title" class="" />
+        <Head :title="$props.title" />
 
-        <Banner />
+        <nav class="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+            <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+                <Link href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
+                <ApplicationMark class="h-8 w-8" />
+                </Link>
 
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-            <nav
-                class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
-                <!-- Primary Navigation Menu -->
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
-                        <div class="flex">
-                            <!-- Logo -->
-                            <div class="shrink-0 flex items-center">
-                                <Link :href="route('dashboard')">
-                                <ApplicationMark class="block h-9 w-auto" />
-                                </Link>
-                            </div>
-
-                            <!-- Navigation Links -->
-
-                            <!-- Dashboard visible for Students and Professors -->
-                            <template v-if="userRole === 'admin' || userRole === 'professor'">
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                        Dashboard
-                                    </NavLink>
-                                </div>
-                            </template>
-
-
-                            <!-- ADMIN -->
-                            <template v-if="userRole === 'admin'">
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('programs.index')" :active="route().current('programs.*')">
-                                        Programs
-                                    </NavLink>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <Dropdown v-model:showing="showingProfessorsStudentsDropdown" class="mt-[18px]">
-                                        <template #trigger>
-                                            <span :class="{
-                                                'bg-indigo-600 text-white': route().current('professors.index') || route().current('professors.assign-subject'),
-                                            }"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 hover:text-gray-700 hover:bg-indigo-400 transition ease-in-out duration-150">
-                                                Professors
-                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                    fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                            </span>
-                                        </template>
-                                        <template #content>
-                                            <div class="w-48">
-                                                <DropdownLink :href="route('professors.index')">Index</DropdownLink>
-                                                <DropdownLink :href="route('professors.assignSubjectForm')">Assign
-                                                    Subject</DropdownLink>
-                                            </div>
-                                        </template>
-                                    </Dropdown>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <Dropdown v-model:showing="showingProfessorsStudentsDropdown" class="mt-[18px]">
-                                        <template #trigger>
-                                            <span :class="{
-                                                'bg-indigo-600 text-white': route().current('students.index') || route().current('students.assign-subject'),
-                                            }"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 hover:text-gray-700 hover:bg-indigo-400 transition ease-in-out duration-150">
-                                                Students
-                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                    fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                            </span>
-                                        </template>
-                                        <template #content>
-                                            <div class="w-48">
-                                                <DropdownLink :href="route('students.index')">Index</DropdownLink>
-                                                <DropdownLink :href="route('students.assignSubjectForm')">Assign Subject
-                                                </DropdownLink>
-                                            </div>
-                                        </template>
-                                    </Dropdown>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('subjects.index')" :active="route().current('subjects.*')">
-                                        Subjects
-                                    </NavLink>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('users.index')" :active="route().current('users.*')">
-                                        Admin
-                                    </NavLink>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('class-groups.index')" :active="route().current('users.*')">
-                                        Class Groups
-                                    </NavLink>
-                                </div>
-                            </template>
-
-                            <!-- PROFESSOR -->
-                            <template v-else-if="userRole === 'professor'">
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('professor.subjects')">
-                                        My Subjects
-                                    </NavLink>
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('students.index')">
-                                        Students
-                                    </NavLink>
-                                </div>
-                            </template>
-
-                            <!-- STUDENT -->
-                            <template v-else-if="userRole === 'student'">
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('professor.subjects')"
-                                        class="dark:text-gray-200 dark:hover:text-white dark:hover:bg-gray-700">
-                                        My Subjects
-                                    </NavLink>
-
-                                </div>
-
-                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink :href="route('professors.index')"
-                                        class="dark:text-gray-200 dark:hover:text-white dark:hover:bg-gray-700">
-                                        Professors
-                                    </NavLink>
-
-                                </div>
-                            </template>
-
+                <div class="flex items-center md:order-2 space-x-3 rtl:space-x-reverse">
+                    <button @click="userDropdownOpen = !userDropdownOpen" type="button"
+                        class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
+                        <img class="w-8 h-8 rounded-full object-cover" :src="page.props.auth.user.profile_photo_url"
+                            :alt="page.props.auth.user.name" />
+                    </button>
+                    <div v-show="userDropdownOpen"
+                        class="absolute right-4 top-16 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600">
+                        <div class="px-4 py-3">
+                            <span class="block text-sm text-gray-900 dark:text-white">{{ page.props.auth.user.name
+                            }}</span>
+                            <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{
+                                page.props.auth.user.email }}</span>
                         </div>
-
-
-                        <div class="hidden sm:flex sm:items-center sm:ms-6">
-                            <div class="ms-3 relative">
-                                <!-- Teams Dropdown -->
-                                <Dropdown v-if="$page.props.jetstream.hasTeamFeatures" align="right" width="60">
-                                    <template #trigger>
-                                        <span class="inline-flex rounded-md">
-                                            <button type="button"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:bg-gray-50 active:bg-gray-50 transition ease-in-out duration-150">
-                                                {{
-                                                    $page.props.auth.user
-                                                        .current_team.name
-                                                }}
-
-                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <div class="w-60">
-                                            <!-- Team Management -->
-                                            <div class="block px-4 py-2 text-xs text-gray-400">
-                                                Manage Team
-                                            </div>
-
-                                            <!-- Team Settings -->
-                                            <DropdownLink :href="route(
-                                                'teams.show',
-                                                $page.props.auth.user
-                                                    .current_team
-                                            )
-                                                ">
-                                                Team Settings
-                                            </DropdownLink>
-
-                                            <DropdownLink v-if="$page.props.jetstream
-                                                .canCreateTeams
-                                            " :href="route('teams.create')">
-                                                Create New Team
-                                            </DropdownLink>
-
-                                            <!-- Team Switcher -->
-                                            <template v-if="$page.props.auth.user
-                                                .all_teams.length > 1
-                                            ">
-                                                <div class="border-t border-gray-200" />
-
-                                                <div class="block px-4 py-2 text-xs text-gray-400">
-                                                    Switch Teams
-                                                </div>
-
-                                                <template v-for="team in $page.props
-                                                    .auth.user.all_teams" :key="team.id">
-                                                    <form @submit.prevent="
-                                                        switchToTeam(team)
-                                                        ">
-                                                        <DropdownLink as="button">
-                                                            <div class="flex items-center">
-                                                                <svg v-if="team.id ==
-                                                                    $page
-                                                                        .props
-                                                                        .auth
-                                                                        .user
-                                                                        .current_team_id
-                                                                " class="me-2 h-5 w-5 text-green-400"
-                                                                    xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                                    viewBox="0 0 24 24" stroke-width="1.5"
-                                                                    stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                </svg>
-
-                                                                <div>
-                                                                    {{
-                                                                        team.name
-                                                                    }}
-                                                                </div>
-                                                            </div>
-                                                        </DropdownLink>
-                                                    </form>
-                                                </template>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </Dropdown>
-                            </div>
-
-                            <!-- Settings Dropdown -->
-                            <div class="ms-3 relative">
-                                <Dropdown v-model:showing="userDropdownOpen" align="right" width="48">
-                                    <template #trigger>
-                                        <button v-if="$page.props.jetstream
-                                            .managesProfilePhotos
-                                        "
-                                            class="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
-                                            <img class="h-8 w-8 rounded-full object-cover" :src="$page.props.auth.user
-                                                .profile_photo_url
-                                                " :alt="$page.props.auth.user.name
-                                                    " />
-                                        </button>
-
-                                        <span v-else class="inline-flex rounded-md">
-                                            <button type="button" :class="[
-                                                'inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition ease-in-out duration-150',
-                                                isDarkMode
-                                                    ? userDropdownOpen
-                                                        ? 'bg-gray-800 text-white' // cuando abierto en dark
-                                                        : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                                                    : userDropdownOpen
-                                                        ? 'bg-gray-100 text-gray-800' // cuando abierto en light
-                                                        : 'bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                                            ]">
-
-                                                {{ $page.props.auth.user.name }}
-
-                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <!-- Account Management -->
-                                        <div class="block px-4 py-2 text-xs text-gray-400">
-                                            Manage Account
-                                        </div>
-
-                                        <DropdownLink :href="route('profile.show')">
-                                            Profile
-                                        </DropdownLink>
-
-                                        <DropdownLink v-if="$page.props.jetstream
-                                            .hasApiFeatures
-                                        " :href="route('api-tokens.index')">
-                                            API Tokens
-                                        </DropdownLink>
-
-                                        <div class="border-t border-gray-200" />
-
-                                        <!-- Authentication -->
-                                        <form @submit.prevent="logout">
-                                            <DropdownLink as="button">
-                                                Log Out
-                                            </DropdownLink>
-                                        </form>
-                                    </template>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <!-- Hamburger -->
-                        <div class="-me-2 flex items-center sm:hidden">
-                            <button
-                                class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
-                                @click="
-                                    showingNavigationDropdown =
-                                    !showingNavigationDropdown
-                                    ">
-                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path :class="{
-                                        hidden: showingNavigationDropdown,
-                                        'inline-flex':
-                                            !showingNavigationDropdown,
-                                    }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16" />
-                                    <path :class="{
-                                        hidden: !showingNavigationDropdown,
-                                        'inline-flex':
-                                            showingNavigationDropdown,
-                                    }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Responsive Navigation Menu -->
-                <div :class="{
-                    block: showingNavigationDropdown,
-                    hidden: !showingNavigationDropdown,
-                }" class="sm:hidden flex flex-col"> <!-- Contenedor flex vertical -->
-                    <div class="pt-2 pb-3 space-y-1">
-                        <!-- Dashboard -->
-                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Dashboard
-                        </ResponsiveNavLink>
+                        <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
+                            <li>
+                                <Link :href="route('profile.show')"
+                                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                Profile</Link>
+                            </li>
+                            <li>
+                                <button @click="logout"
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                    Sign out
+                                </button>
+                            </li>
+                        </ul>
                     </div>
 
-                    <div class="pt-2 pb-3 space-y-1">
-                        <!-- Programs -->
-                        <ResponsiveNavLink :href="route('programs.index')" :active="route().current('programs')">
-                            Programs
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <div class="pt-2 pb-3 space-y-1 ml-4">
-                        <!-- Professors -->
-                        <div @click="toggleProfessorsMenu = !toggleProfessorsMenu" class="cursor-pointer">
-                            <a>
-                                Professors <i class="fa-solid fa-caret-down"></i>
-                            </a>
-                            <div v-show="toggleProfessorsMenu">
-                                <!-- Professors Index -->
-                                <ResponsiveNavLink :href="route('professors.index')"
-                                    :active="route().current('professors.index')">
-                                    Index
-                                </ResponsiveNavLink>
-                                <!-- Assign Subjects to Professors -->
-                                <ResponsiveNavLink :href="route('professors.assignSubjectForm')"
-                                    :active="route().current('professors.assignSubjectForm')">
-                                    Assign Subjects
-                                </ResponsiveNavLink>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2 pb-3 space-y-1 ml-4">
-                        <!-- Students -->
-                        <div @click="toggleStudentsMenu = !toggleStudentsMenu" class="cursor-pointer">
-                            <a>
-                                Students <i class="fa-solid fa-caret-down"></i>
-                            </a>
-                            <div v-show="toggleStudentsMenu">
-                                <!-- Students Index -->
-                                <ResponsiveNavLink :href="route('students.index')"
-                                    :active="route().current('students.index')">
-                                    Index
-                                </ResponsiveNavLink>
-                                <!-- Assign Subjects to Students -->
-                                <ResponsiveNavLink :href="route('students.assignSubjectForm')"
-                                    :active="route().current('students.assignSubjectForm')">
-                                    Assign Subjects
-                                </ResponsiveNavLink>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2 pb-3 space-y-1">
-                        <!-- Subjects -->
-                        <ResponsiveNavLink :href="route('subjects.index')" :active="route().current('subjects')">
-                            Subjects
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <div class="pt-2 pb-3 space-y-1">
-                        <!-- Admin -->
-                        <ResponsiveNavLink>
-                            Admin
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-gray-200">
-                        <div class="flex items-center px-4">
-                            <div v-if="$page.props.jetstream.managesProfilePhotos" class="shrink-0 me-3">
-                                <!-- User Avatar -->
-                                <img class="h-10 w-10 rounded-full object-cover"
-                                    :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name" />
-                            </div>
-                            <div>
-                                <!-- User Name -->
-                                <div class="font-medium text-base text-gray-800">
-                                    {{ $page.props.auth.user.name }}
-                                </div>
-                                <!-- User Email -->
-                                <div class="font-medium text-sm text-gray-500">
-                                    {{ $page.props.auth.user.email }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 space-y-1 flex flex-col"> <!-- Contenedor flex vertical -->
-                            <!-- Profile -->
-                            <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">
-                                Profile
-                            </ResponsiveNavLink>
-
-                            <!-- API Tokens -->
-                            <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures"
-                                :href="route('api-tokens.index')" :active="route().current('api-tokens.index')">
-                                API Tokens
-                            </ResponsiveNavLink>
-
-                            <!-- Log Out -->
-                            <form method="POST" @submit.prevent="logout">
-                                <ResponsiveNavLink as="button">
-                                    Log Out
-                                </ResponsiveNavLink>
-                            </form>
-
-                            <!-- Team Management -->
-                            <template v-if="$page.props.jetstream.hasTeamFeatures">
-                                <div class="border-t border-gray-200"></div>
-
-                                <!-- Team Settings -->
-                                <ResponsiveNavLink :href="route('teams.show', $page.props.auth.user.current_team)"
-                                    :active="route().current('teams.show')">
-                                    Team Settings
-                                </ResponsiveNavLink>
-
-                                <!-- Create New Team -->
-                                <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams"
-                                    :href="route('teams.create')" :active="route().current('teams.create')">
-                                    Create New Team
-                                </ResponsiveNavLink>
-
-                                <!-- Team Switcher -->
-                                <template v-if="$page.props.auth.user.all_teams.length > 1">
-                                    <div class="border-t border-gray-200"></div>
-                                    <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Switch Teams
-                                    </div>
-                                    <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
-                                        <form @submit.prevent="switchToTeam(team)">
-                                            <ResponsiveNavLink as="button">
-                                                <div class="flex items-center">
-                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id"
-                                                        class="me-2 h-5 w-5 text-green-400"
-                                                        xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <div>{{ team.name }}</div>
-                                                </div>
-                                            </ResponsiveNavLink>
-                                        </form>
-                                    </template>
-                                </template>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-            </nav>
-
-            <!-- Page Heading (mejorado para consistencia global y UX/UI refinada) -->
-            <header v-if="$slots.header"
-                class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center">
-                    <slot name="header" />
-                    <button @click="toggleDarkMode" class="flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium
-                   bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600
-                   text-gray-800 dark:text-gray-200 transition">
-                        <span v-if="isDarkMode">🌙 Dark</span>
-                        <span v-else>☀️ Light</span>
+                    <button @click="showingMenu = !showingMenu" type="button"
+                        class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M1 1h15M1 7h15M1 13h15" />
+                        </svg>
                     </button>
                 </div>
-            </header>
+
+                <div :class="[
+                    'w-full md:flex md:w-auto md:order-1',
+                    showingMenu ? 'block' : 'hidden md:block'
+                ]">
+                    <ul
+                        class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+
+                        <li v-if="userRole === 'admin' || userRole === 'professor'">
+                            <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
+                        </li>
+
+                        <template v-if="userRole === 'admin'">
+                            <li>
+                                <Link :href="route('programs.index')" class="nav-link">Programs</Link>
+                            </li>
+
+                            <li class="relative">
+                                <button @click="toggleDropdown('professors')" class="nav-link dropdown-toggle">
+                                    Professors
+                                    <svg class="w-2.5 h-2.5 ml-2 inline-block" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 10 6">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                            stroke-width="2" d="m1 1 4 4 4-4" />
+                                    </svg>
+                                </button>
+                                <div v-show="dropdownOpen === 'professors'" class="dropdown-menu">
+                                    <Link :href="route('professors.index')" class="dropdown-item">Index</Link>
+                                    <Link :href="route('professors.assignSubjectForm')" class="dropdown-item">Assign
+                                    Subject</Link>
+                                </div>
+                            </li>
+
+                            <li class="relative">
+                                <button @click="toggleDropdown('students')" class="nav-link dropdown-toggle">
+                                    Students
+                                    <svg class="w-2.5 h-2.5 ml-2 inline-block" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 10 6">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                            stroke-width="2" d="m1 1 4 4 4-4" />
+                                    </svg>
+                                </button>
+                                <div v-show="dropdownOpen === 'students'" class="dropdown-menu">
+                                    <Link :href="route('students.index')" class="dropdown-item">Index</Link>
+                                    <Link :href="route('students.assignSubjectForm')" class="dropdown-item">Assign
+                                    Subject</Link>
+                                </div>
+                            </li>
+
+                            <li>
+                                <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('users.index')" class="nav-link">Admin</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
+                            </li>
+                        </template>
+
+                        <template v-if="userRole === 'professor'">
+                            <li>
+                                <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('students.index')" class="nav-link">Students</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
+                            </li>
+                        </template>
+
+                        <template v-if="userRole === 'student'">
+                            <li>
+                                <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+        </nav>
 
 
+        <header class="bg-white dark:bg-gray-800 shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <slot name="header"></slot>
 
-            <!-- Page Content -->
-            <main>
-                <slot />
-            </main>
-        </div>
+                <!-- Dark Mode Toggle Button -->
+                <button @click="toggleDarkMode"
+                    class="text-gray-500 dark:text-gray-400 hover:text-blue-500 focus:outline-none transition duration-300 ease-in-out transform hover:scale-110">
+                    <!-- Transición de ícono de sol/luna -->
+                    <i :class="[
+                        darkMode ? 'fas fa-moon' : 'fas fa-sun',
+                        'transition-transform ease-in-out duration-300'
+                    ]" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </header>
+        <main class="p-4">
+            <slot />
+        </main>
     </div>
 </template>
+
+<style scoped>
+body {
+    transition: background-color 1s ease, color 1s ease;
+}
+
+.nav-link {
+    @apply block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent;
+}
+
+.dropdown-menu {
+    @apply absolute mt-2 z-50 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600;
+}
+
+.dropdown-item {
+    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white;
+}
+</style>

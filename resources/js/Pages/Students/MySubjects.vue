@@ -70,13 +70,15 @@
                                 'text-yellow-500': selectedGrade?.state?.code === 'failed_attendance',
                                 'text-gray-500': !selectedGrade?.state
                             }">
-                                <span v-if="selectedGrade?.state?.code === 'passed'">🟢</span>
-                                <span v-else-if="selectedGrade?.state?.code === 'failed_attendance'">🟡</span>
-                                <span v-else-if="selectedGrade?.state?.code === 'failed'">🔴</span>
-                                <span v-else>⏳</span>
+                                <i v-if="selectedGrade?.state?.code === 'passed'" class="fas fa-check-circle"></i>
+                                <i v-else-if="selectedGrade?.state?.code === 'failed_attendance'"
+                                    class="fas fa-exclamation-triangle"></i>
+                                <i v-else-if="selectedGrade?.state?.code === 'failed'" class="fas fa-times-circle"></i>
+                                <i v-else class="fas fa-clock"></i>
                                 {{ selectedGrade?.state?.label ?? 'Pending' }}
                             </span>
                         </li>
+
                     </ul>
                 </div>
             </div>
@@ -142,13 +144,15 @@
                                         'text-yellow-500': g.state?.code === 'failed_attendance',
                                         'text-gray-500': !g.state
                                     }">
-                                        <span v-if="g.state?.code === 'passed'">🟢</span>
-                                        <span v-else-if="g.state?.code === 'failed_attendance'">🟡</span>
-                                        <span v-else-if="g.state?.code === 'failed'">🔴</span>
-                                        <span v-else>⏳</span>
+                                        <i v-if="g.state?.code === 'passed'" class="fas fa-check-circle"></i>
+                                        <i v-else-if="g.state?.code === 'failed_attendance'"
+                                            class="fas fa-exclamation-triangle"></i>
+                                        <i v-else-if="g.state?.code === 'failed'" class="fas fa-times-circle"></i>
+                                        <i v-else class="fas fa-clock"></i>
                                         {{ g.state?.label ?? 'Pending' }}
                                     </span>
                                 </td>
+
                             </tr>
                         </tbody>
                     </table>

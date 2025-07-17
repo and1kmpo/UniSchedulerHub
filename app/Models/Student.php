@@ -54,4 +54,9 @@ class Student extends Model
     {
         return $this->hasMany(Grade::class);
     }
+
+    public function enrollments()
+    {
+        return $this->hasMany(SubjectEnrollment::class);
+    }
 }

@@ -55,4 +55,16 @@ class Subject extends Model
     {
         return $this->hasMany(Grade::class);
     }
+
+    // Materias que son prerrequisitos de esta materia
+    public function prerequisites()
+    {
+        return $this->belongsToMany(Subject::class, 'subject_prerequisite', 'subject_id', 'prerequisite_id');
+    }
+
+    // Materias que dependen de esta como prerrequisito
+    public function isPrerequisiteFor()
+    {
+        return $this->belongsToMany(Subject::class, 'subject_prerequisite', 'prerequisite_id', 'subject_id');
+    }
 }
