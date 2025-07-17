@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClassGroupController;
 use App\Http\Controllers\ClassScheduleController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\RoleAndPermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
@@ -70,6 +72,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('class-groups.schedules', ClassScheduleController::class)->names('class-schedules');
 
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
+
+        Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'edit', 'show']);
+        Route::patch('/academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
     });
 
     /**
@@ -91,6 +96,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/student/{subject}/grades', [StudentController::class, 'viewGrades'])->name('student.subject.grades');
         Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])->name('student.subject.grades.json');
         Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])->name('student.grades.summary');
+
+        Route::get('/student/subject-enrollment', [SubjectEnrollmentController::class, 'index'])->name('student.subject-enrollment.index');
+        Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
     });
 
 

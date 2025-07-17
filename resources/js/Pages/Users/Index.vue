@@ -12,35 +12,19 @@
                 </div>
 
                 <ul class="space-y-4 w-full mt-4 flex-1">
-                    <li>
-                        <button @click="viewSection('users')"
-                            class="flex items-center justify-center lg:justify-center gap-3 w-full text-center hover:bg-indigo-600 dark:hover:bg-indigo-800 p-3 rounded-xl transition">
-                            <i class="fas fa-users text-lg"></i>
-                            <span v-if="isSidebarOpen">Users</span>
-                        </button>
-                    </li>
-                    <li>
-                        <button @click="viewSection('roles')"
-                            class="flex items-center justify-center lg:justify-center gap-3 w-full text-center hover:bg-indigo-600 dark:hover:bg-indigo-800 p-3 rounded-xl transition">
-                            <i class="fas fa-user-shield text-lg"></i>
-                            <span v-if="isSidebarOpen">Roles</span>
-                        </button>
-                    </li>
-                    <li>
-                        <button @click="viewSection('permissions')"
-                            class="flex items-center justify-center lg:justify-center gap-3 w-full text-center hover:bg-indigo-600 dark:hover:bg-indigo-800 p-3 rounded-xl transition">
-                            <i class="fas fa-key text-lg"></i>
-                            <span v-if="isSidebarOpen">Permissions</span>
-                        </button>
-                    </li>
+                    <li><button @click="viewSection('users')" class="menu-btn"><i class="fas fa-users"></i><span
+                                v-if="isSidebarOpen">Users</span></button></li>
+                    <li><button @click="viewSection('roles')" class="menu-btn"><i class="fas fa-user-shield"></i><span
+                                v-if="isSidebarOpen">Roles</span></button></li>
+                    <li><button @click="viewSection('permissions')" class="menu-btn"><i class="fas fa-key"></i><span
+                                v-if="isSidebarOpen">Permissions</span></button></li>
                 </ul>
             </aside>
 
             <div class="flex-1 flex flex-col">
                 <header
                     class="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center transition-all duration-300">
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {{ capitalizeSection(currentSection) }}
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ capitalizeSection(currentSection) }}
                     </h1>
                     <button @click="toggleTheme"
                         class="p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full">
@@ -59,10 +43,11 @@
 </template>
 
 <script>
+import AppLayout from "@/Layouts/AppLayout.vue";
 import UserManagement from "@/Components/Users/UserManagement.vue";
 import RolesManagement from "@/Components/Users/RoleManagement.vue";
 import PermissionManagement from "@/Components/Users/PermissionManagement.vue";
-import AppLayout from "@/Layouts/AppLayout.vue";
+import AcademicPeriods from "@/Pages/Admin/AcademicPeriods.vue";
 
 export default {
     components: {
@@ -70,9 +55,11 @@ export default {
         UserManagement,
         RolesManagement,
         PermissionManagement,
+        AcademicPeriods,
     },
     props: {
         users: Object,
+        periods: Object,
     },
     data() {
         return {
@@ -88,11 +75,7 @@ export default {
         toggleTheme() {
             this.darkMode = !this.darkMode;
             localStorage.setItem("darkMode", this.darkMode);
-            if (this.darkMode) {
-                document.documentElement.classList.add("dark");
-            } else {
-                document.documentElement.classList.remove("dark");
-            }
+            document.documentElement.classList.toggle("dark", this.darkMode);
         },
         viewSection(section) {
             this.currentSection = section;
@@ -106,3 +89,21 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    transition: background 0.2s;
+}
+
+.menu-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+</style>
