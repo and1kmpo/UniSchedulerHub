@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,5 +41,20 @@ class HandleInertiaRequests extends Middleware
             'user.roles' => $request->user() ? $request->user()->roles->pluck('name') : [],
             'user.permissions' => $request->user() ? $request->user()->getPermissionsViaRoles()->pluck('name') : []
         ]);
+    }
+
+    public function handle($request, Closure $next)
+    {
+        $response = $next($request);
+
+        if (
+            $request->header('X-Inertia') &&
+            $response instanceof \Illuminate\Http\JsonResponse
+        ) {
+            // Permite respuestas JSON en peticiones Inertia
+            return $response;
+        }
+
+        return $response;
     }
 }

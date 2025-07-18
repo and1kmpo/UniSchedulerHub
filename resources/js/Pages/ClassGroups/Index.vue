@@ -70,7 +70,7 @@
                                 <td class="px-4 py-3">
                                     <div class="flex gap-3">
                                         <Link :href="route('class-groups.edit', group.id)"
-                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                            class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
                                             title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                         </Link>
