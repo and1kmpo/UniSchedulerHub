@@ -47,7 +47,6 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import UserManagement from "@/Components/Users/UserManagement.vue";
 import RolesManagement from "@/Components/Users/RoleManagement.vue";
 import PermissionManagement from "@/Components/Users/PermissionManagement.vue";
-import AcademicPeriods from "@/Pages/Admin/AcademicPeriods.vue";
 
 export default {
     components: {
@@ -55,11 +54,10 @@ export default {
         UserManagement,
         RolesManagement,
         PermissionManagement,
-        AcademicPeriods,
+
     },
     props: {
         users: Object,
-        periods: Object,
     },
     data() {
         return {
