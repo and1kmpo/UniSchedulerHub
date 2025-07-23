@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Program;
 use App\Http\Requests\ProgramRequest;
+use Illuminate\Http\Request;
 
 class ProgramController extends Controller
 {
@@ -15,16 +16,16 @@ class ProgramController extends Controller
     }
 
     public function index(Request $request)
-{
-    if ($request->wantsJson()) {
-        // Si es una petición axios (Accept: application/json)
-        return response()->json(Program::all());
-    }
+    {
+        if ($request->wantsJson()) {
+            // Si es una petición axios (Accept: application/json)
+            return response()->json(Program::all());
+        }
 
-    // Para navegación normal en el panel (Inertia)
-    $programs = Program::paginate(5);
-    return inertia('Programs/Index', ['programs' => $programs]);
-}
+        // Para navegación normal en el panel (Inertia)
+        $programs = Program::paginate(5);
+        return inertia('Programs/Index', ['programs' => $programs]);
+    }
     public function create()
     {
         return inertia('Programs/Create');

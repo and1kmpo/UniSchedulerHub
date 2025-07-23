@@ -73,8 +73,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
 
-        Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'edit', 'show']);
-        Route::patch('/academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
+        // 👇 Primero define esta ruta personalizada
+        Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
+
+        // 👇 Luego el resource
+        Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
     });
 
     /**
@@ -97,8 +100,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])->name('student.subject.grades.json');
         Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])->name('student.grades.summary');
 
-        Route::get('/student/subject-enrollment', [SubjectEnrollmentController::class, 'index'])->name('student.subject-enrollment.index');
-        Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
+        //Route::get('/student/subject-enrollment', [SubjectEnrollmentController::class, 'index'])->name('student.subject-enrollment.index');
+        // Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
     });
 
 
