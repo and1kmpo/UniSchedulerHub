@@ -73,10 +73,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
 
-        // 👇 Primero define esta ruta personalizada
         Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
-
-        // 👇 Luego el resource
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
     });
 

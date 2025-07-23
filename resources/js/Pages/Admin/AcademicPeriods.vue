@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useAlert } from '@/Components/Composables/useAlert'
 
@@ -19,34 +19,71 @@ const form = ref({
 
 const editingId = ref(null)
 
-const submit = () => {
-    if (editingId.value) {
-        router.post(`/academic-periods/${editingId.value}`, {
-            ...form.value,
-            _method: 'put',
-        }, {
-            onSuccess: () => {
-                toastSuccess('Period updated successfully')
-                resetForm()
-                reload()
-            },
-            onError: () => {
-                toastError('Failed to update period')
-            },
-        })
-    } else {
-        router.post('/academic-periods', form.value, {
-            onSuccess: () => {
-                toastSuccess('Period created successfully')
-                resetForm()
-                reload()
-            },
-            onError: () => {
-                toastError('Failed to create period')
-            },
-        })
+const submit = async () => {
+    // Verificar si ya existe un periodo con el mismo nombre
+    const existingPeriod = periods.value.find(p => p.name === form.value.name && p.id !== editingId.value);
+    if (existingPeriod) {
+        console.log(`Error: Ya existe un periodo con el nombre "${form.value.name}"`);
+        toastError(`Ya existe un periodo con el nombre "${form.value.name}"`);
+        return; // No se envía el formulario
     }
-}
+
+    // Validación de solapamiento de fechas
+    const startDate = new Date(form.value.start_date).setHours(0, 0, 0, 0);
+    const endDate = new Date(form.value.end_date).setHours(0, 0, 0, 0);
+
+    // Verificar si hay algún periodo con solapamiento
+    const overlappingPeriod = periods.value.find(p => {
+        const pStart = new Date(p.start_date).setHours(0, 0, 0, 0);
+        const pEnd = new Date(p.end_date).setHours(0, 0, 0, 0);
+
+        // Comprobar si las fechas se solapan
+        return (startDate < pEnd && endDate > pStart && p.id !== editingId.value);
+    });
+
+    if (overlappingPeriod) {
+        console.log("Error: El periodo de fechas se solapa con otro periodo existente.");
+        // Mostrar un mensaje específico con el nombre del periodo con el que se solapa
+        toastError(`El periodo de fechas se solapa con el periodo "${overlappingPeriod.name}", que va de ${overlappingPeriod.start_date} a ${overlappingPeriod.end_date}.`);
+        return; // No se envía el formulario
+    }
+
+    try {
+        // Si no hay solapamientos, se puede proceder con la creación o actualización
+        let response;
+
+        if (editingId.value) {
+            // Enviar petición para actualizar el periodo
+            response = await axios.put(`/academic-periods/${editingId.value}`, form.value);
+        } else {
+            // Enviar petición para crear el periodo
+            response = await axios.post('/academic-periods', form.value);
+        }
+
+        // Si la respuesta es exitosa
+        if (response.data.success) {
+            toastSuccess('Period created/updated successfully');
+            resetForm();
+            reload();
+        } else {
+            toastError('Failed to create/update period');
+        }
+    } catch (error) {
+        // Manejo de error cuando el backend devuelve un error
+        console.log('Error creating/updating period:', error.response?.data || error);
+
+        // Si el error es por solapamiento de fechas, mostrar el mensaje adecuado
+        if (error.response && error.response.data.error) {
+            toastError(error.response.data.error);  // Usar el mensaje de error retornado por el servidor
+        } else if (error.response && error.response.data.errors) {
+            // Si el backend retorna errores de validación (por ejemplo, fechas solapadas)
+            const overlapMessage = error.response.data.errors.start_date || 'Failed to create/update period';
+            toastError(overlapMessage);
+        } else {
+            toastError('Failed to create/update period');
+        }
+    }
+};
 
 
 const edit = (period) => {
@@ -60,16 +97,16 @@ const edit = (period) => {
 }
 
 const destroy = async (id) => {
-    const confirmed = await confirm('This will permanently delete the academic period.', 'Are you sure?')
+    const confirmed = await confirm('Esto eliminará permanentemente el periodo académico.', '¿Estás seguro?')
     if (!confirmed) return
 
     router.delete(`/academic-periods/${id}`, {
         onSuccess: () => {
-            toastSuccess('Period deleted successfully')
+            toastSuccess('Periodo eliminado correctamente')
             reload()
         },
         onError: () => {
-            toastError('Failed to delete period')
+            toastError('Error al eliminar el periodo')
         },
     })
 }
@@ -80,7 +117,7 @@ const activate = (id) => {
     router.post(url, { _method: 'patch' }, {
         preserveScroll: true,
         onSuccess: () => {
-            toastSuccess('Period activated successfully')
+            toastSuccess('Periodo activado correctamente')
 
             // ✅ Reactividad inmediata
             periods.value = periods.value.map(p => ({
@@ -92,7 +129,7 @@ const activate = (id) => {
             setTimeout(reload, 500)
         },
         onError: () => {
-            error('Could not activate the period', 'Activation Error')
+            error('No se pudo activar el periodo', 'Error de activación')
         }
     })
 }
@@ -132,8 +169,15 @@ const formatDate = (dateStr) => {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
+        timeZone: 'UTC'
     })
 }
+
+// Computed property para validar si la fecha final es mayor que la de inicio
+const isStartDateBeforeEnd = computed(() => {
+    if (!form.value.start_date || !form.value.end_date) return true
+    return new Date(form.value.start_date) < new Date(form.value.end_date)
+})
 </script>
 
 <template>
@@ -164,6 +208,8 @@ const formatDate = (dateStr) => {
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
                     <input v-model="form.end_date" type="date" required
                         class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
+                    <p v-if="!isStartDateBeforeEnd" class="text-red-600 text-xs mt-1">La fecha de fin debe ser posterior
+                        a la fecha de inicio.</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <input v-model="form.is_active" type="checkbox" id="is_active"
@@ -171,8 +217,8 @@ const formatDate = (dateStr) => {
                     <label for="is_active" class="text-sm text-gray-700 dark:text-gray-300">Mark as active</label>
                 </div>
                 <div class="flex gap-4">
-                    <button type="submit"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
+                    <button type="submit" :disabled="!isStartDateBeforeEnd"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
                         {{ editingId ? 'Update' : 'Save' }}
                     </button>
                     <button type="button" @click="resetForm"

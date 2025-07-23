@@ -20,8 +20,10 @@ class AcademicPeriodController extends Controller
         ]);
     }
 
+
     public function store(Request $request)
     {
+        // Validar los datos
         $validated = $request->validate([
             'name'       => 'required|string|max:255|unique:academic_periods,name',
             'start_date' => 'required|date',
@@ -29,14 +31,46 @@ class AcademicPeriodController extends Controller
             'is_active'  => 'boolean',
         ]);
 
+        // Validación de solapamiento de fechas
+        $startDate = $validated['start_date'];
+        $endDate = $validated['end_date'];
+
+        $overlap = AcademicPeriod::where(function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('start_date', [$startDate, $endDate])
+                ->orWhereBetween('end_date', [$startDate, $endDate]);
+        })->exists();
+
+        if ($overlap) {
+            // Devolver una respuesta JSON con un error específico
+            return response()->json([
+                'error' => 'The period dates overlap with an existing period.',
+                'form' => $request->all(),  // Mantener los datos del formulario
+            ], 400);  // Código HTTP 400: Bad Request
+        }
+
+        // Desactivar el periodo activo anterior si corresponde
         if ($validated['is_active']) {
             AcademicPeriod::where('is_active', true)->update(['is_active' => false]);
         }
 
-        AcademicPeriod::create($validated);
+        // Crear el nuevo periodo
+        try {
+            $academicPeriod = AcademicPeriod::create($validated);
+        } catch (\Exception $e) {
+            // Manejar cualquier excepción durante la creación
+            return response()->json([
+                'error' => 'Failed to create period: ' . $e->getMessage(),
+                'form' => $request->all(),  // Mantener los datos en el formulario
+            ], 500);  // Código HTTP 500: Internal Server Error
+        }
 
-        return back()->with('success', 'Academic period created successfully.');
+        // Si todo salió bien, devolver una respuesta exitosa
+        return response()->json([
+            'success' => 'Academic period created successfully.',
+            'academicPeriod' => $academicPeriod,
+        ], 201);  // Código HTTP 201: Created
     }
+
 
     public function update(Request $request, $id)
     {
@@ -49,14 +83,35 @@ class AcademicPeriodController extends Controller
             'is_active'  => 'boolean',
         ]);
 
+        // Validación de solapamiento de fechas
+        $startDate = $validated['start_date'];
+        $endDate = $validated['end_date'];
+
+        $overlap = AcademicPeriod::where(function ($query) use ($startDate, $endDate, $period) {
+            $query->whereBetween('start_date', [$startDate, $endDate])
+                ->orWhereBetween('end_date', [$startDate, $endDate])
+                ->where('id', '!=', $period->id); // Excluir el periodo que estamos editando
+        })->exists();
+
+        if ($overlap) {
+            return response()->json([
+                'error' => 'The period dates overlap with an existing period.',
+                'form' => $request->all(),  // Mantener los datos del formulario
+            ], 400);
+        }
+
         if ($validated['is_active']) {
             AcademicPeriod::where('is_active', true)->where('id', '!=', $period->id)->update(['is_active' => false]);
         }
 
         $period->update($validated);
 
-        return back()->with('success', 'Academic period updated successfully.');
+        return response()->json([
+            'success' => 'Academic period updated successfully.',
+            'academicPeriod' => $period,
+        ]);
     }
+
 
     public function destroy($id)
     {
