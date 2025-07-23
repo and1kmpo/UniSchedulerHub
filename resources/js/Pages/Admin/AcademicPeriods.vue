@@ -253,21 +253,34 @@ const isStartDateBeforeEnd = computed(() => {
                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ formatDate(period.start_date) }}</td>
                         <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ formatDate(period.end_date) }}</td>
                         <td class="px-4 py-2">
-                            <span v-if="period.is_active" class="text-green-600 font-semibold">Active</span>
-                            <span v-else class="text-gray-500">Inactive</span>
+                            <!-- Toggle Switch -->
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" :checked="period.is_active"
+                                    :disabled="period.is_active" @change="() => activate(period.id)" />
+                                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 
+              peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 
+              peer-checked:after:translate-x-full 
+              rtl:peer-checked:after:-translate-x-full 
+              peer-checked:after:border-white 
+              after:content-[''] after:absolute after:top-0.5 after:start-[2px] 
+              after:bg-white after:border-gray-300 after:border after:rounded-full 
+              after:h-5 after:w-5 after:transition-transform after:duration-300 
+              dark:border-gray-600 peer-checked:bg-indigo-600">
+                                </div>
+                                <span class="ms-2 text-sm font-semibold"
+                                    :class="period.is_active ? 'text-green-600' : 'text-gray-500'">
+                                    {{ period.is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                            </label>
                         </td>
-                        <td class="px-4 py-2 space-x-2 text-right">
+                        <td class="px-4 py-2 flex gap-4 justify-center text-center">
                             <button @click="edit(period)"
-                                class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded">
-                                Edit
-                            </button>
-                            <button v-if="!period.is_active" @click="activate(period.id)"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-1 rounded">
-                                Activate
+                                class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
+                                <i class="fas fa-edit"></i>
                             </button>
                             <button @click="destroy(period.id)"
-                                class="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded">
-                                Delete
+                                class="text-red-600 dark:text-red-400 hover:text-red-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </td>
                     </tr>
