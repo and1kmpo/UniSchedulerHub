@@ -108,7 +108,7 @@ const generatedCodePreview = computed(() =>
         <!-- Vista previa auto-generada -->
         <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded mt-4 text-sm space-y-1">
             <p><strong>Code:</strong> <span class="font-mono text-indigo-600 dark:text-indigo-400">{{
-                    generatedCodePreview }}</span></p>
+                generatedCodePreview }}</span></p>
             <p><strong>Semester:</strong> {{ generatedSemester }}</p>
             <p><strong>Group Code:</strong> Will be assigned (e.g., G1, G2...)</p>
             <p><strong>Name:</strong> {{ generatedName }}</p>

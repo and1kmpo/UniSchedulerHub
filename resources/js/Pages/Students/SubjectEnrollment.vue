@@ -1,18 +1,36 @@
 <script setup>
-import { router } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import { useAlert } from '@/Components/Composables/useAlert'
+import axios from 'axios'
 
 defineProps({ subjects: Array })
 
 const enrolling = ref(null)
 
-const enroll = (subjectId) => {
-    enrolling.value = subjectId
-    router.post(route('student.subject-enrollment.enroll', subjectId), {}, {
-        preserveScroll: true,
-        onFinish: () => enrolling.value = null,
-    })
+const { toastSuccess, toastError } = useAlert();
+
+const toggleEnrollment = async (subject) => {
+    enrolling.value = subject.id
+
+    const wasEnrolled = subject.alreadyEnrolled
+
+    try {
+        if (wasEnrolled) {
+            const response = await axios.post(route('student.subject-enrollment.unenroll', subject.id))
+            subject.alreadyEnrolled = false // ← cambio reactivo inmediato
+            toastSuccess(response.data.message)
+        } else {
+            const response = await axios.post(route('student.subject-enrollment.enroll', subject.id))
+            subject.alreadyEnrolled = true // ← cambio reactivo inmediato
+            toastSuccess(response.data.message)
+        }
+    } catch (error) {
+        const msg = error.response?.data?.error || 'An unexpected error occurred'
+        toastError(msg)
+    } finally {
+        enrolling.value = null
+    }
 }
 </script>
 
@@ -20,7 +38,7 @@ const enroll = (subjectId) => {
     <AppLayout>
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
-                Students
+                Subject Enrollment
             </h1>
         </template>
 
@@ -56,19 +74,29 @@ const enroll = (subjectId) => {
                                 </span>
                             </td>
                             <td class="p-3 text-center">
-                                <button v-if="!subject.alreadyEnrolled && subject.hasAllPrerequisites"
-                                    @click="enroll(subject.id)" :disabled="enrolling === subject.id"
-                                    class="bg-blue-600 dark:bg-blue-500 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 transition">
-                                    <span v-if="enrolling === subject.id">Enrolling...</span>
-                                    <span v-else>Enroll</span>
+                                <button v-if="subject.hasAllPrerequisites" @click="toggleEnrollment(subject)"
+                                    :disabled="enrolling === subject.id"
+                                    class="px-4 py-1.5 rounded-md transition text-white focus:outline-none focus:ring-2 disabled:opacity-50"
+                                    :class="{
+                                        'bg-green-600 hover:bg-green-700 focus:ring-green-300': !subject.alreadyEnrolled,
+                                        'bg-red-600 hover:bg-red-700 focus:ring-red-300': subject.alreadyEnrolled
+                                    }">
+                                    <span v-if="enrolling === subject.id">
+                                        {{ subject.alreadyEnrolled ? 'Unenrolling...' : 'Enrolling...' }}
+                                    </span>
+                                    <span v-else>
+                                        {{ subject.alreadyEnrolled ? 'Unenroll' : 'Enroll' }}
+                                    </span>
                                 </button>
                             </td>
                         </tr>
                         <tr v-if="subjects.length === 0">
-                            <td colspan="5" class="p-4 text-center text-gray-500 dark:text-gray-400">No subjects found.
+                            <td colspan="5" class="p-4 text-center text-gray-500 dark:text-gray-400">
+                                No subjects found.
                             </td>
                         </tr>
                     </tbody>
+
                 </table>
             </div>
         </div>

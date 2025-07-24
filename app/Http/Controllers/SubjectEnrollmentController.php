@@ -6,7 +6,9 @@ use App\Models\AcademicPeriod;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class SubjectEnrollmentController extends Controller
 {
@@ -52,53 +54,98 @@ class SubjectEnrollmentController extends Controller
 
     public function enroll(Request $request, Subject $subject)
     {
+        try {
+            $student = $request->user()->student;
+
+            $isInProgram = $student->program
+                ->subjects()
+                ->where('subjects.id', $subject->id)
+                ->exists();
+
+            if (!$isInProgram) {
+                return response()->json(['error' => 'This subject is not part of your program.'], 403);
+            }
+
+            $missing = $subject->prerequisites->filter(function ($prereq) use ($student) {
+                return !SubjectEnrollment::where('student_id', $student->id)
+                    ->where('subject_id', $prereq->id)
+                    ->where('status', 'approved')
+                    ->exists();
+            });
+
+            if ($missing->isNotEmpty()) {
+                return response()->json(['error' => 'You have not passed the required prerequisites.'], 422);
+            }
+
+            $already = SubjectEnrollment::where('student_id', $student->id)
+                ->where('subject_id', $subject->id)
+                ->exists();
+
+            if ($already) {
+                return response()->json(['error' => 'You have already enrolled in or completed this subject.'], 422);
+            }
+
+            $period = AcademicPeriod::where('is_active', true)->first();
+
+            if (!$period) {
+                return response()->json(['error' => 'There is no active academic period.'], 500);
+            }
+
+            // ✅ Verificación correcta de fecha límite
+            if ($period->enrollment_deadline) {
+                $deadline = Carbon::parse($period->enrollment_deadline)->endOfDay();
+                if (now()->greaterThan($deadline)) {
+                    return response()->json(['error' => 'The enrollment deadline has passed.'], 403);
+                }
+            }
+
+
+            SubjectEnrollment::create([
+                'student_id' => $student->id,
+                'subject_id' => $subject->id,
+                'academic_period_id' => $period->id,
+                'status' => 'approved', // o "enrolled" si deseas una etapa previa
+            ]);
+
+            return response()->json(['message' => 'Enrollment successful.']);
+        } catch (\Exception $e) {
+            Log::error('Enrollment error', ['exception' => $e]);
+            return response()->json([
+                'error' => 'An unexpected error occurred: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function unenroll(Request $request, Subject $subject)
+    {
         $student = $request->user()->student;
 
-        // Check if the subject is part of the student's program
-        $isInProgram = $student->program
-            ->subjects()
-            ->where('subjects.id', $subject->id)
-            ->exists();
+        $activePeriod = AcademicPeriod::where('is_active', true)->first();
 
-        if (! $isInProgram) {
-            return response()->json(['error' => 'This subject is not part of your program.'], 403);
-        }
-
-        // Check prerequisites
-        $missing = $subject->prerequisites->filter(function ($prereq) use ($student) {
-            return !SubjectEnrollment::where('student_id', $student->id)
-                ->where('subject_id', $prereq->id)
-                ->where('status', 'approved')
-                ->exists();
-        });
-
-        if ($missing->isNotEmpty()) {
-            return response()->json(['error' => 'You have not passed the required prerequisites.'], 422);
-        }
-
-        // Prevent duplicate enrollment
-        $already = SubjectEnrollment::where('student_id', $student->id)
-            ->where('subject_id', $subject->id)
-            ->exists();
-
-        if ($already) {
-            return response()->json(['error' => 'You have already enrolled in or completed this subject.'], 422);
-        }
-
-        // Get the active academic period
-        $period = AcademicPeriod::where('is_active', true)->first();
-
-        if (! $period) {
+        if (! $activePeriod) {
             return response()->json(['error' => 'There is no active academic period.'], 500);
         }
 
-        SubjectEnrollment::create([
-            'student_id' => $student->id,
-            'subject_id' => $subject->id,
-            'academic_period_id' => $period->id,
-            'status' => 'approved', // Change to 'enrolled' or 'pending' if applicable
-        ]);
+        // ✅ Verificación robusta de la fecha límite de cancelación
+        if (
+            $activePeriod->unenrollment_deadline &&
+            now()->greaterThan(Carbon::parse($activePeriod->unenrollment_deadline)->endOfDay())
+        ) {
+            return response()->json(['error' => 'The unenrollment deadline has passed.'], 403);
+        }
 
-        return response()->json(['message' => 'Enrollment successful.']);
+        $enrollment = SubjectEnrollment::where('student_id', $student->id)
+            ->where('subject_id', $subject->id)
+            ->where('academic_period_id', $activePeriod->id)
+            ->first();
+
+        if (! $enrollment) {
+            return response()->json(['error' => 'You are not enrolled in this subject.'], 404);
+        }
+
+        $enrollment->delete();
+
+        return response()->json(['message' => 'Unenrollment successful.']);
     }
 }

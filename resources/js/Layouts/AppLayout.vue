@@ -1,16 +1,20 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import ApplicationMark from "@/Components/ApplicationMark.vue";
+import { useAlert } from "@/Components/Composables/useAlert";
 
+// Acceso a la página actual de Inertia
 const page = usePage();
+
+// Props globales
 const darkMode = ref(false);
 const showingMenu = ref(false);
 const userDropdownOpen = ref(null);
 const dropdownOpen = ref(null);
 
 const userRole = computed(() => {
-    return page.props.auth.user?.roles?.[0].name || null;
+    return page.props.auth?.user?.roles?.[0]?.name || null;
 });
 
 const logout = () => {
@@ -75,6 +79,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
+
 <template>
     <div>
 
@@ -98,7 +103,7 @@ onBeforeUnmount(() => {
                             class="absolute right-0 top-12 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600 min-w-[12rem]">
                             <div class="px-4 py-3">
                                 <span class="block text-sm text-gray-900 dark:text-white">{{ page.props.auth.user.name
-                                    }}</span>
+                                }}</span>
                                 <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{
                                     page.props.auth.user.email }}</span>
                             </div>
@@ -225,7 +230,11 @@ onBeforeUnmount(() => {
 
                         <template v-if="userRole === 'student'">
                             <li>
-                                <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
+                                <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
+                                Enrollment</Link>
                             </li>
                             <li>
                                 <Link :href="route('professors.index')" class="nav-link">Professors</Link>
@@ -234,6 +243,7 @@ onBeforeUnmount(() => {
                                 <Link :href="route('profile.show')" class="nav-link">Profile</Link>
                             </li>
                         </template>
+
                     </ul>
                 </div>
 

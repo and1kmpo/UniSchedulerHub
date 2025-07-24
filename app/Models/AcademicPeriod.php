@@ -13,7 +13,16 @@ class AcademicPeriod extends Model
         'name',
         'start_date',
         'end_date',
+        'enrollment_deadline',
+        'unenrollment_deadline',
         'is_active',
+    ];
+
+    protected $dates = [
+        'start_date',
+        'end_date',
+        'enrollment_deadline',
+        'unenrollment_deadline',
     ];
 
     public function enrollments()

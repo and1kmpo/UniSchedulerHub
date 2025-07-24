@@ -1,5 +1,5 @@
 <template>
-    <Layout title="Class Groups">
+    <AppLayout title="Class Groups">
         <template #header>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Class Groups</h1>
@@ -92,12 +92,12 @@
             </div>
         </div>
 
-    </Layout>
+    </AppLayout>
 </template>
 
 <script setup>
 import { Link, router } from "@inertiajs/vue3";
-import Layout from "@/Layouts/AppLayout.vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
 import Pagination from "@/Components/Pagination.vue";
 
 defineProps({

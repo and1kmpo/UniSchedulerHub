@@ -1,5 +1,5 @@
 <script setup>
-import Layout from "@/Layouts/AppLayout.vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
 import Form from "./Form.vue";
 
 defineProps({
@@ -9,10 +9,14 @@ defineProps({
 </script>
 
 <template>
-    <Layout title="Create Class Group">
+    <AppLayout title="Create Class Group">
+        <template #header>
+            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
+                Create class group
+            </h1>
+        </template>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">Create Class Group</h1>
             <Form :subjects="subjects" :professors="professors" />
         </div>
-    </Layout>
+    </AppLayout>
 </template>
