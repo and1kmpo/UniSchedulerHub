@@ -80,11 +80,16 @@ class ClassGroup extends Model
 
     public function professor()
     {
-        return $this->belongsTo(User::class, 'professor_id');
+        return $this->belongsTo(Professor::class, 'professor_id');
     }
 
     public function schedules()
     {
         return $this->hasMany(ClassSchedule::class);
+    }
+
+    public function subjectEnrollments()
+    {
+        return $this->hasMany(SubjectEnrollment::class);
     }
 }

@@ -88,15 +88,18 @@ const submit = async () => {
     }
 };
 
+const toDateInputFormat = (date) => {
+    return date ? new Date(date).toISOString().slice(0, 10) : ''
+}
 
 const edit = (period) => {
     form.value = {
         name: period.name,
-        start_date: period.start_date,
-        end_date: period.end_date,
+        start_date: toDateInputFormat(period.start_date),
+        end_date: toDateInputFormat(period.end_date),
         is_active: period.is_active,
-        enrollment_deadline: period.enrollment_deadline,
-        unenrollment_deadline: period.unenrollment_deadline
+        enrollment_deadline: toDateInputFormat(period.enrollment_deadline),
+        unenrollment_deadline: toDateInputFormat(period.unenrollment_deadline),
     }
     editingId.value = period.id
 }
@@ -144,10 +147,13 @@ const resetForm = () => {
         name: '',
         start_date: '',
         end_date: '',
+        enrollment_deadline: '',
+        unenrollment_deadline: '',
         is_active: false,
     }
     editingId.value = null
 }
+
 
 const reload = () => {
     router.reload({

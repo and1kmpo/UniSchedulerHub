@@ -10,7 +10,7 @@ class SubjectEnrollment extends Model
         'student_id',
         'subject_id',
         'academic_period_id',
-        'status',
+        'status_id',
     ];
 
     public function student()
@@ -26,5 +26,15 @@ class SubjectEnrollment extends Model
     public function academicPeriod()
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(SubjectEnrollmentStatus::class, 'status_id');
+    }
+
+    public function classGroup()
+    {
+        return $this->belongsTo(ClassGroup::class);
     }
 }

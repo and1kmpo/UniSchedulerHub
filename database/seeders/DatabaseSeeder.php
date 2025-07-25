@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolSeeder::class,
-            GradeStatusSeeder::class
+            GradeStatusSeeder::class,
+            SubjectEnrollmentStatusSeeder::class
         ]);
 
         // Crear un usuario de tipo admin y asignarle el rol

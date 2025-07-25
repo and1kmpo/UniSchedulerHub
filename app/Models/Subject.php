@@ -67,4 +67,9 @@ class Subject extends Model
     {
         return $this->belongsToMany(Subject::class, 'subject_prerequisite', 'prerequisite_id', 'subject_id');
     }
+
+    public function classGroups()
+    {
+        return $this->hasMany(ClassGroup::class);
+    }
 }
