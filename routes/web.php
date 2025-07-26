@@ -100,6 +100,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/student/subject-enrollment', [SubjectEnrollmentController::class, 'index'])->name('student.subject-enrollment.index');
         Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
         Route::post('/student/subject-unenrollment/{subject}', [SubjectEnrollmentController::class, 'unenroll'])->name('student.subject-enrollment.unenroll');
+        Route::get('student/subject-enrollment/{subject}/groups', [SubjectEnrollmentController::class, 'groups'])
+            ->name('student.subject-enrollment.groups');
     });
 
 

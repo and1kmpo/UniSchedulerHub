@@ -6,9 +6,11 @@ use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\ClassSchedule;
 use App\Models\Program;
+use App\Models\Student;
 use App\Models\Subject;
-use App\Models\Schedule;
 use App\Models\Professor;
+use App\Models\SubjectEnrollment;
+use App\Models\SubjectEnrollmentStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -22,27 +24,53 @@ class DemoSubjectGroupsSeeder extends Seeder
         $program = Program::where('name', 'Civil Engineering')->first();
         if (!$program) return;
 
-        $professor = Professor::first(); // Usa el primero que exista
+        $professor = Professor::first(); // Usa el primero disponible
         if (!$professor) return;
 
+        $student = Student::first(); // Para simular inscripción
+        $statusId = SubjectEnrollmentStatus::where('code', 'enrolled')->value('id');
+
         foreach ($program->subjects as $subject) {
-            // Crea un grupo por asignatura
+            // Evita duplicados en el mismo período
+            if ($subject->classGroups()->where('academic_period_id', $period->id)->exists()) {
+                continue;
+            }
+
+            // Intenta obtener el semestre desde el pivot (si lo tienes)
+            $semester = $subject->pivot->semester ?? rand(1, 8);
+
             $group = ClassGroup::create([
                 'subject_id' => $subject->id,
                 'professor_id' => $professor->id,
                 'academic_period_id' => $period->id,
                 'code' => 'A' . strtoupper(Str::random(3)),
+                'group_code' => 'A',
                 'name' => 'Grupo A',
+                'semester' => $semester,
+                'modality' => 'Presential',
+                'shift' => 'Day',
                 'capacity' => 30,
             ]);
 
-            // Añade 2 horarios aleatorios
+            // Agrega horarios al grupo
             foreach ($this->generateSchedules() as $sched) {
                 ClassSchedule::create([
                     'class_group_id' => $group->id,
                     'day' => $sched['day'],
                     'start_time' => $sched['start_time'],
                     'end_time' => $sched['end_time'],
+                ]);
+            }
+
+            // Opcional: crear una inscripción ficticia del primer estudiante
+            if ($student && $statusId) {
+                SubjectEnrollment::firstOrCreate([
+                    'student_id' => $student->id,
+                    'subject_id' => $subject->id,
+                    'academic_period_id' => $period->id,
+                ], [
+                    'class_group_id' => $group->id,
+                    'status_id' => $statusId,
                 ]);
             }
         }

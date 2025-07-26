@@ -19,13 +19,11 @@ class SubjectEnrollmentController extends Controller
         $student = $request->user()->student;
         $activePeriod = AcademicPeriod::where('is_active', true)->first();
 
-        // Traer todos los enrollments del estudiante en el período activo con relaciones
         $enrollments = SubjectEnrollment::with(['status', 'classGroup.schedules'])
             ->where('student_id', $student->id)
             ->where('academic_period_id', optional($activePeriod)->id)
             ->get();
 
-        // Horarios actuales para validación de traslapes en el frontend
         $currentSchedules = $enrollments->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules ?? [])
             ->map(fn($schedule) => [
                 'day' => $schedule->day,
@@ -34,12 +32,10 @@ class SubjectEnrollmentController extends Controller
             ])
             ->values();
 
-        // IDs de asignaturas aprobadas (para validar prerrequisitos)
         $approvedSubjectIds = SubjectEnrollment::where('student_id', $student->id)
             ->whereHas('status', fn($q) => $q->where('code', 'approved'))
             ->pluck('subject_id');
 
-        // Obtener asignaturas del programa con prerrequisitos y grupos activos
         $subjects = $student->program->subjects()
             ->with([
                 'prerequisites',
@@ -55,6 +51,7 @@ class SubjectEnrollmentController extends Controller
                 );
 
                 $enrollment = $enrollments->firstWhere('subject_id', $subject->id);
+                $currentGroupId = optional($enrollment)->class_group_id;
 
                 return [
                     'id' => $subject->id,
@@ -63,14 +60,15 @@ class SubjectEnrollmentController extends Controller
                     'semester' => $subject->pivot->semester,
                     'hasAllPrerequisites' => $hasAllPrerequisites,
                     'alreadyEnrolled' => $enrollment !== null,
-                    'status' => $enrollment?->status?->label,
+                    'status' => $enrollment?->status?->code,
                     'statusColor' => $enrollment?->status?->color,
+                    'currentGroupId' => $currentGroupId,
                     'schedules' => $enrollment?->classGroup?->schedules->map(fn($s) => [
                         'day' => $s->day,
                         'start_time' => $s->start_time,
                         'end_time' => $s->end_time,
                     ])->values(),
-                    'groups' => $subject->classGroups->map(function ($group) {
+                    'groups' => $subject->classGroups->map(function ($group) use ($currentGroupId) {
                         return [
                             'id' => $group->id,
                             'code' => $group->code,
@@ -83,6 +81,7 @@ class SubjectEnrollmentController extends Controller
                                 'end_time' => $s->end_time,
                             ]),
                             'professor' => optional($group->professor?->user)->name,
+                            'isCurrent' => $group->id === $currentGroupId,
                         ];
                     }),
                 ];
@@ -90,11 +89,12 @@ class SubjectEnrollmentController extends Controller
 
         return Inertia::render('Students/SubjectEnrollment', [
             'subjects' => $subjects,
-            'enrollmentDeadline' => optional($activePeriod)->enrollment_deadline,
-            'unenrollmentDeadline' => optional($activePeriod)->unenrollment_deadline,
+            'enrollmentDeadline' => $activePeriod->enrollment_deadline,
+            'unenrollmentDeadline' => $activePeriod->unenrollment_deadline,
             'currentSchedules' => $currentSchedules,
         ]);
     }
+
 
     public function enroll(Request $request, Subject $subject)
     {
@@ -118,11 +118,6 @@ class SubjectEnrollmentController extends Controller
                 return response()->json(['error' => 'You have not passed the required prerequisites.'], 422);
             }
 
-            // Evitar duplicados
-            if (SubjectEnrollment::where('student_id', $student->id)->where('subject_id', $subject->id)->exists()) {
-                return response()->json(['error' => 'You have already enrolled in or completed this subject.'], 422);
-            }
-
             $period = AcademicPeriod::where('is_active', true)->first();
 
             if (!$period) {
@@ -134,8 +129,13 @@ class SubjectEnrollmentController extends Controller
                 return response()->json(['error' => 'The enrollment deadline has passed.'], 403);
             }
 
-            $groupId = $request->input('class_group_id');
+            // Validar group enviado
+            $groupId = $request->get('class_group_id');
+            if (!$groupId) {
+                return response()->json(['error' => 'No group selected.'], 422);
+            }
 
+            // Buscar el grupo y asegurarse que pertenece a esta materia y período
             $classGroup = $subject->classGroups()
                 ->where('id', $groupId)
                 ->where('academic_period_id', $period->id)
@@ -146,32 +146,40 @@ class SubjectEnrollmentController extends Controller
                 return response()->json(['error' => 'Selected group is not valid for this subject or period.'], 422);
             }
 
+            // Validar capacidad
             if ($classGroup->subjectEnrollments()->count() >= $classGroup->capacity) {
                 return response()->json(['error' => 'This group is already full.'], 422);
             }
 
+            // Buscar si ya existe inscripción previa para esta asignatura
+            $existing = SubjectEnrollment::where('student_id', $student->id)
+                ->where('subject_id', $subject->id)
+                ->where('academic_period_id', $period->id)
+                ->first();
 
-
-            if (!$classGroup) {
-                return response()->json(['error' => 'No group available for this subject in the active period'], 404);
+            // Si ya la aprobó o revalidó, no puede inscribirse ni cambiar grupo
+            if ($existing && in_array($existing->status->code, ['approved', 'revalidation'])) {
+                return response()->json(['error' => 'You have already completed this subject.'], 422);
             }
 
-            $newSchedules = $classGroup->schedules;
-
-            // Obtener horarios ya inscritos del estudiante
+            // Validar traslapes de horario
             $existingSchedules = SubjectEnrollment::where('student_id', $student->id)
                 ->where('academic_period_id', $period->id)
                 ->with('classGroup.schedules')
                 ->get()
-                ->flatMap(fn($enrollment) => $enrollment->classGroup->schedules);
+                ->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules ?? []);
 
-            // Validar traslapes
-            foreach ($newSchedules as $new) {
-                foreach ($existingSchedules as $existing) {
+            foreach ($classGroup->schedules as $new) {
+                foreach ($existingSchedules as $existingSchedule) {
+                    // Si el horario a comparar es del mismo grupo actual, lo ignoramos
+                    if ($existing && $existing->class_group_id === $classGroup->id) {
+                        continue;
+                    }
+
                     if (
-                        $new->day === $existing->day &&
-                        $new->start_time < $existing->end_time &&
-                        $new->end_time > $existing->start_time
+                        $new->day === $existingSchedule->day &&
+                        $new->start_time < $existingSchedule->end_time &&
+                        $new->end_time > $existingSchedule->start_time
                     ) {
                         return response()->json([
                             'error' => 'Schedule conflict detected with another enrolled subject.'
@@ -180,21 +188,41 @@ class SubjectEnrollmentController extends Controller
                 }
             }
 
-            $statusId = SubjectEnrollmentStatus::where('code', 'enrolled')->value('id');
+            $status = SubjectEnrollmentStatus::where('code', 'enrolled')->first();
+            if (!$status) {
+                return response()->json(['error' => 'Enrollment status is misconfigured.'], 500);
+            }
 
+            // Si ya está inscrito, actualizar el grupo
+            if ($existing) {
+                $existing->class_group_id = $classGroup->id;
+                $existing->save();
+
+                return response()->json([
+                    'message' => 'Group changed successfully.',
+                    'status' => [
+                        'code' => $existing->status->code,
+                        'color' => $existing->status->color,
+                        'description' => $existing->status->description,
+                    ]
+                ]);
+            }
+
+            // Si no existe, crear nueva inscripción
             SubjectEnrollment::create([
                 'student_id' => $student->id,
                 'subject_id' => $subject->id,
                 'academic_period_id' => $period->id,
                 'class_group_id' => $classGroup->id,
-                'status_id' => $statusId,
+                'status_id' => $status->id,
             ]);
 
             return response()->json([
                 'message' => 'Enrollment successful.',
                 'status' => [
-                    'label' => $statusId->label,
-                    'color' => $statusId->color
+                    'code' => $status->code,
+                    'color' => $status->color,
+                    'description' => $status->description,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -202,6 +230,8 @@ class SubjectEnrollmentController extends Controller
             return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
         }
     }
+
+
 
     public function unenroll(Request $request, Subject $subject)
     {
@@ -231,5 +261,31 @@ class SubjectEnrollmentController extends Controller
         $enrollment->delete();
 
         return response()->json(['message' => 'Unenrollment successful.']);
+    }
+
+    public function groups(Subject $subject)
+    {
+        $groups = $subject->classGroups()
+            ->whereHas('schedules')
+            ->withCount('subjectEnrollments')
+            ->with('schedules', 'professor.user')
+            ->get()
+            ->map(function ($group) {
+                return [
+                    'id' => $group->id,
+                    'code' => $group->code,
+                    'name' => $group->name,
+                    'capacity' => $group->capacity,
+                    'enrolled' => $group->subject_enrollments_count,
+                    'schedules' => $group->schedules->map(fn($s) => [
+                        'day' => strtolower($s->day),
+                        'start_time' => $s->start_time,
+                        'end_time' => $s->end_time,
+                    ]),
+                    'professor' => optional($group->professor?->user)->name,
+                ];
+            });
+
+        return response()->json(['groups' => $groups]);
     }
 }

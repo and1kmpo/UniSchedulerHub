@@ -10,7 +10,15 @@ class SubjectEnrollment extends Model
         'student_id',
         'subject_id',
         'academic_period_id',
+        'class_group_id',
         'status_id',
+    ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'enrollment_deadline' => 'datetime',
+        'unenrollment_deadline' => 'datetime',
     ];
 
     public function student()
