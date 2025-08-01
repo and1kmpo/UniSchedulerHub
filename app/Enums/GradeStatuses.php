@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum GradeStatus: string
+enum GradeStatuses: string
 {
     case PASSED = 'passed';
     case FAILED = 'failed';

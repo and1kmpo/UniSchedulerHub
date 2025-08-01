@@ -1,44 +1,51 @@
-<script>
-export default {
-    name: "ProgramsCreated",
-};
-</script>
-
+<!-- resources/js/Pages/Programs/Create.vue -->
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { useForm } from "@inertiajs/vue3";
-import ProgramForm from "@/Components/Programs/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
+import { router } from "@inertiajs/vue3";
 
 const form = useForm({
     name: "",
     description: "",
 });
 
-const handleCancel = () => {
-    Inertia.visit(route("programs.index"));
+const submit = () => {
+    form.post(route("programs.store"), {
+        onSuccess: () => {
+            router.visit(route("programs.index"));
+        },
+    });
 };
 </script>
 
 <template>
-    <AppLayout title="Create program">
+    <AppLayout title="Create Program">
         <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Create new program
-            </h1>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Create Program</h2>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <ProgramForm :form="form" @submit="form.post(route('programs.store'))"
-                                :handleCancel="handleCancel" />
-                        </div>
-                    </div>
+        <div class="py-10 max-w-2xl mx-auto">
+            <form @submit.prevent="submit" class="bg-white p-6 rounded-lg shadow space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <input v-model="form.name" type="text" class="mt-1 block w-full rounded border-gray-300" />
+                    <span class="text-sm text-red-600" v-if="form.errors.name">{{ form.errors.name }}</span>
                 </div>
-            </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea v-model="form.description" class="mt-1 block w-full rounded border-gray-300"></textarea>
+                    <span class="text-sm text-red-600" v-if="form.errors.description">{{ form.errors.description
+                        }}</span>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" @click="$inertia.visit(route('programs.index'))"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded">Create</button>
+                </div>
+            </form>
         </div>
     </AppLayout>
 </template>

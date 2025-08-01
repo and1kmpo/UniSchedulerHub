@@ -140,7 +140,8 @@ const deleteSubject = (id, name) => {
                             </tbody>
                         </table>
                         <div class="flex items-center justify-center m-4">
-                            <Link href="#" v-if="subjects.current_page > 1" :href="subjects.prev_page_url"
+
+                            <Link v-if="subjects.current_page > 1" :href="subjects.prev_page_url"
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
                             <i class="fa-solid fa-angles-left"></i>
                             </Link>
@@ -155,6 +156,7 @@ const deleteSubject = (id, name) => {
                                 class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
                             <i class="fa-solid fa-angles-right"></i>
                             </Link>
+
                         </div>
                     </div>
                 </div>

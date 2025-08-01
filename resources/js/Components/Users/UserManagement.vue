@@ -45,7 +45,7 @@
                         <td class="px-4 py-2 text-center">
                             <span v-for="role in user.roles" :key="role.id">{{
                                 role.name
-                                }}</span>
+                            }}</span>
                         </td>
                         <td class="px-4 py-2 text-center">
                             <label class="inline-flex items-center me-5 cursor-pointer">
@@ -220,7 +220,7 @@ export default {
             axios
                 .get("/users", { params: { search: this.searchQuery } })
                 .then((res) => {
-                    this.localUsers = res.data;
+                    this.localUsers = res.data.users;
                 })
                 .catch((error) => {
                     console.error("Error fetching users:", error);
@@ -236,7 +236,7 @@ export default {
             axios
                 .get(url, { params: { search: this.searchQuery } })
                 .then((res) => {
-                    this.localUsers = res.data;
+                    this.localUsers = res.data.users;
                 })
                 .catch((error) => {
                     console.error("Error fetching users:", error);

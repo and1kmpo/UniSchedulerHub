@@ -212,6 +212,13 @@ onBeforeUnmount(() => {
                                 <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
                             </li>
                             <li>
+                            <li>
+                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group Enrollments
+                                </Link>
+                            </li>
+
+                            </li>
+                            <li>
                                 <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
                             </li>
                         </template>
@@ -222,6 +229,10 @@ onBeforeUnmount(() => {
                             </li>
                             <li>
                                 <Link :href="route('students.index')" class="nav-link">Students</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
+                                Enrollments</Link>
                             </li>
                             <li>
                                 <Link :href="route('profile.show')" class="nav-link">Profile</Link>
@@ -334,6 +345,12 @@ onBeforeUnmount(() => {
                                     <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
                                 </li>
                                 <li>
+                                <li>
+                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
+                                    Enrollments</Link>
+                                </li>
+                                </li>
+                                <li>
                                     <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods
                                     </Link>
                                 </li>
@@ -345,6 +362,10 @@ onBeforeUnmount(() => {
                                 </li>
                                 <li>
                                     <Link :href="route('students.index')" class="nav-link">Students</Link>
+                                </li>
+                                <li>
+                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
+                                    Enrollments</Link>
                                 </li>
                                 <li>
                                     <Link :href="route('profile.show')" class="nav-link">Profile</Link>

@@ -49,8 +49,9 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
-                                    {{ group.professor.name }}
+                                    {{ group.professor?.user?.name ?? 'No asignado' }}
                                 </td>
+
                                 <td class="px-4 py-3 hidden md:table-cell">
                                     <span class="badge" :class="shiftClass(group.shift)">
                                         {{ group.shift }}
@@ -61,6 +62,7 @@
                                         class="badge bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-white">
                                         {{ group.modality }}
                                     </span>
+
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">

@@ -1,14 +1,13 @@
-<script>
-export default {
-    name: "SubjectsEdit",
-};
-</script>
-
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
 import SubjectForm from "@/Components/Subjects/Form.vue";
 import { Inertia } from "@inertiajs/inertia";
+import { useForm } from "@inertiajs/vue3";
+import { watch } from "vue";
+import axios from 'axios';
+import { router } from '@inertiajs/vue3'; // Si quieres redirigir tras guardar
+import { useAlert } from '@/Components/Composables/useAlert'; // Opcional si ya lo usas
+const { success, error } = useAlert(); // Si tienes alertas definidas
 
 const props = defineProps({
     subject: {
@@ -18,47 +17,54 @@ const props = defineProps({
 });
 
 const form = useForm({
-    name: props.subject.name,
-    description: props.subject.description,
-    credits: props.subject.credits,
-    knowledge_area: props.subject.knowledge_area,
-    elective: props.subject.elective,
+    name: "",
+    description: "",
+    credits: "",
+    knowledge_area: "",
+    elective: "",
 });
+const submitUpdate = async () => {
+    try {
+        await axios.post(`/subjects/${props.subject.id}`, {
+            ...form.data(),
+            _method: 'PUT',
+        });
+
+        success('Subject updated successfully.');
+        router.visit(route('subjects.index')); // Redirige tras guardar
+    } catch (err) {
+        if (err.response?.status === 422) {
+            form.setErrors(err.response.data.errors); // Para mostrar errores de validación
+        } else {
+            error('Failed to update subject.');
+        }
+    }
+};
+watch(
+    () => props.subject,
+    (subject) => {
+        if (subject) {
+            form.name = subject.name ?? "";
+            form.description = subject.description ?? "";
+            form.credits = subject.credits ?? "";
+            form.knowledge_area = subject.knowledge_area ?? "";
+            form.elective = subject.elective ?? "";
+        }
+    },
+    { immediate: true }
+);
 
 const handleCancel = () => {
-    Inertia.visit(route("subjects.index"));
+    router.visit(route("subjects.index")); // ✔️ Correcto para Vue 3
 };
+
 </script>
 
 <template>
-    <AppLayout title="Edit subject">
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Edit subject
-            </h1>
-        </template>
+    <AppLayout title="Edit Subject">
+        <h1 class="text-2xl font-bold mb-4">Edit Subject</h1>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div
-                        class="bg-white overflow-hidden shadow-xl sm:rounded-lg"
-                    >
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <SubjectForm
-                                :updating="true"
-                                :form="form"
-                                @submit="
-                                    form.put(
-                                        route('subjects.update', subject.id)
-                                    )
-                                "
-                                :handleCancel="handleCancel"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <SubjectForm :updating="true" :form="form" :handleCancel="handleCancel" @submit="submitUpdate" />
+
     </AppLayout>
 </template>

@@ -19,8 +19,9 @@ const props = defineProps({
 });
 
 onMounted(() => {
-    console.log("Student data:", props.students);
+    console.log("Props recibidas:", JSON.parse(JSON.stringify(props.students)));
 });
+
 
 const deleteStudent = (id, name) => {
     Swal.fire({

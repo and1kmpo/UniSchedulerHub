@@ -16,11 +16,6 @@ class ClassSchedule extends Model
         return $this->belongsTo(ClassGroup::class, 'class_group_id');
     }
 
-    public function schedules()
-    {
-        return $this->hasMany(ClassSchedule::class);
-    }
-
     public function getRouteKeyName()
     {
         return 'id';

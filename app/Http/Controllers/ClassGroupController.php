@@ -13,8 +13,16 @@ class ClassGroupController extends Controller
 {
     public function index()
     {
+        $classGroups = ClassGroup::with('subject', 'professor.user')->get();
+
+        foreach ($classGroups as $group) {
+            if (!$group->professor || !$group->professor->user) {
+                dd($group->toArray()); // Aquí sabrás qué grupo está mal
+            }
+        }
+
         return Inertia::render('ClassGroups/Index', [
-            'classGroups' => ClassGroup::with('subject', 'professor')->latest()->paginate(10)
+            'classGroups' => ClassGroup::with('subject', 'professor.user')->latest()->paginate(10)
         ]);
     }
 
@@ -56,7 +64,13 @@ class ClassGroupController extends Controller
     public function edit($id)
     {
         $classGroup = ClassGroup::findOrFail($id);
+        $classGroups = ClassGroup::with('subject', 'professor.user')->get();
 
+        foreach ($classGroups as $group) {
+            if (!$group->professor || !$group->professor->user) {
+                dd($group->toArray()); // Aquí sabrás qué grupo está mal
+            }
+        }
         return Inertia::render('ClassGroups/Edit', [
             'classGroup' => $classGroup,
             'subjects' => Subject::all(['id', 'name', 'code']),

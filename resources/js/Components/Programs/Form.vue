@@ -1,83 +1,64 @@
-<script>
-export default {
-    name: "programForm",
-};
-</script>
-
 <script setup>
-import FormSection from "@/Components/FormSection.vue";
-import InputError from "@/Components/InputError.vue";
-import InputLabel from "@/Components/InputLabel.vue";
-import PrimaryButton from "@/Components/PrimaryButton.vue";
-import DangerButton from "@/Components/DangerButton.vue";
-import TextInput from "@/Components/TextInput.vue";
+import { useForm } from '@inertiajs/vue3'
+import { onMounted, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 
-defineProps({
-    form: {
+const props = defineProps({
+    program: {
         type: Object,
-        required: true,
+        default: () => ({
+            name: '',
+            description: ''
+        })
     },
-    updating: {
-        type: Boolean,
-        required: false,
-        default: false,
-    },
-    handleCancel: Function,
-});
+    mode: {
+        type: String,
+        default: 'create', // 'create' o 'edit'
+    }
+})
 
-defineEmits(["submit"]);
+const form = useForm({
+    name: props.program.name,
+    description: props.program.description,
+})
+
+const submit = () => {
+    if (props.mode === 'edit') {
+        router.put(route('programs.update', props.program.id), form)
+    } else {
+        router.post(route('programs.store'), form)
+    }
+}
+
+watch(() => props.program, (newProgram) => {
+    form.name = newProgram.name
+    form.description = newProgram.description
+})
 </script>
 
 <template>
-    <FormSection @submitted="$emit('submit')">
-        <template #title
-            >{{ updating ? "Update program" : "Create new program" }}
-        </template>
+    <form @submit.prevent="submit" class="space-y-6 bg-white p-6 rounded-lg shadow">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" v-model="form.name"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-indigo-300"
+                required />
+            <span class="text-sm text-red-500" v-if="form.errors.name">{{ form.errors.name }}</span>
+        </div>
 
-        <template #description
-            >{{
-                updating
-                    ? "Update the selected program"
-                    : "Create new program from scratch"
-            }}
-        </template>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea v-model="form.description" rows="3"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-indigo-300"
+                required></textarea>
+            <span class="text-sm text-red-500" v-if="form.errors.description">{{ form.errors.description }}</span>
+        </div>
 
-        <template #form>
-            <div class="col-span-6 sm:col-span-6">
-                <InputLabel for="name" value="Name" />
-                <TextInput
-                    for="name"
-                    v-model="form.name"
-                    type="text"
-                    autocomplete="name"
-                    class="mt-1 block w-full"
-                    placeholder="Enter a program name"
-                />
-                <InputError :message="$page.props.errors.name" class="mt-2" />
-                <InputLabel for="name" value="Description" />
-                <TextInput
-                    for="description"
-                    v-model="form.description"
-                    type="text"
-                    autocomplete="description"
-                    class="mt-1 block w-full"
-                    placeholder="Enter program description"
-                />
-                <InputError
-                    :message="$page.props.errors.description"
-                    class="mt-2"
-                />
-            </div>
-        </template>
-        <template #actions>
-            <PrimaryButton
-                class="bg-indigo-700 hover:bg-indigo-600 rounded p-2 px-4 text-white"
-                >{{ updating ? "Update" : "Create" }}</PrimaryButton
-            >
-
-            <DangerButton @click="handleCancel" class="ml-2"
-                >Cancel</DangerButton
-            >
-        </template>
-    </FormSection>
+        <div class="flex justify-end">
+            <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-2 rounded shadow transition">
+                {{ mode === 'edit' ? 'Update' : 'Create' }}
+            </button>
+        </div>
+    </form>
 </template>
