@@ -112,7 +112,7 @@ class ClassGroupController extends Controller
                 'subject_enrollments_count' => $group->subject_enrollments_count,
                 'students'                  => $group->subjectEnrollments->map(fn($e) => [
                     'id'   => $e->student->id,
-                    'code' => $e->student->document,
+                    'document' => $e->student->document,
                     'name' => $e->student->user->name,
                 ]),
             ],

@@ -106,14 +106,14 @@ const removeEnrollment = async (studentId) => {
                         <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                             <tr>
                                 <th class="px-4 py-2">Name</th>
-                                <th class="px-4 py-2 hidden md:table-cell">Code</th>
+                                <th class="px-4 py-2 hidden md:table-cell">Document</th>
                                 <th class="px-4 py-2 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                             <tr v-for="stu in enrolled" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td class="px-4 py-2">{{ stu.name }}</td>
-                                <td class="px-4 py-2 hidden md:table-cell">{{ stu.code }}</td>
+                                <td class="px-4 py-2 hidden md:table-cell">{{ stu.document }}</td>
                                 <td class="px-4 py-2 text-center">
                                     <button @click="removeEnrollment(stu.id)"
                                         class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
@@ -140,7 +140,7 @@ const removeEnrollment = async (studentId) => {
                     <select v-model="selectedStudentId" class="input">
                         <option disabled value="">Select a student…</option>
                         <option v-for="stu in available" :key="stu.id" :value="stu.id">
-                            {{ stu.name }} ({{ stu.code }})
+                            {{ stu.name }} ({{ stu.document }})
                         </option>
                     </select>
                     <button :disabled="!selectedStudentId || enrolling" @click="enrollStudent"

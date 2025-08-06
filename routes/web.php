@@ -58,6 +58,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('class-groups.schedules', ClassScheduleController::class)->names('class-schedules');
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
         Route::post('/class-groups/{classGroup}/enroll', [GroupEnrollmentController::class, 'store'])->name('class-groups.enroll');
+        Route::delete('/class-groups/{classGroup}/unenroll/{stduent}', [GroupEnrollmentController::class, 'destroy'])->name('class-groups.unenroll');
         Route::get('/class-groups/{id}', [ClassGroupController::class, 'show'])->name('class-groups.show');
 
         Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');

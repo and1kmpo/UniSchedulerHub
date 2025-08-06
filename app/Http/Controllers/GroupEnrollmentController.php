@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\ClassGroup;
 use App\Models\SubjectEnrollment;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class GroupEnrollmentController extends Controller
@@ -19,7 +20,7 @@ class GroupEnrollmentController extends Controller
 
     public function show(ClassGroup $classGroup)
     {
-        $group = $classGroup->load(['subject', 'schedules', 'professor']);
+        $group = $classGroup->load(['subject', 'schedules', 'professor'])->loadCount('subjectEnrollments');
 
         $enrollments = $classGroup->subjectEnrollments()
             ->with(['student', 'status'])
@@ -44,6 +45,7 @@ class GroupEnrollmentController extends Controller
                     'start_time' => $s->start_time,
                     'end_time' => $s->end_time,
                 ]),
+                'subject_enrollments_count' => $group->subject_enrollments_count
             ],
             'enrollments' => $enrollments
         ]);
@@ -82,5 +84,31 @@ class GroupEnrollmentController extends Controller
         ]);
 
         return response()->json(['message' => 'Student enrolled successfully']);
+    }
+
+    /* Remove a student's enrollment from a group  */
+    public function destroy($classGroupId, $studentId)
+    {
+        try {
+            // Buscar la inscripción
+            $enrollment = SubjectEnrollment::where('class_group_id', $classGroupId)
+                ->where('student_id', $studentId)
+                ->firstOrFail();
+
+            $enrollment->delete();
+
+            return response()->json([
+                'message' => 'Enrollment removed successfully.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Enrollment not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error removing enrollment', ['exception' => $e]);
+            return response()->json([
+                'error' => 'Could not remove enrollment.',
+            ], 500);
+        }
     }
 }

@@ -1,5 +1,5 @@
 <template>
-    <AppLayout :title="`Manage Enrollments — ${classGroup.code}`">
+    <AppLayout :title="`Manage Enrollments — ${group.code}`">
         <template #header>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 Manage Enrollments
@@ -11,14 +11,14 @@
             <div class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded shadow">
                 <h2 class="text-xl font-semibold mb-4">Group Info</h2>
                 <ul class="space-y-2 text-gray-700 dark:text-gray-300">
-                    <li><strong>Code:</strong> {{ classGroup.code }}</li>
-                    <li><strong>Subject:</strong> {{ classGroup.subject.name }}</li>
-                    <li><strong>Professor:</strong> {{ classGroup.professor.user.name }}</li>
-                    <li><strong>Modality:</strong> {{ classGroup.modality }}</li>
-                    <li><strong>Shift:</strong> {{ classGroup.shift }}</li>
+                    <li><strong>Code:</strong> {{ group.code }}</li>
+                    <li><strong>Subject:</strong> {{ group.subject }}</li>
+                    <li><strong>Professor:</strong> {{ group.professor }}</li>
+                    <li><strong>Modality:</strong> {{ group.modality }}</li>
+                    <li><strong>Shift:</strong> {{ group.shift }}</li>
                     <li>
                         <strong>Capacity:</strong>
-                        {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity }}
+                        {{ group.subject_enrollments_count }} / {{ group.capacity }}
                     </li>
                 </ul>
             </div>
@@ -30,14 +30,14 @@
                     <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                         <tr>
                             <th class="px-4 py-2">Name</th>
-                            <th class="px-4 py-2 hidden md:table-cell">Code</th>
+                            <th class="px-4 py-2 hidden md:table-cell">Document</th>
                             <th class="px-4 py-2 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="stu in enrolled" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-2">{{ stu.name }}</td>
-                            <td class="px-4 py-2 hidden md:table-cell">{{ stu.code }}</td>
+                        <tr v-for="stu in enrollments" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-2">{{ stu.student_name }}</td>
+                            <td class="px-4 py-2 hidden md:table-cell">{{ stu.document }}</td>
                             <td class="px-4 py-2 text-center">
                                 <button @click="removeEnrollment(stu.id)"
                                     class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
@@ -46,7 +46,7 @@
                                 </button>
                             </td>
                         </tr>
-                        <tr v-if="enrolled.length === 0">
+                        <tr v-if="enrollments.length === 0">
                             <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
                                 No students enrolled yet.
                             </td>
@@ -57,12 +57,12 @@
 
             <!-- ─── FORM INSCRIPCIÓN ─── -->
             <div class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4">Enroll New Student</h2>
-
+                <h2 class="text-xl font-semibold mb-4">Enroll New Student 1</h2>
                 <div class="flex flex-col md:flex-row gap-4">
-                    <select v-model="selectedStudentId" class="flex-1 input">
+                    <select v-model="selectedStudentId" class="input">
                         <option disabled value="">Select a student…</option>
-                        <option v-for="stu in available" :key="stu.id" :value="stu.id">{{ stu.name }} ({{ stu.code }})
+                        <option v-for="s in available" :key="s.id" :value="s.id">
+                            {{ s.name }} ({{ s.document }})
                         </option>
                     </select>
                     <button :disabled="!selectedStudentId || enrolling" @click="enrollStudent" class="btn-primary">
@@ -76,71 +76,65 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useAlert } from '@/Components/Composables/useAlert'
+import { computed, ref } from 'vue'
+import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import { useAlert } from '@/Components/Composables/useAlert'
 
 const { toastSuccess, toastError, confirm } = useAlert()
 
-// Recibimos por props:
-// classGroup: { id, code, subject, professor:{ user }, modality, shift, capacity, subject_enrollments_count, students:[{id,code,name}] }
-// allStudents: [{id,code,name},...]
+// Props enviado por el servidor en show()
 const props = defineProps({
     classGroup: Object,
-    allStudents: Array
+    allStudents: Array,
+    enrollments: Array,
 })
 
-const enrolling = ref(false)
+// Refs locales
+const group = ref({ ...props.classGroup })
+const enrollments = ref([...props.enrollments])
 const selectedStudentId = ref(null)
+const enrolling = ref(false)
 
-// reactivo de inscritos
-const enrolled = ref([...props.classGroup.students])
+console.log('🚀 initial enrollments prop:', props.enrollments)
 
-// lista de disponibles = todos menos los ya inscritos
+// Lista de estudiantes disponibles (no inscritos aún)
 const available = computed(() =>
     props.allStudents.filter(s =>
-        !enrolled.value.find(e => e.id === s.id)
+        !enrollments.value.some(e => e.id === s.id)
     )
 )
 
-// Inscribir un estudiante
-const enrollStudent = async () => {
+async function enrollStudent() {
     if (!selectedStudentId.value) return
     enrolling.value = true
+
     try {
-        const { data } = await axios.post(
-            route('class-groups.enroll', props.classGroup.id),
-            { student_id: selectedStudentId.value }
-        )
-        // actualizar lista local
-        const stu = props.allStudents.find(s => s.id === selectedStudentId.value)
-        enrolled.value.push(stu)
-        toastSuccess(data.message || 'Student enrolled')
-        selectedStudentId.value = null
+        await axios.post(route('class-groups.enroll', group.value.id), {
+            student_id: selectedStudentId.value
+        })
+        toastSuccess('Student enrolled successfully')
+        // Recargar la página Inertia para obtener nuevas props
+        Inertia.reload({ preserveState: true, preserveScroll: true })
     } catch (e) {
-        toastError(e.response?.data?.error || 'Enrollment failed')
+        toastError(e.response?.data?.message || 'Enrollment failed')
     } finally {
         enrolling.value = false
+        selectedStudentId.value = null
     }
 }
 
-// Eliminar inscripción
-const removeEnrollment = async (studentId) => {
-    const ok = await confirm(
-        'Are you sure you want to remove this student?',
-        'Confirm removal'
-    )
+async function removeEnrollment(studentId) {
+    const ok = await confirm('Are you sure you want to remove this student?', 'Confirm removal')
     if (!ok) return
 
     try {
-        await axios.delete(
-            route('class-groups.unenroll', [props.classGroup.id, studentId])
-        )
-        enrolled.value = enrolled.value.filter(s => s.id !== studentId)
-        toastSuccess('Student removed')
+        await axios.delete(route('class-groups.unenroll', [group.value.id, studentId]))
+        toastSuccess('Student removed successfully')
+        Inertia.reload({ preserveState: true, preserveScroll: true })
     } catch (e) {
-        toastError(e.response?.data?.error || 'Could not remove')
+        toastError(e.response?.data?.error || 'Could not remove enrollment')
     }
 }
 </script>
