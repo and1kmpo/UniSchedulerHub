@@ -15,6 +15,7 @@ class ClassGroup extends Model
         'semester',
         'name',
         'group_code',
+        'academic_period_id',
         'capacity',
         'modality',
         'shift',
@@ -91,5 +92,10 @@ class ClassGroup extends Model
     public function subjectEnrollments()
     {
         return $this->hasMany(SubjectEnrollment::class);
+    }
+
+    public function students()
+    {
+        return $this->hasManyThrough(Student::class, SubjectEnrollment::class, 'class_group_id', 'id', 'id', 'student_id');
     }
 }

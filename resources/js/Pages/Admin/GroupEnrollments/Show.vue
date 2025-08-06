@@ -1,75 +1,156 @@
-<script setup>
-import { Head, Link } from '@inertiajs/vue3'
-import Badge from '@/Components/Badge.vue'
+<template>
+    <AppLayout :title="`Manage Enrollments — ${classGroup.code}`">
+        <template #header>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                Manage Enrollments
+            </h1>
+        </template>
 
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- ─── INFO DEL GRUPO ─── -->
+            <div class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Group Info</h2>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li><strong>Code:</strong> {{ classGroup.code }}</li>
+                    <li><strong>Subject:</strong> {{ classGroup.subject.name }}</li>
+                    <li><strong>Professor:</strong> {{ classGroup.professor.user.name }}</li>
+                    <li><strong>Modality:</strong> {{ classGroup.modality }}</li>
+                    <li><strong>Shift:</strong> {{ classGroup.shift }}</li>
+                    <li>
+                        <strong>Capacity:</strong>
+                        {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity }}
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ─── LISTA DE INSCRIPTOS ─── -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Enrolled Students</h2>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <tr>
+                            <th class="px-4 py-2">Name</th>
+                            <th class="px-4 py-2 hidden md:table-cell">Code</th>
+                            <th class="px-4 py-2 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr v-for="stu in enrolled" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-2">{{ stu.name }}</td>
+                            <td class="px-4 py-2 hidden md:table-cell">{{ stu.code }}</td>
+                            <td class="px-4 py-2 text-center">
+                                <button @click="removeEnrollment(stu.id)"
+                                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                                    title="Remove">
+                                    <i class="fa-solid fa-user-minus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr v-if="enrolled.length === 0">
+                            <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                No students enrolled yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ─── FORM INSCRIPCIÓN ─── -->
+            <div class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Enroll New Student</h2>
+
+                <div class="flex flex-col md:flex-row gap-4">
+                    <select v-model="selectedStudentId" class="flex-1 input">
+                        <option disabled value="">Select a student…</option>
+                        <option v-for="stu in available" :key="stu.id" :value="stu.id">{{ stu.name }} ({{ stu.code }})
+                        </option>
+                    </select>
+                    <button :disabled="!selectedStudentId || enrolling" @click="enrollStudent" class="btn-primary">
+                        <span v-if="!enrolling">Enroll</span>
+                        <span v-else>…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useAlert } from '@/Components/Composables/useAlert'
+import axios from 'axios'
+import AppLayout from '@/Layouts/AppLayout.vue'
+
+const { toastSuccess, toastError, confirm } = useAlert()
+
+// Recibimos por props:
+// classGroup: { id, code, subject, professor:{ user }, modality, shift, capacity, subject_enrollments_count, students:[{id,code,name}] }
+// allStudents: [{id,code,name},...]
 const props = defineProps({
-    group: Object,
-    enrollments: Array
+    classGroup: Object,
+    allStudents: Array
 })
+
+const enrolling = ref(false)
+const selectedStudentId = ref(null)
+
+// reactivo de inscritos
+const enrolled = ref([...props.classGroup.students])
+
+// lista de disponibles = todos menos los ya inscritos
+const available = computed(() =>
+    props.allStudents.filter(s =>
+        !enrolled.value.find(e => e.id === s.id)
+    )
+)
+
+// Inscribir un estudiante
+const enrollStudent = async () => {
+    if (!selectedStudentId.value) return
+    enrolling.value = true
+    try {
+        const { data } = await axios.post(
+            route('class-groups.enroll', props.classGroup.id),
+            { student_id: selectedStudentId.value }
+        )
+        // actualizar lista local
+        const stu = props.allStudents.find(s => s.id === selectedStudentId.value)
+        enrolled.value.push(stu)
+        toastSuccess(data.message || 'Student enrolled')
+        selectedStudentId.value = null
+    } catch (e) {
+        toastError(e.response?.data?.error || 'Enrollment failed')
+    } finally {
+        enrolling.value = false
+    }
+}
+
+// Eliminar inscripción
+const removeEnrollment = async (studentId) => {
+    const ok = await confirm(
+        'Are you sure you want to remove this student?',
+        'Confirm removal'
+    )
+    if (!ok) return
+
+    try {
+        await axios.delete(
+            route('class-groups.unenroll', [props.classGroup.id, studentId])
+        )
+        enrolled.value = enrolled.value.filter(s => s.id !== studentId)
+        toastSuccess('Student removed')
+    } catch (e) {
+        toastError(e.response?.data?.error || 'Could not remove')
+    }
+}
 </script>
 
-<template>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<style scoped>
+.input {
+    @apply w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white;
+}
 
-        <Head title="Group Details" />
-
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {{ group.subject }} — {{ group.code }} ({{ group.name }})
-            </h1>
-            <p class="text-gray-700 dark:text-gray-300">
-                <strong>Profesor:</strong> {{ group.professor ?? 'No asignado' }}
-            </p>
-            <p class="text-gray-700 dark:text-gray-300 mt-2">
-                <strong>Horarios:</strong>
-                <span v-if="group.schedules.length > 0">
-                    <ul class="list-disc ml-5 mt-1">
-                        <li v-for="(schedule, i) in group.schedules" :key="i">
-                            {{ schedule.day }}: {{ schedule.start_time }} - {{ schedule.end_time }}
-                        </li>
-                    </ul>
-                </span>
-                <span v-else class="text-gray-500 dark:text-gray-400">No definidos</span>
-            </p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                        <th
-                            class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Código</th>
-                        <th
-                            class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Nombre</th>
-                        <th
-                            class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Estado</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr v-for="enrollment in enrollments" :key="enrollment.id">
-                        <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">{{ enrollment.code }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">{{ enrollment.student_name }}</td>
-                        <td class="px-4 py-2 text-sm">
-                            <Badge :text="enrollment.status" :color="enrollment.statusColor" />
-                        </td>
-                    </tr>
-                    <tr v-if="enrollments.length === 0">
-                        <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
-                            No hay estudiantes inscritos.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-6">
-            <Link :href="route('admin.group-enrollments.index')"
-                class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            ← Volver a la lista de grupos
-            </Link>
-        </div>
-    </div>
-</template>
+.btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded;
+}
+</style>

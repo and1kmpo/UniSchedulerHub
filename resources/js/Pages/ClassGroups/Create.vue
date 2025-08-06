@@ -5,6 +5,7 @@ import Form from "./Form.vue";
 defineProps({
     subjects: Array,
     professors: Array,
+    currentPeriodId: Number
 });
 </script>
 
@@ -16,7 +17,7 @@ defineProps({
             </h1>
         </template>
         <div class="max-w-4xl mx-auto">
-            <Form :subjects="subjects" :professors="professors" />
+            <Form :subjects="subjects" :professors="professors" :currentPeriodId="currentPeriodId" />
         </div>
     </AppLayout>
 </template>

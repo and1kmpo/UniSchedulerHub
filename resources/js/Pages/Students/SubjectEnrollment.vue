@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { Inertia } from '@inertiajs/inertia'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { useAlert } from '@/Components/Composables/useAlert'
 import axios from 'axios'
@@ -18,7 +19,6 @@ const props = defineProps({
 })
 
 const currentSchedules = ref([...props.currentSchedules])
-
 const enrolling = ref(null)
 const selectedSubject = ref(null)
 const showModal = ref(false)
@@ -32,23 +32,31 @@ const canStillChangeGroup = computed(() => {
 
 const { toastSuccess, toastError } = useAlert()
 
-const formatDate = (date) => {
-    return dayjs(date).tz('America/Bogota').format('DD/MM/YYYY')
-}
+onMounted(() => {
+    const msg = localStorage.getItem('enrollFlash')
+    if (msg) {
+        toastSuccess(msg)
+        localStorage.removeItem('enrollFlash')
+    }
+})
 
-const hasScheduleConflict = (schedules) => {
-    return currentSchedules.value.some(current =>
-        schedules.some(sched =>
-            sched.day === current.day &&
-            sched.start_time < current.end_time &&
-            sched.end_time > current.start_time
+const formatDate = (date) =>
+    dayjs(date).tz('America/Bogota').format('DD/MM/YYYY')
+
+const hasScheduleConflict = (schedules) =>
+    currentSchedules.value.some((current) =>
+        schedules.some(
+            (sched) =>
+                sched.day === current.day &&
+                sched.start_time < current.end_time &&
+                sched.end_time > current.start_time
         )
     )
-}
 
-
-const selectGroup = (subject) => {
+// 1️⃣ Al abrir siempre recargamos los grupos
+const selectGroup = async (subject) => {
     selectedSubject.value = subject
+    await refreshGroups(subject)
     showModal.value = true
 }
 
@@ -57,10 +65,9 @@ const closeModal = () => {
     showModal.value = false
 }
 
-
 const enrollInGroup = async (groupId) => {
     const subject = selectedSubject.value
-    const group = subject.groups.find(g => g.id === groupId)
+    const group = subject.groups.find((g) => g.id === groupId)
 
     if (hasScheduleConflict(group.schedules)) {
         toastError('Schedule conflict with another subject.')
@@ -70,16 +77,21 @@ const enrollInGroup = async (groupId) => {
     enrolling.value = subject.id
 
     try {
-        // 🔸 Eliminar horarios anteriores antes de inscribir
+        // 🔸 Elimina horarios anteriores localmente
         currentSchedules.value = currentSchedules.value.filter(
-            sched => !subject.schedules.some(s => s.day === sched.day && s.start_time === sched.start_time)
+            (sched) =>
+                !subject.schedules.some(
+                    (s) => s.day === sched.day && s.start_time === sched.start_time
+                )
         )
 
-        const { data } = await axios.post(route('student.subject-enrollment.enroll', subject.id), {
-            class_group_id: groupId
-        })
+        // 🔸 Petición al backend
+        const { data } = await axios.post(
+            route('student.subject-enrollment.enroll', subject.id),
+            { class_group_id: groupId }
+        )
 
-        // 🔸 Actualizar estado del subject
+        // 🔸 Actualiza estado local (opcional, pues recargamos la página)
         Object.assign(subject, {
             alreadyEnrolled: true,
             status: data.status.code,
@@ -88,19 +100,10 @@ const enrollInGroup = async (groupId) => {
             currentGroupId: group.id
         })
 
-        // 🔸 Agregar nuevos horarios
-        group.schedules.forEach(schedule => currentSchedules.value.push(schedule))
-
-        // 🔸 Marcar grupo actual
-        subject.groups.forEach(g => {
-            g.isCurrent = g.id === subject.currentGroupId
-        })
-
+        // 🔸 Toast y redirección inmediata al índice
         toastSuccess(data.message)
-        closeModal()
-
-        // 🔸 Refrescar grupos si es necesario
-        await refreshGroups(subject)
+        localStorage.setItem('enrollFlash', data.message)
+        window.location.href = route('student.subject-enrollment.index')
 
     } catch (e) {
         toastError(e.response?.data?.error || 'Enrollment error')
@@ -109,56 +112,37 @@ const enrollInGroup = async (groupId) => {
     }
 }
 
-
+// Refresca los grupos del subject, marcando el current
 const refreshGroups = async (subject) => {
     try {
-        const { data } = await axios.get(route('student.subject-enrollment.groups', subject.id))
+        const { data } = await axios.get(
+            route('student.subject-enrollment.groups', subject.id)
+        )
         subject.groups = data.groups
-
-        subject.groups.forEach(group => {
-            group.isCurrent = group.id === subject.currentGroupId
-        })
-    } catch (e) {
-        toastError('Could not refresh groups')
+        const current = subject.groups.find((g) => g.isCurrent)
+        subject.currentGroupId = current?.id || null
+    } catch (error) {
+        toastError('Error fetching groups')
+        console.error(error)
     }
 }
 
 const unenrollFromSubject = async (subject) => {
+    enrolling.value = subject.id
     try {
-        enrolling.value = subject.id
-
-        // 🔸 Guardar los horarios actuales antes de limpiar
-        const oldSchedules = [...subject.schedules]
-
-        const { data } = await axios.post(route('student.subject-enrollment.unenroll', subject.id))
-
-        // 🔸 Actualizar estado local del subject
-        Object.assign(subject, {
-            alreadyEnrolled: false,
-            status: null,
-            statusColor: null,
-            currentGroupId: null,
-            schedules: []
-        })
-
-        // 🔸 Limpiar horarios del currentSchedules reactivo
-        currentSchedules.value = currentSchedules.value.filter(
-            sched => !oldSchedules.some(s => s.day === sched.day && s.start_time === sched.start_time)
+        await axios.post(
+            route('student.subject-enrollment.unenroll', subject.id)
         )
-
-        toastSuccess(data.message)
-        closeModal()
+        toastSuccess('Unenrollment successful.')
+        localStorage.setItem('enrollFlash', 'Unenrollment successful.')
+        window.location.href = route('student.subject-enrollment.index')
     } catch (e) {
         toastError(e.response?.data?.error || 'Unenrollment failed')
     } finally {
         enrolling.value = null
     }
 }
-
-
-
 </script>
-
 
 <template>
     <AppLayout>

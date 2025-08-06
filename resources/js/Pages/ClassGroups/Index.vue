@@ -49,7 +49,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
-                                    {{ group.professor?.user?.name ?? 'No asignado' }}
+                                    {{ group.professor?.name ?? 'Not assigned' }}
                                 </td>
 
                                 <td class="px-4 py-3 hidden md:table-cell">
@@ -66,15 +66,21 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        {{ group.capacity }} students
+                                        {{ group.subject_enrollments_count }} / {{ group.capacity }} students
                                     </span>
                                 </td>
+
                                 <td class="px-4 py-3">
                                     <div class="flex gap-3">
                                         <Link :href="route('class-groups.edit', group.id)"
                                             class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
                                             title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        </Link>
+                                        <Link :href="route('class-groups.show', group.id)"
+                                            class="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
+                                            title="Manage Enrollments">
+                                        <i class="fa-solid fa-users"></i>
                                         </Link>
                                         <button @click="destroy(group.id)"
                                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
@@ -101,16 +107,31 @@
 import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Pagination from "@/Components/Pagination.vue";
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { toastSuccess, toastError, confirm } = useAlert();
 
 defineProps({
     classGroups: Object,
 });
 
-function destroy(id) {
-    if (confirm("Are you sure you want to delete this group?")) {
-        router.delete(route("class-groups.destroy", id));
+const destroy = async (id) => {
+    const confirmed = await confirm('Are you sure you want to delete this group?', 'Confirm Deletion');
+
+    if (!confirmed) return;
+
+    try {
+        await axios.post(route('class-groups.destroy', id), {
+            _method: 'DELETE'
+        });
+        toastSuccess('Group deleted successfully');
+        router.reload();
+    } catch (error) {
+        console.error(error);
+        toastError('Could not delete the group');
     }
-}
+};
+
 
 function shiftClass(shift) {
     const map = {

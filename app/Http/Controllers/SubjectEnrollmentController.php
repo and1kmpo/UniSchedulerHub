@@ -80,7 +80,7 @@ class SubjectEnrollmentController extends Controller
                                 'start_time' => $s->start_time,
                                 'end_time' => $s->end_time,
                             ]),
-                            'professor' => optional($group->professor?->user)->name,
+                            'professor' => optional($group->professor)->name,
                             'isCurrent' => $group->id === $currentGroupId,
                         ];
                     }),
@@ -205,7 +205,7 @@ class SubjectEnrollmentController extends Controller
                         'color' => $existing->status->color,
                         'description' => $existing->status->description,
                     ]
-                ]);
+                ], 200);
             }
 
             // Si no existe, crear nueva inscripción
@@ -265,12 +265,23 @@ class SubjectEnrollmentController extends Controller
 
     public function groups(Subject $subject)
     {
+        $student = auth()->user()->student;
+        $period = AcademicPeriod::where('is_active', true)->first();
+
+        $enrollment = SubjectEnrollment::where('student_id', $student->id)
+            ->where('subject_id', $subject->id)
+            ->where('academic_period_id', $period->id)
+            ->first();
+
+        $currentGroupId = optional($enrollment)->class_group_id;
+
         $groups = $subject->classGroups()
+            ->where('academic_period_id', $period->id)
             ->whereHas('schedules')
             ->withCount('subjectEnrollments')
-            ->with('schedules', 'professor.user')
+            ->with('schedules', 'professor')
             ->get()
-            ->map(function ($group) {
+            ->map(function ($group) use ($currentGroupId) {
                 return [
                     'id' => $group->id,
                     'code' => $group->code,
@@ -282,7 +293,8 @@ class SubjectEnrollmentController extends Controller
                         'start_time' => $s->start_time,
                         'end_time' => $s->end_time,
                     ]),
-                    'professor' => optional($group->professor?->user)->name,
+                    'professor' => optional($group->professor)->name,
+                    'isCurrent' => $group->id === $currentGroupId,
                 ];
             });
 
