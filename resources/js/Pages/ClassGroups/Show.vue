@@ -86,7 +86,7 @@ const removeEnrollment = async (studentId) => {
                     <p><strong>Professor:</strong> {{ classGroup.professor.name }}</p>
                     <p><strong>Modality:</strong> {{ classGroup.modality }}</p>
                     <p><strong>Shift:</strong> {{ classGroup.shift }}</p>
-                    <p><strong>Capacity:</strong> {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity }}
+                    <p><strong>Capacity:</strong> {{ enrolled.length }} / {{ classGroup.capacity }}
                     </p>
                 </div>
             </div>

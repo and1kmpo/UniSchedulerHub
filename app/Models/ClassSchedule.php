@@ -20,4 +20,9 @@ class ClassSchedule extends Model
     {
         return 'id';
     }
+
+    public function classroom()
+    {
+        return $this->belongsTo(Classroom::class);
+    }
 }
