@@ -69,6 +69,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
 
+        Route::get('/classrooms/preview', [ClassroomController::class, 'preview'])->name('classrooms.preview');
         Route::resource('classrooms', ClassroomController::class);
     });
 

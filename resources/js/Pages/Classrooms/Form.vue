@@ -1,10 +1,18 @@
 <template>
     <form @submit.prevent="onSubmit">
-        <!-- Name -->
+        <!-- Preview o Nombre en edición -->
         <div class="mb-1">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-            <input v-model="form.name" type="text" class="input w-full" required />
-            <div v-if="form.errors.name" class="text-red-600 text-sm mt-1">{{ form.errors.name }}</div>
+
+            <!-- Creación: preview dinámico -->
+            <div v-if="!classroom" class="input bg-gray-100 dark:bg-gray-600">
+                {{ previewName || '— Select building and floor —' }}
+            </div>
+
+            <!-- Edición: nombre actual fijo -->
+            <div v-else class="input bg-gray-100 dark:bg-gray-600">
+                {{ form.name }}
+            </div>
         </div>
 
         <!-- Building -->
@@ -53,18 +61,15 @@
 import { useForm } from '@inertiajs/vue3'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import axios from 'axios'
+import { route } from 'ziggy-js'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
     classroom: Object,
     buildings: Array,
-    submitText: {
-        type: String,
-        default: 'Save'
-    },
-    submitTextLoading: {
-        type: String,
-        default: 'Saving...'
-    }
+    submitText: { type: String, default: 'Save' },
+    submitTextLoading: { type: String, default: 'Saving...' }
 })
 
 const form = useForm({
@@ -75,16 +80,33 @@ const form = useForm({
     description: props.classroom?.description || ''
 })
 
-defineExpose({ form })
+const { classroom, buildings, submitText, submitTextLoading } = props
 
+const previewName = ref(null)
+
+watch(
+    () => [form.building_id, form.floor],
+    async ([buildingId, floor]) => {
+        if (!props.classroom && buildingId && floor !== '') {
+            try {
+                const { data } = await axios.get(route('classrooms.preview'), {
+                    params: { building_id: buildingId, floor }
+                })
+                previewName.value = data.name
+            } catch {
+                previewName.value = null
+            }
+        }
+    }
+)
+
+defineExpose({ form })
 const emit = defineEmits(['submit', 'cancel'])
 
 function onSubmit(event) {
     event.preventDefault()
     emit('submit', form)
 }
-
-
 </script>
 
 <style scoped>
