@@ -212,11 +212,12 @@ onBeforeUnmount(() => {
                                 <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
                             </li>
                             <li>
-                            <li>
-                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group Enrollments
-                                </Link>
+                                <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
                             </li>
-
+                            <li>
+                            <li>
+                                <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
+                            </li>
                             </li>
                             <li>
                                 <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
@@ -345,9 +346,11 @@ onBeforeUnmount(() => {
                                     <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
                                 </li>
                                 <li>
+                                    <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
+                                </li>
                                 <li>
-                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
-                                    Enrollments</Link>
+                                <li>
+                                    <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
                                 </li>
                                 </li>
                                 <li>

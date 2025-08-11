@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\ClassGroupController;
+use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\ClassScheduleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GradeController;
@@ -67,6 +68,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
+
+        Route::resource('classrooms', ClassroomController::class);
     });
 
     /**

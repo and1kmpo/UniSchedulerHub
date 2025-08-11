@@ -9,7 +9,8 @@ class Classroom extends Model
 {
     protected $fillable = [
         'name',
-        'location',
+        'building_id',
+        'floor',
         'capacity',
         'description',
     ];
