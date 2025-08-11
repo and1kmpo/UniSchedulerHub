@@ -26,6 +26,7 @@
                             <th class="px-4 py-3">Building</th>
                             <th class="px-4 py-3">Floor</th>
                             <th class="px-4 py-3">Capacity</th>
+                            <th class="px-4 py-3">Description</th>
                             <th class="px-4 py-3">Actions</th>
                         </tr>
                     </thead>
@@ -43,6 +44,9 @@
                             </td>
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
                                 {{ classroom.capacity ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
+                                {{ classroom.description ?? '—' }}
                             </td>
                             <td class="px-4 py-3">
                                 <EditButton :href="route('classrooms.edit', { classroom: classroom.id })"
