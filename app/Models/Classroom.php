@@ -13,6 +13,7 @@ class Classroom extends Model
         'floor',
         'capacity',
         'description',
+        'status'
     ];
 
     public function schedules()
@@ -23,5 +24,18 @@ class Classroom extends Model
     public function building()
     {
         return $this->belongsTo(Building::class);
+    }
+
+
+    public function classGroups()
+    {
+        return $this->hasManyThrough(
+            ClassGroup::class,       // Modelo final
+            ClassSchedule::class,    // Modelo intermedio
+            'classroom_id',          // FK en ClassSchedule -> Classroom
+            'id',                    // PK en ClassGroup
+            'id',                    // PK en Classroom
+            'class_group_id'         // FK en ClassSchedule -> ClassGroup
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassGroup;
+use App\Models\Classroom;
 use App\Models\ClassSchedule;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,7 +12,7 @@ class ClassScheduleController extends Controller
 {
     public function index($classGroupId)
     {
-        $classGroup = ClassGroup::with(['subject', 'professor', 'schedules'])->findOrFail($classGroupId);
+        $classGroup = ClassGroup::with(['subject', 'professor', 'schedules.classroom'])->findOrFail($classGroupId);
 
         return Inertia::render('ClassSchedules/Index', [
             'classGroup' => $classGroup,
@@ -55,7 +56,7 @@ class ClassScheduleController extends Controller
             'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
-            'classroom' => 'nullable|string|max:255',
+            'classroom_id' => 'nullable|exists:classrooms,id',
         ]);
     }
 
@@ -76,23 +77,32 @@ class ClassScheduleController extends Controller
 
     public function calendar($classGroupId)
     {
-        $classGroup = ClassGroup::with(['schedules', 'subject', 'professor'])->findOrFail($classGroupId);
+        $classGroup = ClassGroup::with([
+            // relaciones "top-level" del ClassGroup
+            'subject',
+            'professor',
+
+            // schedules con su classroom y, para cada schedule, el class_group con subject/professor (si lo usas)
+            'schedules.classGroup.subject',
+            'schedules.classGroup.professor',
+            'schedules.classroom',
+        ])->findOrFail($classGroupId);
+
+        $classrooms = Classroom::where('status', 'active')->orderBy('name')->get();
 
         return Inertia::render('ClassSchedules/Calendar', [
             'classGroup' => $classGroup,
-            'schedules' => $classGroup->schedules, // Pasamos eventos
+            'schedules'  => $classGroup->schedules,
+            'classrooms' => $classrooms,
         ]);
     }
 
+
     public function schedulesJson($classGroupId)
     {
-        $schedules = ClassSchedule::where('class_group_id', $classGroupId)->get([
-            'id',
-            'day',
-            'start_time',
-            'end_time',
-            'classroom'
-        ]);
+        $schedules = ClassSchedule::with('classroom')
+            ->where('class_group_id', $classGroupId)
+            ->get(['id', 'day', 'start_time', 'end_time', 'classroom_id']);
         return response()->json($schedules);
     }
 }

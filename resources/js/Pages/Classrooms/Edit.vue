@@ -25,9 +25,21 @@ const props = defineProps({
     buildings: Array
 })
 
-const { toastSuccess } = useAlert()
+const { toastSuccess, confirm } = useAlert()
 
 async function handleSubmit(form) {
+    // Detect if location has changed
+    if (
+        form.building_id !== props.classroom.building_id ||
+        form.floor !== props.classroom.floor
+    ) {
+        const confirmed = await confirm(
+            'Changing the floor or building will deactivate this classroom and create a new one. Do you want to continue?',
+            'Confirm Location Change'
+        )
+        if (!confirmed) return
+    }
+
     try {
         await axios.post(route('classrooms.update', props.classroom.id), {
             ...form.data(),
@@ -41,6 +53,7 @@ async function handleSubmit(form) {
         }
     }
 }
+
 
 function cancel() {
     router.visit(route('classrooms.index'))

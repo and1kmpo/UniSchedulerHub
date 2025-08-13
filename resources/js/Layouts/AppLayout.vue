@@ -2,12 +2,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import ApplicationMark from "@/Components/ApplicationMark.vue";
-import { useAlert } from "@/Components/Composables/useAlert";
 
 // Acceso a la página actual de Inertia
 const page = usePage();
 
-// Props globales
 const darkMode = ref(false);
 const showingMenu = ref(false);
 const userDropdownOpen = ref(null);
@@ -103,7 +101,7 @@ onBeforeUnmount(() => {
                             class="absolute right-0 top-12 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600 min-w-[12rem]">
                             <div class="px-4 py-3">
                                 <span class="block text-sm text-gray-900 dark:text-white">{{ page.props.auth.user.name
-                                }}</span>
+                                    }}</span>
                                 <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{
                                     page.props.auth.user.email }}</span>
                             </div>

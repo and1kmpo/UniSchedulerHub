@@ -24,7 +24,7 @@
                     <table class="min-w-full text-sm text-left">
                         <thead>
                             <tr
-                                class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider">
+                                class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider text-center">
                                 <th class="px-4 py-3">Code</th>
                                 <th class="px-4 py-3">Subject</th>
                                 <th class="px-4 py-3">Professor</th>
@@ -71,24 +71,41 @@
                                 </td>
 
                                 <td class="px-4 py-3">
-                                    <div class="flex gap-3">
+                                    <div class="flex gap-2 justify-center">
+                                        <!-- Edit -->
                                         <Link :href="route('class-groups.edit', group.id)"
-                                            class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+                                            class="action-icon text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
                                             title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="sr-only">Edit</span>
                                         </Link>
+
+                                        <!-- Manage Enrollments -->
                                         <Link :href="route('class-groups.show', group.id)"
-                                            class="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
+                                            class="action-icon text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
                                             title="Manage Enrollments">
                                         <i class="fa-solid fa-users"></i>
+                                        <span class="sr-only">Manage Enrollments</span>
                                         </Link>
+
+                                        <!-- View Calendar -->
+                                        <Link :href="route('class-schedules.calendar', group.id)"
+                                            class="action-icon text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
+                                            title="View Calendar">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span class="sr-only">View Calendar</span>
+                                        </Link>
+
+                                        <!-- Delete -->
                                         <button @click="destroy(group.id)"
-                                            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                                            class="action-icon text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
                                             title="Delete">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="sr-only">Delete</span>
                                         </button>
                                     </div>
                                 </td>
+
                             </tr>
                         </tbody>
                     </table>
@@ -146,5 +163,9 @@ function shiftClass(shift) {
 <style scoped>
 .badge {
     @apply inline-block px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.action-icon {
+    @apply p-2 rounded transition hover:bg-gray-100 dark:hover:bg-gray-800;
 }
 </style>

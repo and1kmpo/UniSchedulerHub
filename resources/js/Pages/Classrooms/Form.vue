@@ -77,7 +77,7 @@ const form = useForm({
     building_id: props.classroom?.building_id || '',
     floor: props.classroom?.floor || '',
     capacity: props.classroom?.capacity || '',
-    description: props.classroom?.description || ''
+    description: props.classroom?.description || '',
 })
 
 const { classroom, buildings, submitText, submitTextLoading } = props

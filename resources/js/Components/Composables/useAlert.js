@@ -1,91 +1,119 @@
-import Swal from 'sweetalert2'
+import Swal from "sweetalert2";
 
 export function useAlert() {
     // 🔔 Reusable basic toast
     const Toast = Swal.mixin({
         toast: true,
-        position: 'top-end',
+        position: "top-end",
         showConfirmButton: false,
         timer: 3000,
         timerProgressBar: true,
         didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
-        }
-    })
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+        },
+    });
 
     // ✅ Success modal alert
-    const success = (message = 'Operation successful', title = 'Success') => {
+    const success = (message = "Operation successful", title = "Success") => {
         Swal.fire({
-            icon: 'success',
+            icon: "success",
             title,
             text: message,
             timer: 2000,
             showConfirmButton: false,
-        })
-    }
+        });
+    };
 
     // ❌ Error modal alert
-    const error = (message = 'An error occurred', title = 'Error') => {
+    const error = (message = "An error occurred", title = "Error") => {
         Swal.fire({
-            icon: 'error',
+            icon: "error",
             title,
             text: message,
-        })
-    }
+        });
+    };
 
     // ℹ️ Informational alert (with confirmation option)
-    const info = (message = 'Information', title = 'Attention') => {
+    const info = (message = "Information", title = "Attention") => {
         Swal.fire({
-            icon: 'info',
+            icon: "info",
             title,
             text: message,
-        })
-    }
+        });
+    };
 
     // ⚠️ Yes/No confirmation alert
-    const confirm = async (message = 'Are you sure?', title = 'Confirm') => {
+    const confirm = async (message = "Are you sure?", title = "Confirm") => {
         const result = await Swal.fire({
             title,
             text: message,
-            icon: 'warning',
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#2563eb', // Indigo
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'Cancel'
-        })
-        return result.isConfirmed
-    }
+            confirmButtonColor: "#2563eb", // Indigo
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes",
+            cancelButtonText: "Cancel",
+        });
+        return result.isConfirmed;
+    };
 
     // ✅ Floating success toast
-    const toastSuccess = (message = 'Saved successfully') => {
+    const toastSuccess = (message = "Saved successfully") => {
         Toast.fire({
-            icon: 'success',
-            title: message
-        })
-    }
+            icon: "success",
+            title: message,
+        });
+    };
 
     // ❌ Floating error toast
-    const toastError = (message = 'Error saving') => {
+    const toastError = (message = "Error saving") => {
         Toast.fire({
-            icon: 'error',
-            title: message
-        })
-    }
+            icon: "error",
+            title: message,
+        });
+    };
 
     // Custom alert
     const custom = (options = {}) => {
-        Swal.fire(options)
-    }
+        Swal.fire(options);
+    };
+
+    //Alert Confirm but with preconfirm
+    const confirmWithPreConfirm = async (title, text, preConfirm) => {
+        if (!title || !text || !preConfirm) {
+            console.error(
+                "confirmWithPreConfirm requiere title, text y preConfirm"
+            );
+            return;
+        }
+
+        const result = await Swal.fire({
+            title,
+            text,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete",
+            cancelButtonText: "Cancel",
+            reverseButtons: true,
+            focusCancel: true,
+            showLoaderOnConfirm: true,
+            preConfirm,
+        });
+
+        return result;
+    };
 
     return {
         success,
         error,
         info,
         confirm,
+        confirmWithPreConfirm,
         toastSuccess,
         toastError,
-        custom
-    }
+        custom,
+    };
 }

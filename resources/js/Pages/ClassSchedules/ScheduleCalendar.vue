@@ -11,15 +11,20 @@ import tippy from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 import 'tippy.js/animations/scale-extreme.css';
 import Swal from 'sweetalert2'
+import { useAlert } from '@/Components/Composables/useAlert'
+import axios from 'axios'
 
 
-// Props
 const props = defineProps({
     classGroup: Object,
-    schedules: Array
+    schedules: Array,
+    classrooms: Array
 })
 
-// Estado
+const { toastSuccess, toastError, confirmWithPreConfirm } = useAlert()
+
+console.log(props);
+
 const showModal = ref(false)
 const modalInitial = ref(null)
 const modalSchedule = ref(null)
@@ -50,16 +55,14 @@ const eventSources = computed(() => {
             borderColor: props.classGroup.code.endsWith('G1') ? '#4338ca' : '#047857',
             textColor: '#fff',
             extendedProps: {
-                classroom: s.classroom,
-                teacher: s.teacher || 'N/A', // ejemplo adicional
+                classroom: s.classroom ? s.classroom.name : 'No assigned',
+                teacher: s.teacher || 'N/A',
                 scheduleData: s,
             }
         }
     })
 })
 
-
-// Opciones de calendario
 
 const calendarOptions = ref({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
@@ -81,7 +84,37 @@ const calendarOptions = ref({
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay',
     },
-    events: eventSources,
+    events: (fetchInfo, successCallback, failureCallback) => {
+        axios.get(route('class-schedules.json', props.classGroup.id))
+            .then((res) => {
+                const events = res.data.map((s) => {
+                    const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(s.day)
+
+                    return {
+                        id: s.id,
+                        title: '📚 ' + props.classGroup.subject.name,
+                        startTime: s.start_time,
+                        endTime: s.end_time,
+                        daysOfWeek: [dayIndex],
+                        startRecur: '2025-01-01',
+                        endRecur: '2025-12-31',
+                        color: props.classGroup.code.endsWith('G1') ? '#4F46E5' : '#059669',
+                        borderColor: props.classGroup.code.endsWith('G1') ? '#4338ca' : '#047857',
+                        textColor: '#fff',
+                        extendedProps: {
+                            classroom: s.classroom?.name ?? 'No assigned',
+                            teacher: s.teacher ?? 'N/A',
+                            scheduleData: s,
+                        }
+                    }
+                })
+
+                successCallback(events)
+            })
+            .catch(() => {
+                failureCallback()
+            })
+    },
     dateClick: (info) => {
         showModal.value = true;
         modalInitial.value = {
@@ -115,12 +148,10 @@ const calendarOptions = ref({
             animation: 'scale-extreme'
         })
 
-        // Añade clase personalizada para más estilo (ver paso 3)
         el.classList.add('custom-fc-event')
     }
 
 });
-
 
 // Cierre modal
 const handleClose = () => {
@@ -131,9 +162,9 @@ const handleClose = () => {
 const handleSubmit = (formData) => {
     const payload = {
         day: formData.day,
-        start_time: formData.start_time,
-        end_time: formData.end_time,
-        classroom: formData.classroom,
+        start_time: formData.start_time.slice(0, 5),
+        end_time: formData.end_time.slice(0, 5),
+        classroom_id: formData.classroom_id,
     }
 
     if (modalMode.value === 'create') {
@@ -142,136 +173,48 @@ const handleSubmit = (formData) => {
                 showModal.value = false
                 calendarRef.value.getApi().refetchEvents()
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Schedule created',
-                    text: 'The schedule was created successfully.',
-                    timer: 2500,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    position: 'top-end',
-                    toast: true,
-                    background: '#f0f9ff',
-                    color: '#2c7be5',
-                    iconColor: '#2c7be5',
-                    customClass: {
-                        popup: 'shadow-lg rounded-lg'
-                    }
-                })
+                toastSuccess('The schedule was created successfully.')
             },
             onError: (errors) => {
                 console.error(errors)
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Could not create the schedule. Please check the data.',
-                    timer: 3500,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    position: 'top-end',
-                    toast: true,
-                    background: '#fdecea',
-                    color: '#d93025',
-                    iconColor: '#d93025',
-                    customClass: {
-                        popup: 'shadow-lg rounded-lg'
-                    }
-                })
+                toastError('Could not create the schedule. Please check the data.');
             }
         })
     } else if (modalMode.value === 'edit') {
-        router.put(route('class-schedules.update', [props.classGroup.id, modalSchedule.value.id]), payload, {
-            onSuccess: () => {
-                showModal.value = false
-                calendarRef.value.getApi().refetchEvents()
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Schedule updated',
-                    text: 'The schedule was updated successfully.',
-                    timer: 2500,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    position: 'top-end',
-                    toast: true,
-                    background: '#f0f9ff',
-                    color: '#2c7be5',
-                    iconColor: '#2c7be5',
-                    customClass: {
-                        popup: 'shadow-lg rounded-lg'
-                    }
-                })
-            },
-            onError: (errors) => {
-                console.error(errors)
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Could not update the schedule. Please check the data.',
-                    timer: 3500,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    position: 'top-end',
-                    toast: true,
-                    background: '#fdecea',
-                    color: '#d93025',
-                    iconColor: '#d93025',
-                    customClass: {
-                        popup: 'shadow-lg rounded-lg'
-                    }
-                })
+        axios.post(
+            route('class-schedules.update', [props.classGroup.id, modalSchedule.value.id]),
+            {
+                ...payload,
+                _method: 'PUT'
             }
+        ).then(() => {
+            showModal.value = false
+            calendarRef.value.getApi().refetchEvents()
+            toastSuccess('The schedule was updated successfully.');
+        }).catch((error) => {
+            console.error(error)
+            toastError('Could not update the schedule. Please check the data.');
         })
     }
 }
 
-
-
-const handleDelete = () => {
-    Swal.fire({
-        title: 'Delete schedule?',
-        text: 'Are you sure you want to delete this schedule? This action cannot be undone.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, delete',
-        cancelButtonText: 'Cancel',
-        reverseButtons: true,
-        focusCancel: true,
-        showLoaderOnConfirm: true,
-        preConfirm: () => {
-            // Return the promise so SweetAlert shows loader until the delete is done
-            return router.delete(route('class-schedules.destroy', [props.classGroup.id, modalSchedule.value.id]), {
-                onSuccess: () => {
-                    showModal.value = false
-                    calendarRef.value.getApi().refetchEvents()
-                    Swal.fire({
-                        title: 'Deleted',
-                        text: 'The schedule was deleted successfully.',
-                        icon: 'success',
-                        timer: 3000,
-                        showConfirmButton: false,
-                        timerProgressBar: true,
-                        position: 'top-end',
-                        toast: true
-                    })
-                },
-                onError: () => {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'The schedule could not be deleted.',
-                        icon: 'error',
-                        timer: 3000,
-                        showConfirmButton: false,
-                        timerProgressBar: true,
-                        position: 'top-end',
-                        toast: true
-                    })
-                }
+async function handleDelete() {
+    try {
+        const result = await confirmWithPreConfirm('Delete schedule?', 'Are you sure you want to delete this schedule? This action cannot be undone.', () => {
+            return axios.post(route('class-schedules.destroy', [props.classGroup.id, modalSchedule.value.id]), {
+                _method: 'DELETE'
             })
         }
-    })
+        )
+
+        if (result.isConfirmed) {
+            showModal.value = false
+            calendarRef.value.getApi().refetchEvents()
+            toastSuccess('The schedule was deleted successfully.')
+        }
+    } catch (error) {
+        toastError('The schedule could not be deleted.')
+    }
 }
 
 
@@ -281,7 +224,8 @@ const handleDelete = () => {
     <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 overflow-hidden p-4">
         <FullCalendar ref="calendarRef" :options="calendarOptions" />
         <ScheduleModal :show="showModal" :schedule="modalSchedule" :initial="modalInitial"
-            :classGroupId="props.classGroup.id" :mode="modalMode" :onClose="handleClose" :onSubmit="handleSubmit"
-            @delete="handleDelete" />
+            :classGroupId="props.classGroup.id" :classrooms="props.classrooms" :mode="modalMode" :onClose="handleClose"
+            :onSubmit="handleSubmit" @delete="handleDelete" />
+
     </div>
 </template>

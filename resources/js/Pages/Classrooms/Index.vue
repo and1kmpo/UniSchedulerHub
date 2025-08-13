@@ -27,6 +27,7 @@
                             <th class="px-4 py-3">Floor</th>
                             <th class="px-4 py-3">Capacity</th>
                             <th class="px-4 py-3">Description</th>
+                            <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3">Actions</th>
                         </tr>
                     </thead>
@@ -48,9 +49,18 @@
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
                                 {{ classroom.description ?? '—' }}
                             </td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
+                                {{ classroom.status ?? '—' }}
+                            </td>
                             <td class="px-4 py-3">
-                                <EditButton :href="route('classrooms.edit', { classroom: classroom.id })"
-                                    class="mr-2" />
+                                <EditButton v-if="classroom.status === 'active'" class="mr-2"
+                                    :href="route('classrooms.edit', { classroom: classroom.id })" />
+
+                                <Link :href="route('classrooms.schedule', classroom.id)"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2">
+                                View Schedule
+                                </Link>
+
                                 <DeleteButton :onClick="() => deleteClassroom(classroom.id)" />
                             </td>
                         </tr>

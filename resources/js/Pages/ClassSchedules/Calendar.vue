@@ -3,9 +3,11 @@
 import Layout from "@/Layouts/AppLayout.vue";
 import ScheduleCalendar from "./ScheduleCalendar.vue";
 
-defineProps({
+const props = defineProps({
     classGroup: Object,
-});
+    schedules: Array,
+    classrooms: Array
+})
 </script>
 
 <template>
@@ -14,7 +16,7 @@ defineProps({
             <h2 class="text-2xl font-semibold mb-4">
                 Horario: {{ classGroup.name }} ({{ classGroup.code }})
             </h2>
-            <ScheduleCalendar :classGroupId="classGroup.id" />
+            <ScheduleCalendar :classGroup="classGroup" :schedules="schedules" :classrooms="classrooms" />
         </div>
     </Layout>
 </template>
