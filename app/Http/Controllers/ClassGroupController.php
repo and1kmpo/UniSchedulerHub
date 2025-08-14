@@ -44,15 +44,6 @@ class ClassGroupController extends Controller
             'modality' => 'required|string',
             'shift' => 'required|string',
             'academic_period_id' => 'required|exists:academic_periods,id',
-            // Validación del schedule
-            'schedules'          => 'required|array|min:1',
-            'schedules.*.day'        => 'required|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'schedules.*.start_time' => 'required|date_format:H:i',
-            'schedules.*.end_time'   => 'required|date_format:H:i|after:schedules.*.start_time',
-            // 'code' => 'required|unique:class_groups,code',
-            // 'group_code' => 'required|string|unique:class_groups,group_code',
-            // 'name' => 'required|string|max:255',
-            // 'semester' => 'required|string',
         ]);
 
         Log::info('Creating ClassGroup with data:', $data);
@@ -143,13 +134,6 @@ class ClassGroupController extends Controller
             'capacity'           => 'required|integer|min:1',
             'modality'           => 'required|string',
             'shift'              => 'required|string',
-            /*  'academic_period_id' => 'required|exists:academic_periods,id', */
-
-            // Validación del schedule
-            'schedules'             => 'required|array|min:1',
-            'schedules.*.day'        => 'required|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'schedules.*.start_time' => 'required|date_format:H:i',
-            'schedules.*.end_time'   => 'required|date_format:H:i|after:schedules.*.start_time',
         ]);
 
         DB::transaction(function () use ($classGroup, $data) {
@@ -160,20 +144,7 @@ class ClassGroupController extends Controller
                 'capacity'           => $data['capacity'],
                 'modality'           => $data['modality'],
                 'shift'              => $data['shift'],
-                /* 'academic_period_id' => $data['academic_period_id'], */
             ]);
-
-            // 2) Elimina horarios antiguos
-            $classGroup->schedules()->delete();
-
-            // 3) Crea los nuevos horarios
-            foreach ($data['schedules'] as $sch) {
-                $classGroup->schedules()->create([
-                    'day'        => $sch['day'],
-                    'start_time' => $sch['start_time'],
-                    'end_time'   => $sch['end_time'],
-                ]);
-            }
         });
 
         return redirect()

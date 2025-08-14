@@ -20,28 +20,9 @@ const form = ref({
     modality: props.classGroup?.modality || "Presential",
     shift: props.classGroup?.shift || "Day",
     academic_period_id: props.currentPeriodId,
-
-    // schedules: array de objetos { day, start_time, end_time }
-    schedules: props.classGroup?.schedules?.length
-        ? props.classGroup.schedules.map(s => ({
-            day: s.day,
-            start_time: s.start_time,
-            end_time: s.end_time
-        }))
-        : [{ day: '', start_time: '', end_time: '' }]
-
 });
 
 const errors = ref({});
-
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-function addSchedule() {
-    form.value.schedules.push({ day: '', start_time: '', end_time: '' })
-}
-function removeSchedule(i) {
-    form.value.schedules.splice(i, 1)
-}
 
 const submit = async () => {
     try {
@@ -142,45 +123,6 @@ const generatedCodePreview = computed(() =>
                 <p v-if="errors.capacity" class="error">{{ errors.capacity[0] }}</p>
             </div>
         </div>
-
-        <!-- Schedules -->
-        <div class="space-y-2">
-            <h3 class="font-semibold">Schedules <small class="text-sm text-gray-500">(at least one)</small></h3>
-            <div v-for="(sch, i) in form.schedules" :key="i" class="grid grid-cols-4 gap-4 items-end">
-                <!-- Día -->
-                <div>
-                    <select v-model="sch.day" class="input">
-                        <option disabled value="">Day</option>
-                        <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
-                    </select>
-                    <p v-if="errors[`schedules.${i}.day`]" class="error">
-                        {{ errors[`schedules.${i}.day`][0] }}
-                    </p>
-                </div>
-                <!-- Hora inicio -->
-                <div>
-                    <input type="time" v-model="sch.start_time" class="input" />
-                    <p v-if="errors[`schedules.${i}.start_time`]" class="error">
-                        {{ errors[`schedules.${i}.start_time`][0] }}
-                    </p>
-                </div>
-                <!-- Hora fin -->
-                <div>
-                    <input type="time" v-model="sch.end_time" class="input" />
-                    <p v-if="errors[`schedules.${i}.end_time`]" class="error">
-                        {{ errors[`schedules.${i}.end_time`][0] }}
-                    </p>
-                </div>
-                <!-- Botón eliminar (solo si hay más de uno) -->
-                <button v-if="form.schedules.length > 1" type="button" @click="removeSchedule(i)"
-                    class="btn-secondary">−</button>
-            </div>
-            <!-- Añadir nuevo horario -->
-            <button type="button" @click="addSchedule" class="btn-primary">
-                + Add Schedule
-            </button>
-        </div>
-
 
         <!-- Vista previa -->
         <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded mt-4 text-sm space-y-1">
