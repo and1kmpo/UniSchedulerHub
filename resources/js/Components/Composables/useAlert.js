@@ -44,16 +44,21 @@ export function useAlert() {
     };
 
     // ⚠️ Yes/No confirmation alert
-    const confirm = async (message = "Are you sure?", title = "Confirm") => {
+    // ⚠️ Yes/No confirmation alert (with optional HTML)
+    const confirm = async (
+        message = "Are you sure?",
+        title = "Confirm",
+        useHtml = false
+    ) => {
         const result = await Swal.fire({
             title,
-            text: message,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#2563eb", // Indigo
             cancelButtonColor: "#d33",
             confirmButtonText: "Yes",
             cancelButtonText: "Cancel",
+            ...(useHtml ? { html: message } : { text: message }), // 🔄 usar html o text
         });
         return result.isConfirmed;
     };

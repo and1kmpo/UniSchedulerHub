@@ -62,6 +62,9 @@ class ClassGroupController extends Controller
 
     public function show($id)
     {
+
+
+        $editable = auth()->user()->hasRole('admin');
         $group = ClassGroup::with([
             'subject',
             'professor',                 // cargar al profesor y su user

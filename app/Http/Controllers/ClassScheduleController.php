@@ -109,18 +109,29 @@ class ClassScheduleController extends Controller
 
         $classrooms = Classroom::where('status', 'active')->orderBy('name')->get();
 
+        $editable = auth()->user()->hasRole('admin');
+
+        /*   // temporal: inspección rápida
+        return response()->json($classGroup->load('schedules.classGroup.professor', 'schedules.classroom')->toArray()); */
+
+
         return Inertia::render('ClassSchedules/Calendar', [
             'classGroup' => $classGroup,
             'schedules'  => $classGroup->schedules,
             'classrooms' => $classrooms,
+            'editable' => $editable
         ]);
     }
 
     public function schedulesJson($classGroupId)
     {
-        $schedules = ClassSchedule::with('classroom')
+        $schedules = ClassSchedule::with(
+            'classroom',
+            'classGroup.subject',
+            'classGroup.professor'
+        )
             ->where('class_group_id', $classGroupId)
-            ->get(['id', 'day', 'start_time', 'end_time', 'classroom_id']);
+            ->get();
 
         return response()->json($schedules);
     }
