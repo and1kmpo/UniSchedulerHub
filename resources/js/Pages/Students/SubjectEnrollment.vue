@@ -15,8 +15,10 @@ const props = defineProps({
     subjects: Array,
     enrollmentDeadline: String,
     unenrollmentDeadline: String,
-    currentSchedules: Array
+    currentSchedules: Array,
+    systemState: String
 })
+
 
 const currentSchedules = ref([...props.currentSchedules])
 const enrolling = ref(null)
@@ -174,6 +176,13 @@ const unenrollFromSubject = async (subject) => {
             </transition>
 
             <!-- Tabla -->
+            <div v-if="systemState === 'no_curriculum'"
+                class="p-6 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded">
+                <strong>Academic setup pending.</strong><br>
+                Your program does not have an active curriculum yet.
+                Please contact academic administration.
+            </div>
+
             <div class="overflow-x-auto shadow border rounded-lg">
                 <table class="w-full text-sm text-left text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-900">
                     <thead class="bg-gray-100 dark:bg-gray-800 uppercase text-xs text-gray-700 dark:text-gray-300">
@@ -192,22 +201,33 @@ const unenrollFromSubject = async (subject) => {
                             <td class="p-3">{{ subject.credits }}</td>
                             <td class="p-3">{{ subject.semester }}</td>
                             <td class="p-3">
-                                <template v-if="subject.alreadyEnrolled">
-                                    <span :class="[
-                                        'px-2 py-0.5 rounded-full text-xs font-medium',
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="{
+                                    'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300': subject.audit.status === 'approved',
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300': subject.audit.status === 'in_progress',
+                                    'bg-emerald-100 text-emerald-800 dark:bg-emerald-800/20 dark:text-emerald-300': subject.audit.status === 'available',
+                                    'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300': subject.audit.status === 'blocked',
+                                }">
+                                    {{
                                         {
-                                            'bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300': subject.statusColor === 'blue',
-                                            'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300': subject.statusColor === 'green',
-                                            'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300': subject.statusColor === 'red',
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-800/20 dark:text-gray-300': subject.statusColor === 'gray',
-                                            'bg-purple-100 text-purple-800 dark:bg-purple-800/20 dark:text-purple-300': subject.statusColor === 'purple'
-                                        }
-                                    ]">{{ subject.status }}</span>
-                                </template>
-                                <span v-else-if="!subject.hasAllPrerequisites" class="text-red-600 font-semibold">
-                                    Missing Prerequisites
+                                            approved: 'Approved',
+                                            in_progress: 'In Progress',
+                                            available: 'Available',
+                                            blocked: 'Blocked'
+                                        }[subject.audit.status]
+                                    }}
                                 </span>
-                                <span v-else class="text-green-600 font-semibold">Available</span>
+
+                                <!-- Block reason -->
+                                <div v-if="subject.audit.status === 'blocked'"
+                                    class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                    Requires:
+                                    <ul class="list-disc ml-4">
+                                        <li v-for="name in subject.audit.blockedBy" :key="name">
+                                            {{ name }}
+                                        </li>
+                                    </ul>
+                                </div>
+
 
                                 <div v-if="subject.alreadyEnrolled && subject.schedules?.length"
                                     class="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -218,11 +238,11 @@ const unenrollFromSubject = async (subject) => {
 
                             </td>
                             <td class="p-3 text-center">
-                                <button v-if="subject.hasAllPrerequisites && canStillChangeGroup"
-                                    @click="selectGroup(subject)"
+                                <button v-if="subject.canEnroll && canStillChangeGroup" @click="selectGroup(subject)"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md">
-                                    {{ subject.alreadyEnrolled ? 'Change Group' : 'Select Group' }}
+                                    {{ subject.isEnrolled ? 'Change Group' : 'Select Group' }}
                                 </button>
+
                             </td>
                         </tr>
                         <tr v-if="subjects.length === 0">

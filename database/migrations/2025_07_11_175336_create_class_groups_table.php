@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('cascade');
             $table->foreign('professor_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('academic_period_id')->constrained()->cascadeOnDelete();
         });
     }
 

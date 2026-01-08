@@ -11,7 +11,9 @@ const { toastSuccess, toastError, confirm } = useAlert()
 // allStudents: [{id,code,name},...]
 const props = defineProps({
     classGroup: Object,
-    allStudents: Array
+    allStudents: Array,
+    enrolledIds: Array,
+    studentSchedules: Array
 })
 
 const enrolling = ref(false)
@@ -19,6 +21,7 @@ const selectedStudentId = ref(null)
 
 // reactivo de inscritos
 const enrolled = ref([...props.classGroup.students])
+const enrolledIds = ref([...props.enrolledIds])
 
 // lista de disponibles = todos menos los ya inscritos
 const available = computed(() =>
@@ -39,10 +42,11 @@ const enrollStudent = async () => {
         // actualizar lista local
         const stu = props.allStudents.find(s => s.id === selectedStudentId.value)
         enrolled.value.push(stu)
+        enrolledIds.value.push(stu.id)
         toastSuccess(data.message || 'Student enrolled')
         selectedStudentId.value = null
     } catch (e) {
-        toastError(e.response?.data?.error || 'Enrollment failed')
+        toastError(e.response?.data?.message || 'Enrollment failed')
     } finally {
         enrolling.value = false
     }
@@ -61,11 +65,42 @@ const removeEnrollment = async (studentId) => {
             route('class-groups.unenroll', [props.classGroup.id, studentId])
         )
         enrolled.value = enrolled.value.filter(s => s.id !== studentId)
+        enrolledIds.value = enrolledIds.value.filter(id => id !== studentId)
         toastSuccess('Student removed')
     } catch (e) {
         toastError(e.response?.data?.error || 'Could not remove')
     }
 }
+
+const isFull = computed(() =>
+    enrolled.value.length >= props.classGroup.capacity
+)
+
+const isAlreadyEnrolled = computed(() =>
+    enrolledIds.value.includes(selectedStudentId.value)
+)
+
+const hasScheduleConflict = (groupSchedules, studentSchedules) => {
+    return groupSchedules.some(gs =>
+        studentSchedules.some(ss =>
+            gs.day === ss.day &&
+            gs.start_time < ss.end_time &&
+            gs.end_time > ss.start_time
+        )
+    )
+}
+
+const groupSchedules = props.classGroup.schedules
+
+const hasConflict = computed(() => {
+    if (!selectedStudentId.value) return false
+
+    return hasScheduleConflict(
+        groupSchedules,
+        props.studentSchedules
+    )
+})
+
 </script>
 
 <template>
@@ -143,9 +178,16 @@ const removeEnrollment = async (studentId) => {
                             {{ stu.name }} ({{ stu.document }})
                         </option>
                     </select>
-                    <button :disabled="!selectedStudentId || enrolling" @click="enrollStudent"
-                        class="btn-primary disabled:opacity-50">
-                        <span v-if="!enrolling">Enroll</span>
+                    <p v-if="hasConflict" class="text-sm text-red-600 mt-2">
+                        ⚠️ This student has a schedule conflict with another class.
+                    </p>
+
+                    <button :disabled="!selectedStudentId || enrolling || isFull || isAlreadyEnrolled || hasConflict"
+                        @click="enrollStudent" class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span v-if="isFull">Group full</span>
+                        <span v-else-if="hasConflict">Schedule conflict</span>
+                        <span v-else-if="isAlreadyEnrolled">Already enrolled</span>
+                        <span v-else-if="!enrolling">Enroll</span>
                         <span v-else>Enrolling...</span>
                     </button>
                 </div>

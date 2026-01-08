@@ -7,6 +7,8 @@ use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\ClassGroupController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\ClassScheduleController;
+use App\Http\Controllers\CurriculumController;
+use App\Http\Controllers\CurriculumSubjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GroupEnrollmentController;
@@ -57,6 +59,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::delete('/unassign-subject-student/{studentId}/{subjectId}', [StudentController::class, 'unassignSubject']);
 
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
+        Route::get('/class-groups/{classGroup}/can-enroll/{student}', [ClassGroupController::class, 'canEnroll'])->name('class-groups.can-enroll');
         Route::resource('class-groups.schedules', ClassScheduleController::class)->names('class-schedules');
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
         Route::get('/class-groups/{classGroup}/schedules-json', [ClassScheduleController::class, 'schedulesJson'])->name('class-schedules.json');
@@ -73,8 +76,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/classrooms/preview', [ClassroomController::class, 'preview'])->name('classrooms.preview');
         Route::resource('classrooms', ClassroomController::class);
 
-        Route::get('/classrooms/{classroom}/schedule', [ClassroomController::class, 'schedule'])
-            ->name('classrooms.schedule');
+        Route::get('/classrooms/{classroom}/schedule', [ClassroomController::class, 'schedule'])->name('classrooms.schedule');
+        Route::post('/curricula/{curriculum}/subjects', [CurriculumSubjectController::class, 'store']);
     });
 
     /**
@@ -100,6 +103,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
         Route::post('/student/subject-unenrollment/{subject}', [SubjectEnrollmentController::class, 'unenroll'])->name('student.subject-enrollment.unenroll');
         Route::get('student/subject-enrollment/{subject}/groups', [SubjectEnrollmentController::class, 'groups'])->name('student.subject-enrollment.groups');
+        Route::resource('curricula', CurriculumController::class);
     });
 
     /**

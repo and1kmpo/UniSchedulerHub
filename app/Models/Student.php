@@ -60,4 +60,9 @@ class Student extends Model
     {
         return $this->hasMany(SubjectEnrollment::class);
     }
+
+    public function curriculum()
+    {
+        return $this->belongsTo(Curriculum::class);
+    }
 }

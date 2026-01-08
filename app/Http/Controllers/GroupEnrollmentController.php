@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\ClassGroup;
 use App\Models\SubjectEnrollment;
+use App\Models\Student;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Services\EnrollmentService;
+
 
 class GroupEnrollmentController extends Controller
 {
@@ -51,32 +54,25 @@ class GroupEnrollmentController extends Controller
         ]);
     }
 
-    public function store(Request $request, ClassGroup $classGroup)
+    public function store(Request $request, ClassGroup $classGroup, EnrollmentService $service)
     {
         $request->validate([
             'student_id' => ['required', 'exists:students,id']
         ]);
 
-        $studentId = $request->input('student_id');
+        $student = Student::findOrFail($request->student_id);
 
-        // Verificar si ya está inscrito
-        $alreadyEnrolled = SubjectEnrollment::where('class_group_id', $classGroup->id)
-            ->where('student_id', $studentId)
-            ->exists();
+        $result = $service->canEnroll($student, $classGroup);
 
-        if ($alreadyEnrolled) {
-            return response()->json(['message' => 'Student is already enrolled'], 422);
-        }
-
-        // Verificar capacidad
-        $count = SubjectEnrollment::where('class_group_id', $classGroup->id)->count();
-        if ($count >= $classGroup->capacity) {
-            return response()->json(['message' => 'Group is at full capacity'], 422);
+        if (! $result['allowed']) {
+            return response()->json([
+                'message' => $result['message']
+            ], 422);
         }
 
         // Crear inscripción
         SubjectEnrollment::create([
-            'student_id' => $studentId,
+            'student_id' => $student->id,
             'subject_id' => $classGroup->subject_id,
             'academic_period_id' => currentAcademicPeriodId(),
             'class_group_id' => $classGroup->id,

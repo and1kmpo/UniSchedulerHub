@@ -59,17 +59,47 @@ class Subject extends Model
     // Materias que son prerrequisitos de esta materia
     public function prerequisites()
     {
-        return $this->belongsToMany(Subject::class, 'subject_prerequisite', 'subject_id', 'prerequisite_id');
+        return $this->belongsToMany(
+            Subject::class,
+            'subject_prerequisites',
+            'subject_id',
+            'prerequisite_subject_id'
+        )
+            ->withPivot(['logic', 'min_grade'])
+            ->withTimestamps();
     }
+
 
     // Materias que dependen de esta como prerrequisito
     public function isPrerequisiteFor()
     {
-        return $this->belongsToMany(Subject::class, 'subject_prerequisite', 'prerequisite_id', 'subject_id');
+        return $this->belongsToMany(
+            Subject::class,
+            'subject_prerequisites',
+            'prerequisite_subject_id',
+            'subject_id'
+        )
+            ->withPivot(['logic', 'min_grade'])
+            ->withTimestamps();
     }
 
     public function classGroups()
     {
         return $this->hasMany(ClassGroup::class);
+    }
+
+    public function curricula()
+    {
+        return $this->belongsToMany(
+            Curriculum::class,
+            'curriculum_subjects'
+        )
+            ->withPivot([
+                'semester_recommended',
+                'credits',
+                'type',
+                'area_id',
+            ])
+            ->withTimestamps();
     }
 }

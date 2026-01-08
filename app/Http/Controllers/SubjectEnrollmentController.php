@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
-use App\Models\ClassGroup;
+use App\Services\DegreeAuditService;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Models\SubjectEnrollmentStatus;
@@ -17,14 +17,32 @@ class SubjectEnrollmentController extends Controller
     public function index(Request $request)
     {
         $student = $request->user()->student;
+
+        $student = $request->user()->student;
+
+        // ⛔ No hay curriculum todavía
+        if (!$student->curriculum) {
+            return Inertia::render('Students/SubjectEnrollment', [
+                'subjects' => [],
+                'enrollmentDeadline' => null,
+                'unenrollmentDeadline' => null,
+                'currentSchedules' => [],
+                'systemState' => 'no_curriculum',
+            ]);
+        }
+
+
         $activePeriod = AcademicPeriod::where('is_active', true)->first();
 
+        // Current enrollments for active period
         $enrollments = SubjectEnrollment::with(['status', 'classGroup.schedules'])
             ->where('student_id', $student->id)
             ->where('academic_period_id', optional($activePeriod)->id)
             ->get();
 
-        $currentSchedules = $enrollments->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules ?? [])
+        // Current schedules (for conflict visualization)
+        $currentSchedules = $enrollments
+            ->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules ?? [])
             ->map(fn($schedule) => [
                 'day' => $schedule->day,
                 'start_time' => $schedule->start_time,
@@ -32,23 +50,27 @@ class SubjectEnrollmentController extends Controller
             ])
             ->values();
 
-        $approvedSubjectIds = SubjectEnrollment::where('student_id', $student->id)
-            ->whereHas('status', fn($q) => $q->where('code', 'approved'))
-            ->pluck('subject_id');
+        // Degree Audit engine
+        $audit = new DegreeAuditService($student);
 
-        $subjects = $student->program->subjects()
+        $currentCredits = $activePeriod
+            ? $audit->currentPeriodCredits($activePeriod)
+            : 0;
+
+
+        // Curriculum subjects
+        $subjects = $student->curriculum->subjects()
             ->with([
                 'prerequisites',
                 'classGroups' => fn($q) =>
                 $q->where('academic_period_id', optional($activePeriod)->id)
                     ->with(['schedules', 'professor'])
-                    ->withCount('subjectEnrollments')
+                    ->withCount('subjectEnrollments'),
             ])
             ->get()
-            ->map(function ($subject) use ($approvedSubjectIds, $enrollments) {
-                $hasAllPrerequisites = $subject->prerequisites->every(
-                    fn($pr) => $approvedSubjectIds->contains($pr->id)
-                );
+            ->map(function ($subject) use ($audit, $enrollments) {
+
+                $evaluation = $audit->evaluateSubject($subject);
 
                 $enrollment = $enrollments->firstWhere('subject_id', $subject->id);
                 $currentGroupId = optional($enrollment)->class_group_id;
@@ -56,10 +78,13 @@ class SubjectEnrollmentController extends Controller
                 return [
                     'id' => $subject->id,
                     'name' => $subject->name,
-                    'credits' => $subject->credits,
-                    'semester' => $subject->pivot->semester,
-                    'hasAllPrerequisites' => $hasAllPrerequisites,
-                    'alreadyEnrolled' => $enrollment !== null,
+                    'credits' => $subject->pivot->credits,
+                    'semester' => $subject->pivot->semester_recommended,
+
+                    // Degree audit (from service)
+                    ...$evaluation,
+
+                    // Current enrollment info
                     'status' => $enrollment?->status?->code,
                     'statusColor' => $enrollment?->status?->color,
                     'currentGroupId' => $currentGroupId,
@@ -68,74 +93,113 @@ class SubjectEnrollmentController extends Controller
                         'start_time' => $s->start_time,
                         'end_time' => $s->end_time,
                     ])->values(),
+
+                    // Available groups
                     'groups' => $subject->classGroups->map(function ($group) use ($currentGroupId) {
                         return [
                             'id' => $group->id,
                             'code' => $group->code,
-                            'enrolled' => $group->subject_enrollments_count,
                             'name' => $group->name,
                             'capacity' => $group->capacity,
+                            'enrolled' => $group->subject_enrollments_count,
+                            'professor' => optional($group->professor)->name,
+                            'isCurrent' => $group->id === $currentGroupId,
                             'schedules' => $group->schedules->map(fn($s) => [
                                 'day' => $s->day,
                                 'start_time' => $s->start_time,
                                 'end_time' => $s->end_time,
                             ]),
-                            'professor' => optional($group->professor)->name,
-                            'isCurrent' => $group->id === $currentGroupId,
                         ];
                     }),
                 ];
             });
 
+        $progress = $audit->progress($subjects->count());
+
         return Inertia::render('Students/SubjectEnrollment', [
             'subjects' => $subjects,
-            'enrollmentDeadline' => $activePeriod->enrollment_deadline,
-            'unenrollmentDeadline' => $activePeriod->unenrollment_deadline,
+            'progress' => $progress,
+            'currentCredits' => $currentCredits,
+            'maxCredits' => $audit->maxCreditsPerPeriod,
+            'enrollmentDeadline' => $activePeriod?->enrollment_deadline,
+            'unenrollmentDeadline' => $activePeriod?->unenrollment_deadline,
             'currentSchedules' => $currentSchedules,
         ]);
     }
-
 
     public function enroll(Request $request, Subject $subject)
     {
         try {
             $student = $request->user()->student;
 
-            // Validar que la materia pertenece al programa
-            if (!$student->program->subjects()->where('subjects.id', $subject->id)->exists()) {
-                return response()->json(['error' => 'This subject is not part of your program.'], 403);
-            }
-
-            // Validar prerrequisitos
-            $missing = $subject->prerequisites->filter(function ($prereq) use ($student) {
-                return !SubjectEnrollment::where('student_id', $student->id)
-                    ->where('subject_id', $prereq->id)
-                    ->whereHas('status', fn($q) => $q->where('code', 'approved'))
-                    ->exists();
-            });
-
-            if ($missing->isNotEmpty()) {
-                return response()->json(['error' => 'You have not passed the required prerequisites.'], 422);
-            }
-
+            /**
+             * 1️⃣ Obtener período académico activo
+             */
             $period = AcademicPeriod::where('is_active', true)->first();
 
             if (!$period) {
-                return response()->json(['error' => 'There is no active academic period.'], 500);
+                return response()->json([
+                    'error' => 'There is no active academic period.'
+                ], 500);
             }
 
-            // Validar fecha límite
-            if ($period->enrollment_deadline && now()->greaterThan(Carbon::parse($period->enrollment_deadline)->endOfDay())) {
-                return response()->json(['error' => 'The enrollment deadline has passed.'], 403);
+            /**
+             * 2️⃣ Validar que la asignatura pertenece al currículo del estudiante
+             */
+            $curriculumSubject = $student->curriculum
+                ->subjects()
+                ->where('subjects.id', $subject->id)
+                ->first();
+
+            if (!$curriculumSubject) {
+                return response()->json([
+                    'error' => 'This subject does not belong to your curriculum.'
+                ], 403);
             }
 
-            // Validar group enviado
+
+            /**
+             * 🔐 3️⃣ Validación académica (Degree Audit CENTRAL)
+             */
+            $audit = new DegreeAuditService($student);
+            $authorization = $audit->authorizeEnrollment($curriculumSubject, $period);
+
+            if (!$authorization['allowed']) {
+                return response()->json([
+                    'error' => 'Enrollment not allowed.',
+                    'reason' => $authorization['reason'],
+                    'status' => $authorization['status'] ?? null,
+                    'details' => $authorization['details'] ?? null,
+                    'blocked_by' => $authorization['blocked_by'] ?? [],
+                ], 422);
+            }
+
+
+            /**
+             * 4️⃣ Validar fecha límite de inscripción
+             */
+            if (
+                $period->enrollment_deadline &&
+                now()->greaterThan(
+                    Carbon::parse($period->enrollment_deadline)->endOfDay()
+                )
+            ) {
+                return response()->json([
+                    'error' => 'The enrollment deadline has passed.'
+                ], 403);
+            }
+
+            /**
+             * 5️⃣ Validar grupo enviado
+             */
             $groupId = $request->get('class_group_id');
+
             if (!$groupId) {
-                return response()->json(['error' => 'No group selected.'], 422);
+                return response()->json([
+                    'error' => 'No group selected.'
+                ], 422);
             }
 
-            // Buscar el grupo y asegurarse que pertenece a esta materia y período
             $classGroup = $subject->classGroups()
                 ->where('id', $groupId)
                 ->where('academic_period_id', $period->id)
@@ -143,26 +207,22 @@ class SubjectEnrollmentController extends Controller
                 ->first();
 
             if (!$classGroup) {
-                return response()->json(['error' => 'Selected group is not valid for this subject or period.'], 422);
+                return response()->json([
+                    'error' => 'Selected group is not valid for this subject or period.'
+                ], 422);
             }
 
-            // Validar capacidad
-            if ($classGroup->subjectEnrollments()->count() >= $classGroup->capacity) {
-                return response()->json(['error' => 'This group is already full.'], 422);
-            }
-
-            // Buscar si ya existe inscripción previa para esta asignatura
+            /**
+             * 6️⃣ Buscar inscripción existente (para cambio de grupo)
+             */
             $existing = SubjectEnrollment::where('student_id', $student->id)
                 ->where('subject_id', $subject->id)
                 ->where('academic_period_id', $period->id)
                 ->first();
 
-            // Si ya la aprobó o revalidó, no puede inscribirse ni cambiar grupo
-            if ($existing && in_array($existing->status->code, ['approved', 'revalidation'])) {
-                return response()->json(['error' => 'You have already completed this subject.'], 422);
-            }
-
-            // Validar traslapes de horario
+            /**
+             * 7️⃣ Validar traslapes de horario
+             */
             $existingSchedules = SubjectEnrollment::where('student_id', $student->id)
                 ->where('academic_period_id', $period->id)
                 ->with('classGroup.schedules')
@@ -171,7 +231,8 @@ class SubjectEnrollmentController extends Controller
 
             foreach ($classGroup->schedules as $new) {
                 foreach ($existingSchedules as $existingSchedule) {
-                    // Si el horario a comparar es del mismo grupo actual, lo ignoramos
+
+                    // Ignorar el mismo grupo si es cambio
                     if ($existing && $existing->class_group_id === $classGroup->id) {
                         continue;
                     }
@@ -188,12 +249,9 @@ class SubjectEnrollmentController extends Controller
                 }
             }
 
-            $status = SubjectEnrollmentStatus::where('code', 'enrolled')->first();
-            if (!$status) {
-                return response()->json(['error' => 'Enrollment status is misconfigured.'], 500);
-            }
-
-            // Si ya está inscrito, actualizar el grupo
+            /**
+             * 8️⃣ Si YA está inscrito → solo cambiar grupo (NO créditos)
+             */
             if ($existing) {
                 $existing->class_group_id = $classGroup->id;
                 $existing->save();
@@ -204,11 +262,33 @@ class SubjectEnrollmentController extends Controller
                         'code' => $existing->status->code,
                         'color' => $existing->status->color,
                         'description' => $existing->status->description,
-                    ]
+                    ],
                 ], 200);
             }
 
-            // Si no existe, crear nueva inscripción
+            /**
+             * 🔟 Validar capacidad del grupo
+             */
+            if ($classGroup->subjectEnrollments()->count() >= $classGroup->capacity) {
+                return response()->json([
+                    'error' => 'This group is already full.'
+                ], 422);
+            }
+
+            /**
+             * 1️⃣1️⃣ Obtener estado "enrolled"
+             */
+            $status = SubjectEnrollmentStatus::where('code', 'enrolled')->first();
+
+            if (!$status) {
+                return response()->json([
+                    'error' => 'Enrollment status is misconfigured.'
+                ], 500);
+            }
+
+            /**
+             * 1️⃣2️⃣ Crear inscripción
+             */
             SubjectEnrollment::create([
                 'student_id' => $student->id,
                 'subject_id' => $subject->id,
@@ -223,45 +303,95 @@ class SubjectEnrollmentController extends Controller
                     'code' => $status->code,
                     'color' => $status->color,
                     'description' => $status->description,
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Enrollment error', ['exception' => $e]);
-            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => 'An unexpected error occurred.',
+            ], 500);
         }
     }
-
 
 
     public function unenroll(Request $request, Subject $subject)
     {
-        $student = $request->user()->student;
-        $period = AcademicPeriod::where('is_active', true)->first();
+        try {
+            $student = $request->user()->student;
 
-        if (!$period) {
-            return response()->json(['error' => 'There is no active academic period.'], 500);
+            /**
+             * 1️⃣ Obtener período académico activo
+             */
+            $period = AcademicPeriod::where('is_active', true)->first();
+
+            if (!$period) {
+                return response()->json([
+                    'error' => 'There is no active academic period.'
+                ], 500);
+            }
+
+            /**
+             * 2️⃣ Validar fecha límite de retiro
+             */
+            if (
+                $period->unenrollment_deadline &&
+                now()->greaterThan(
+                    Carbon::parse($period->unenrollment_deadline)->endOfDay()
+                )
+            ) {
+                return response()->json([
+                    'error' => 'The unenrollment deadline has passed.'
+                ], 403);
+            }
+
+            /**
+             * 3️⃣ Buscar inscripción existente
+             */
+            $enrollment = SubjectEnrollment::where('student_id', $student->id)
+                ->where('subject_id', $subject->id)
+                ->where('academic_period_id', $period->id)
+                ->with('status', 'subject')
+                ->first();
+
+            if (!$enrollment) {
+                return response()->json([
+                    'error' => 'You are not enrolled in this subject.'
+                ], 404);
+            }
+
+            /**
+             * 🔐 4️⃣ Validación académica central (Degree Audit)
+             */
+            $audit = new DegreeAuditService($student);
+            $authorization = $audit->authorizeUnenrollment($enrollment, $period);
+
+            if (!$authorization['allowed']) {
+                return response()->json([
+                    'error' => 'Unenrollment not allowed.',
+                    'reason' => $authorization['reason'],
+                    'status' => $authorization['status'] ?? null,
+                    'details' => $authorization['details'] ?? null,
+                ], 422);
+            }
+
+            /**
+             * 5️⃣ Eliminar inscripción
+             */
+            $enrollment->delete();
+
+            return response()->json([
+                'message' => 'Unenrollment successful.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unenrollment error', ['exception' => $e]);
+
+            return response()->json([
+                'error' => 'An unexpected error occurred.'
+            ], 500);
         }
-
-        if (
-            $period->unenrollment_deadline &&
-            now()->greaterThan(Carbon::parse($period->unenrollment_deadline)->endOfDay())
-        ) {
-            return response()->json(['error' => 'The unenrollment deadline has passed.'], 403);
-        }
-
-        $enrollment = SubjectEnrollment::where('student_id', $student->id)
-            ->where('subject_id', $subject->id)
-            ->where('academic_period_id', $period->id)
-            ->first();
-
-        if (!$enrollment) {
-            return response()->json(['error' => 'You are not enrolled in this subject.'], 404);
-        }
-
-        $enrollment->delete();
-
-        return response()->json(['message' => 'Unenrollment successful.']);
     }
+
 
     public function groups(Subject $subject)
     {

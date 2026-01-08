@@ -3,31 +3,27 @@
 namespace Database\Seeders;
 
 use App\Models\SubjectEnrollmentStatus;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SubjectEnrollmentStatusSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        SubjectEnrollmentStatus::insert([
+        $statuses = [
+            [
+                'code' => 'pre_enrolled',
+                'description' => 'The student has pre-enrolled in the subject, pending confirmation.',
+                'color' => 'yellow',
+            ],
             [
                 'code' => 'enrolled',
                 'description' => 'The student is currently enrolled in the subject.',
                 'color' => 'blue',
             ],
             [
-                'code' => 'approved',
-                'description' => 'The student has successfully passed the subject.',
-                'color' => 'green',
-            ],
-            [
-                'code' => 'failed',
-                'description' => 'The student failed the subject.',
-                'color' => 'red',
+                'code' => 'cancelled',
+                'description' => 'The subject or group was cancelled.',
+                'color' => 'black',
             ],
             [
                 'code' => 'withdrawn',
@@ -35,10 +31,22 @@ class SubjectEnrollmentStatusSeeder extends Seeder
                 'color' => 'gray',
             ],
             [
+                'code' => 'failed',
+                'description' => 'The student failed the subject.',
+                'color' => 'red',
+            ],
+            [
+                'code' => 'approved',
+                'description' => 'The student successfully passed the subject.',
+                'color' => 'green',
+            ],
+            [
                 'code' => 'revalidation',
                 'description' => 'The subject was validated by external means or past studies.',
                 'color' => 'purple',
             ],
-        ]);
+        ];
+
+        SubjectEnrollmentStatus::upsert($statuses, ['code'], ['description', 'color']);
     }
 }

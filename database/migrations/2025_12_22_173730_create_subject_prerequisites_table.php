@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('subject_prerequisites', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('subject_id');        // materia principal
-            $table->unsignedBigInteger('id');   // su prerrequisito
+            $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('prerequisite_subject_id')->constrained('subjects')->cascadeOnDelete();
+            $table->enum('logic', ['ALL', 'ANY'])->default('ALL');
+            $table->decimal('min_grade', 3, 1)->default(3.0);
             $table->timestamps();
 
-            $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('cascade');
-            $table->foreign('id')->references('id')->on('subjects')->onDelete('cascade');
-
-            $table->unique(['subject_id', 'id']);
+            $table->unique(['subject_id', 'prerequisite_subject_id']);
         });
     }
 

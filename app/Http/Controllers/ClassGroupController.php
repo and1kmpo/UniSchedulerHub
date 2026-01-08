@@ -7,10 +7,13 @@ use App\Models\ClassGroup;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Models\User;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Services\EnrollmentService;
+
 
 class ClassGroupController extends Controller
 {
@@ -44,6 +47,11 @@ class ClassGroupController extends Controller
             'modality' => 'required|string',
             'shift' => 'required|string',
             'academic_period_id' => 'required|exists:academic_periods,id',
+            'schedules' => 'required|array|min:1',
+            'schedules.*.day' => 'required|string',
+            'schedules.*.start_time' => 'required',
+            'schedules.*.end_time' => 'required|after:schedules.*.start_time',
+
         ]);
 
         Log::info('Creating ClassGroup with data:', $data);
@@ -88,6 +96,24 @@ class ClassGroupController extends Controller
                 'name' => $u->name,               // $u ya es User
             ]);
 
+        $studentSchedules = [];
+
+        if ($editable) {
+            $studentSchedules = \App\Models\SubjectEnrollment::with('classGroup.schedules')
+                ->whereIn('student_id', $enrolledIds)
+                ->get()
+                ->flatMap(
+                    fn($e) =>
+                    $e->classGroup->schedules->map(fn($s) => [
+                        'day' => $s->day,
+                        'start_time' => $s->start_time,
+                        'end_time' => $s->end_time,
+                    ])
+                )
+                ->values();
+        }
+
+
         return Inertia::render('ClassGroups/Show', [
             'classGroup' => [
                 'id'                        => $group->id,
@@ -109,9 +135,17 @@ class ClassGroupController extends Controller
                     'document' => $e->student->document,
                     'name' => $e->student->user->name,
                 ]),
+                'schedules' => $group->schedules->map(fn($s) => [
+                    'day' => $s->day,
+                    'start_time' => $s->start_time,
+                    'end_time' => $s->end_time,
+                ]),
+
             ],
             'allStudents' => $allStudents,
             'enrolledIds' => $enrolledIds,
+            'studentSchedules' => $studentSchedules,
+
         ]);
     }
 
@@ -155,12 +189,21 @@ class ClassGroupController extends Controller
             ->with('success', 'Class group updated with schedule');
     }
 
-
     public function destroy($id)
     {
         $classGroup = ClassGroup::findOrFail($id);
         $classGroup->delete();
 
         return redirect()->route('class-groups.index')->with('success', 'Class group deleted');
+    }
+
+    public function canEnroll(
+        ClassGroup $classGroup,
+        Student $student,
+        EnrollmentService $service
+    ) {
+        return response()->json(
+            $service->canEnroll($student, $classGroup)
+        );
     }
 }

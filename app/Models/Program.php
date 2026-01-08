@@ -23,4 +23,14 @@ class Program extends Model
     {
         return $this->belongsToMany(Subject::class)->withPivot('semester')->withTimestamps();
     }
+
+    public function curricula()
+    {
+        return $this->hasMany(Curriculum::class);
+    }
+
+    public function activeCurriculum()
+    {
+        return $this->hasOne(Curriculum::class)->where('is_active', true);
+    }
 }
