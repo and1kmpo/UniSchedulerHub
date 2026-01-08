@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grade;
-use App\Models\GradeState;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Enums\GradeStatus;
-use Hamcrest\Type\IsNumeric;
+use App\Models\GradeStatus;
+use App\Enums\GradeStatuses;
 use Illuminate\Support\Facades\Log;
 
 class GradeController extends Controller
@@ -64,14 +63,14 @@ class GradeController extends Controller
         $finalGrade = $this->calculateFinalGrade($gradeData);
         $statusCode = $this->determineStatus($gradeData, $finalGrade);
 
-        $state = GradeState::where('code', $statusCode)->first();
+        $state = GradeStatus::where('code', $statusCode)->first();
 
         if (!$state) {
             Log::warning("No se encontró un estado con código: {$statusCode}");
-            $stateId = null;
+            $statusId = null;
         } else {
             Log::info("Se encontró estado: {$state->code} con ID {$state->id}");
-            $stateId = $state->id;
+            $statusId = $state->id;
         }
 
         $grade = Grade::updateOrCreate(
@@ -87,7 +86,7 @@ class GradeController extends Controller
                 'activities' => $gradeData['activities'] ?? null,
                 'attendance' => $gradeData['attendance'] ?? null,
                 'final_grade' => $finalGrade,
-                'grade_state_id' => $stateId,
+                'grade_status_id' => $statusId,
             ]
         );
 
@@ -124,11 +123,11 @@ class GradeController extends Controller
         }
 
         if ($gradeData['attendance'] < 80) {
-            return GradeStatus::FAILED_ATTENDANCE->value;
+            return GradeStatuses::FAILED_ATTENDANCE->value;
         }
 
         return $finalGrade >= 3.0
-            ? GradeStatus::PASSED->value
-            : GradeStatus::FAILED->value;
+            ? GradeStatuses::PASSED->value
+            : GradeStatuses::FAILED->value;
     }
 }

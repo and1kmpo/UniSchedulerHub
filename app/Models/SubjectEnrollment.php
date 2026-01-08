@@ -10,7 +10,15 @@ class SubjectEnrollment extends Model
         'student_id',
         'subject_id',
         'academic_period_id',
-        'status',
+        'class_group_id',
+        'status_id',
+    ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'enrollment_deadline' => 'datetime',
+        'unenrollment_deadline' => 'datetime',
     ];
 
     public function student()
@@ -26,5 +34,15 @@ class SubjectEnrollment extends Model
     public function academicPeriod()
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(SubjectEnrollmentStatus::class, 'status_id');
+    }
+
+    public function classGroup()
+    {
+        return $this->belongsTo(ClassGroup::class);
     }
 }

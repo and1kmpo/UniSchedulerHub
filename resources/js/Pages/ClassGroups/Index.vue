@@ -1,5 +1,5 @@
 <template>
-    <Layout title="Class Groups">
+    <AppLayout title="Class Groups">
         <template #header>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Class Groups</h1>
@@ -24,7 +24,7 @@
                     <table class="min-w-full text-sm text-left">
                         <thead>
                             <tr
-                                class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider">
+                                class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider text-center">
                                 <th class="px-4 py-3">Code</th>
                                 <th class="px-4 py-3">Subject</th>
                                 <th class="px-4 py-3">Professor</th>
@@ -49,8 +49,9 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
-                                    {{ group.professor.name }}
+                                    {{ group.professor?.name ?? 'Not assigned' }}
                                 </td>
+
                                 <td class="px-4 py-3 hidden md:table-cell">
                                     <span class="badge" :class="shiftClass(group.shift)">
                                         {{ group.shift }}
@@ -61,26 +62,50 @@
                                         class="badge bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-white">
                                         {{ group.modality }}
                                     </span>
+
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        {{ group.capacity }} students
+                                        {{ group.subject_enrollments_count }} / {{ group.capacity }} students
                                     </span>
                                 </td>
+
                                 <td class="px-4 py-3">
-                                    <div class="flex gap-3">
+                                    <div class="flex gap-2 justify-center">
+                                        <!-- Edit -->
                                         <Link :href="route('class-groups.edit', group.id)"
-                                            class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+                                            class="action-icon text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
                                             title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="sr-only">Edit</span>
                                         </Link>
+
+                                        <!-- Manage Enrollments -->
+                                        <Link :href="route('class-groups.show', group.id)"
+                                            class="action-icon text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
+                                            title="Manage Enrollments">
+                                        <i class="fa-solid fa-users"></i>
+                                        <span class="sr-only">Manage Enrollments</span>
+                                        </Link>
+
+                                        <!-- View Calendar -->
+                                        <Link :href="route('class-schedules.calendar', group.id)"
+                                            class="action-icon text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
+                                            title="View Calendar">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        <span class="sr-only">View Calendar</span>
+                                        </Link>
+
+                                        <!-- Delete -->
                                         <button @click="destroy(group.id)"
-                                            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                                            class="action-icon text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
                                             title="Delete">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="sr-only">Delete</span>
                                         </button>
                                     </div>
                                 </td>
+
                             </tr>
                         </tbody>
                     </table>
@@ -92,23 +117,38 @@
             </div>
         </div>
 
-    </Layout>
+    </AppLayout>
 </template>
 
 <script setup>
 import { Link, router } from "@inertiajs/vue3";
-import Layout from "@/Layouts/AppLayout.vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
 import Pagination from "@/Components/Pagination.vue";
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { toastSuccess, toastError, confirm } = useAlert();
 
 defineProps({
     classGroups: Object,
 });
 
-function destroy(id) {
-    if (confirm("Are you sure you want to delete this group?")) {
-        router.delete(route("class-groups.destroy", id));
+const destroy = async (id) => {
+    const confirmed = await confirm('Are you sure you want to delete this group?', 'Confirm Deletion');
+
+    if (!confirmed) return;
+
+    try {
+        await axios.post(route('class-groups.destroy', id), {
+            _method: 'DELETE'
+        });
+        toastSuccess('Group deleted successfully');
+        router.reload();
+    } catch (error) {
+        console.error(error);
+        toastError('Could not delete the group');
     }
-}
+};
+
 
 function shiftClass(shift) {
     const map = {
@@ -123,5 +163,9 @@ function shiftClass(shift) {
 <style scoped>
 .badge {
     @apply inline-block px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.action-icon {
+    @apply p-2 rounded transition hover:bg-gray-100 dark:hover:bg-gray-800;
 }
 </style>

@@ -11,7 +11,6 @@ use App\Models\Program;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Role;
 
 class StudentController extends Controller
 {
@@ -20,7 +19,10 @@ class StudentController extends Controller
      */
     public function index()
     {
-        $students = User::role('Student')->with(['student.program', 'student.subjects'])->paginate(5);
+        $students = User::role('Student')
+            ->whereHas('student') // <- solo los que tienen relación creada
+            ->with(['student.program', 'student.subjects'])
+            ->paginate(5);
 
         if (request()->wantsJson()) {
             return response()->json($students);

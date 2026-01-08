@@ -71,6 +71,7 @@ class SubjectController extends Controller
     {
         $validatedData = $request->validated();
         $subject->update($validatedData);
+
         return redirect()->route('subjects.index');
     }
 

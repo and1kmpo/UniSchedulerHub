@@ -9,7 +9,7 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        $permissions = Permission::paginate(10);
+        $permissions = Permission::paginate(20);
 
         // Verificamos si la solicitud es JSON
         if (request()->wantsJson()) {
@@ -22,7 +22,7 @@ class PermissionController extends Controller
     {
         $request->validate(['name' => 'required|unique:permissions,name']);
 
-        $permission = Permission::create(['name' => $request->name]);
+        $permission = Permission::create(['name' => $request->name, 'guard_name' => 'web',]);
 
         return response()->json($permission, 201);
     }

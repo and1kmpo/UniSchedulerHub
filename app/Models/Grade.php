@@ -19,7 +19,7 @@ class Grade extends Model
         'activities',
         'attendance',
         'final_grade',
-        'grade_state_id',
+        'grade_status_id',
     ];
 
     // Relaciones
@@ -40,6 +40,6 @@ class Grade extends Model
 
     public function state()
     {
-        return $this->belongsTo(GradeState::class, 'grade_state_id')->select(['id', 'code', 'label']);
+        return $this->belongsTo(GradeStatus::class, 'grade_status_id')->select(['id', 'code', 'label']);
     }
 }

@@ -9,20 +9,20 @@ class ClassSchedule extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['class_group_id', 'day', 'start_time', 'end_time', 'classroom'];
-
-    public function group()
-    {
-        return $this->belongsTo(ClassGroup::class, 'class_group_id');
-    }
-
-    public function schedules()
-    {
-        return $this->hasMany(ClassSchedule::class);
-    }
+    protected $fillable = ['class_group_id', 'day', 'start_time', 'end_time', 'classroom_id'];
 
     public function getRouteKeyName()
     {
         return 'id';
+    }
+
+    public function classroom()
+    {
+        return $this->belongsTo(Classroom::class);
+    }
+
+    public function classGroup()
+    {
+        return $this->belongsTo(ClassGroup::class, 'class_group_id');
     }
 }

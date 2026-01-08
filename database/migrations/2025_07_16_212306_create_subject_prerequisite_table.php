@@ -8,16 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('subject_prerequisite', function (Blueprint $table) {
+        Schema::create('subject_prerequisites', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('subject_id');        // materia principal
-            $table->unsignedBigInteger('prerequisite_id');   // su prerrequisito
+            $table->unsignedBigInteger('id');   // su prerrequisito
             $table->timestamps();
 
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('cascade');
-            $table->foreign('prerequisite_id')->references('id')->on('subjects')->onDelete('cascade');
+            $table->foreign('id')->references('id')->on('subjects')->onDelete('cascade');
 
-            $table->unique(['subject_id', 'prerequisite_id']);
+            $table->unique(['subject_id', 'id']);
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subject_prerequisite');
+        Schema::dropIfExists('subject_prerequisites');
     }
 };

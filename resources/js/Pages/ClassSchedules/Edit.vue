@@ -4,7 +4,7 @@ import Form from "./Form.vue";
 
 defineProps({
     classGroup: Object,
-    schedule: Object, // Solo en Edit.vue
+    schedule: Object,
 });
 </script>
 
