@@ -1,23 +1,22 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAlert } from '@/Components/Composables/useAlert'
 import axios from 'axios'
 import AppLayout from '@/Layouts/AppLayout.vue'
 
+
 const { toastSuccess, toastError, confirm } = useAlert()
 
-// Recibimos por props:
-// classGroup: { id, code, subject, professor:{ user }, modality, shift, capacity, subject_enrollments_count, students:[{id,code,name}] }
-// allStudents: [{id,code,name},...]
 const props = defineProps({
     classGroup: Object,
     allStudents: Array,
-    enrolledIds: Array,
-    studentSchedules: Array
+    enrolledIds: Array
 })
 
 const enrolling = ref(false)
 const selectedStudentId = ref(null)
+const canEnrollResult = ref(null)
+const checking = ref(false)
 
 // reactivo de inscritos
 const enrolled = ref([...props.classGroup.students])
@@ -72,34 +71,31 @@ const removeEnrollment = async (studentId) => {
     }
 }
 
-const isFull = computed(() =>
-    enrolled.value.length >= props.classGroup.capacity
-)
+watch(selectedStudentId, async (studentId) => {
+    canEnrollResult.value = null
+    if (!studentId) return
 
-const isAlreadyEnrolled = computed(() =>
-    enrolledIds.value.includes(selectedStudentId.value)
-)
-
-const hasScheduleConflict = (groupSchedules, studentSchedules) => {
-    return groupSchedules.some(gs =>
-        studentSchedules.some(ss =>
-            gs.day === ss.day &&
-            gs.start_time < ss.end_time &&
-            gs.end_time > ss.start_time
+    checking.value = true
+    try {
+        const { data } = await axios.get(
+            route('class-groups.can-enroll', [
+                props.classGroup.id,
+                studentId
+            ])
         )
-    )
-}
-
-const groupSchedules = props.classGroup.schedules
-
-const hasConflict = computed(() => {
-    if (!selectedStudentId.value) return false
-
-    return hasScheduleConflict(
-        groupSchedules,
-        props.studentSchedules
-    )
+        canEnrollResult.value = data
+    } catch (e) {
+        toastError('Could not validate enrollment')
+    } finally {
+        checking.value = false
+    }
 })
+
+const cannotEnroll = computed(() =>
+    checking.value ||
+    !canEnrollResult.value ||
+    !canEnrollResult.value.allowed
+)
 
 </script>
 
@@ -178,17 +174,24 @@ const hasConflict = computed(() => {
                             {{ stu.name }} ({{ stu.document }})
                         </option>
                     </select>
-                    <p v-if="hasConflict" class="text-sm text-red-600 mt-2">
-                        ⚠️ This student has a schedule conflict with another class.
+                    <p v-if="canEnrollResult && !canEnrollResult.allowed" class="text-sm text-red-600 mt-2">
+                        {{ canEnrollResult.message }}
+
                     </p>
 
-                    <button :disabled="!selectedStudentId || enrolling || isFull || isAlreadyEnrolled || hasConflict"
-                        @click="enrollStudent" class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span v-if="isFull">Group full</span>
-                        <span v-else-if="hasConflict">Schedule conflict</span>
-                        <span v-else-if="isAlreadyEnrolled">Already enrolled</span>
-                        <span v-else-if="!enrolling">Enroll</span>
-                        <span v-else>Enrolling...</span>
+                    <button :disabled="!selectedStudentId || enrolling || cannotEnroll" @click="enrollStudent"
+                        class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span v-if="checking">Checking...</span>
+                        <span v-else-if="canEnrollResult && !canEnrollResult.allowed">
+                            {{ canEnrollResult.message }}
+                        </span>
+                        <span v-else-if="enrolling">
+                            Enrolling...
+                        </span>
+                        <span v-else>
+                            Enroll
+                        </span>
+
                     </button>
                 </div>
             </div>
