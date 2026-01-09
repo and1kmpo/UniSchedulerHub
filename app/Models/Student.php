@@ -19,6 +19,7 @@ class Student extends Model
         'city',
         'semester',
         'program_id',
+        'academic_status'
     ];
 
     public function user()
