@@ -68,6 +68,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/class-groups/{id}', [ClassGroupController::class, 'show'])->name('class-groups.show');
 
         Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
+        Route::middleware(['auth', 'role:admin'])->group(function () {
+            Route::post('/academic-periods/{period}/close', [AcademicPeriodController::class, 'close'])->name('academic-periods.close');
+        });
+
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
 
         Route::resource('buildings', BuildingController::class);

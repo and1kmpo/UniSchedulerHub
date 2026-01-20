@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassGroup;
 use App\Models\SubjectEnrollment;
 use App\Models\Student;
+use App\Models\SubjectEnrollmentStatus;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Services\EnrollmentService;
@@ -70,13 +71,15 @@ class GroupEnrollmentController extends Controller
             ], 422);
         }
 
+        $status = SubjectEnrollmentStatus::where('code', 'pre_enrolled')->firstOrFail();
+
         // Crear inscripción
         SubjectEnrollment::create([
             'student_id' => $student->id,
             'subject_id' => $classGroup->subject_id,
             'academic_period_id' => currentAcademicPeriodId(),
             'class_group_id' => $classGroup->id,
-            'status_id' => 1,
+            'status_id' => $status->id,
         ]);
 
         return response()->json(['message' => 'Student enrolled successfully']);

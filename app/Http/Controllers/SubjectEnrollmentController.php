@@ -276,33 +276,33 @@ class SubjectEnrollmentController extends Controller
             }
 
             /**
-             * 1️⃣1️⃣ Obtener estado "enrolled"
+             * 1️⃣1️⃣ Obtener estado "pre-enrolled"
              */
-            $status = SubjectEnrollmentStatus::where('code', 'enrolled')->first();
+            $preStatus = SubjectEnrollmentStatus::where('code', 'pre_enrolled')->first();
 
-            if (!$status) {
+            if (!$preStatus) {
                 return response()->json([
-                    'error' => 'Enrollment status is misconfigured.'
+                    'error' => 'Pre-enrollment status is misconfigured.'
                 ], 500);
             }
 
             /**
              * 1️⃣2️⃣ Crear inscripción
              */
-            SubjectEnrollment::create([
-                'student_id' => $student->id,
-                'subject_id' => $subject->id,
+            $enrollment = SubjectEnrollment::create([
+                'student_id'         => $student->id,
+                'subject_id'         => $subject->id,
                 'academic_period_id' => $period->id,
-                'class_group_id' => $classGroup->id,
-                'status_id' => $status->id,
+                'class_group_id'     => $classGroup->id,
+                'status_id'          => $preStatus->id,
             ]);
 
             return response()->json([
                 'message' => 'Enrollment successful.',
                 'status' => [
-                    'code' => $status->code,
-                    'color' => $status->color,
-                    'description' => $status->description,
+                    'code' => $preStatus->code,
+                    'color' => $preStatus->color,
+                    'description' => $preStatus->description,
                 ],
             ]);
         } catch (\Exception $e) {

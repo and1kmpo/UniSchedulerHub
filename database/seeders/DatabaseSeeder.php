@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             GradeStatusSeeder::class,
             SubjectEnrollmentStatusSeeder::class,
             AcademicPeriodSeeder::class,
+            AcademicPeriodStatusSeeder::class,
             ProgramSeeder::class,
             SubjectSeeder::class,
             AdminUserSeeder::class,

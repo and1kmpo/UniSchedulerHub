@@ -98,4 +98,9 @@ class ClassGroup extends Model
     {
         return $this->hasManyThrough(Student::class, SubjectEnrollment::class, 'class_group_id', 'id', 'id', 'student_id');
     }
+
+    public function academicPeriod()
+    {
+        return $this->belongsTo(AcademicPeriod::class);
+    }
 }

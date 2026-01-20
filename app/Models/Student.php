@@ -22,6 +22,30 @@ class Student extends Model
         'academic_status'
     ];
 
+    // Academic statuses
+    public const STATUS_ACTIVE     = 'active';
+    public const STATUS_PROBATION  = 'probation';
+    public const STATUS_SUSPENDED  = 'suspended';
+    public const STATUS_GRADUATED  = 'graduated';
+    public const STATUS_WITHDRAWN  = 'withdrawn';
+
+    /**
+     * Statuses that allow enrollment
+     */
+    public const ENROLLABLE_STATUSES = [
+        self::STATUS_ACTIVE,
+        self::STATUS_PROBATION,
+    ];
+
+    /**
+     * Statuses that block enrollment
+     */
+    public const BLOCKED_STATUSES = [
+        self::STATUS_SUSPENDED,
+        self::STATUS_GRADUATED,
+        self::STATUS_WITHDRAWN,
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

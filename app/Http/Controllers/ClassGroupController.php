@@ -76,7 +76,8 @@ class ClassGroupController extends Controller
         $group = ClassGroup::with([
             'subject',
             'professor',                 // cargar al profesor y su user
-            'subjectEnrollments.student' // cargar a cada student.user en los enrollments
+            'subjectEnrollments.student',
+            'subjectEnrollments.status' // cargar a cada student.user en los enrollments
         ])
             ->withCount('subjectEnrollments')
             ->findOrFail($id);
@@ -113,6 +114,7 @@ class ClassGroupController extends Controller
                 ->values();
         }
 
+        $period = AcademicPeriod::find($group->academic_period_id);
 
         return Inertia::render('ClassGroups/Show', [
             'classGroup' => [
@@ -134,12 +136,22 @@ class ClassGroupController extends Controller
                     'id'   => $e->student->id,
                     'document' => $e->student->document,
                     'name' => $e->student->user->name,
+                    'status' => [
+                        'code' => $e->status->code,
+                        'description' => $e->status->description,
+                        'color' => $e->status->color
+                    ],
                 ]),
                 'schedules' => $group->schedules->map(fn($s) => [
                     'day' => $s->day,
                     'start_time' => $s->start_time,
                     'end_time' => $s->end_time,
                 ]),
+                'academicPeriod' => [
+                    'id' => $period->id,
+                    'name' => $period->name,
+                    'is_active' => $period->is_active,
+                ],
 
             ],
             'allStudents' => $allStudents,

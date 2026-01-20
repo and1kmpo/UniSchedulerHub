@@ -10,13 +10,20 @@ const { toastSuccess, toastError, confirm } = useAlert()
 const props = defineProps({
     classGroup: Object,
     allStudents: Array,
-    enrolledIds: Array
+    enrolledIds: Array,
 })
 
 const enrolling = ref(false)
-const selectedStudentId = ref(null)
+const selectedStudentId = ref('')
 const canEnrollResult = ref(null)
 const checking = ref(false)
+const academicPeriod = computed(() => props.classGroup.academicPeriod)
+
+const enrollmentClosed = computed(
+    () => !academicPeriod.value?.is_active
+)
+
+
 
 // reactivo de inscritos
 const enrolled = ref([...props.classGroup.students])
@@ -40,7 +47,14 @@ const enrollStudent = async () => {
         )
         // actualizar lista local
         const stu = props.allStudents.find(s => s.id === selectedStudentId.value)
-        enrolled.value.push(stu)
+        enrolled.value.push({
+            ...stu,
+            status: {
+                code: 'pre_enrolled',
+                description: 'Pre-enrolled',
+                color: 'yellow',
+            }
+        })
         enrolledIds.value.push(stu.id)
         toastSuccess(data.message || 'Student enrolled')
         selectedStudentId.value = null
@@ -74,6 +88,7 @@ const removeEnrollment = async (studentId) => {
 watch(selectedStudentId, async (studentId) => {
     canEnrollResult.value = null
     if (!studentId) return
+    if (!studentId) return
 
     checking.value = true
     try {
@@ -91,11 +106,42 @@ watch(selectedStudentId, async (studentId) => {
     }
 })
 
-const cannotEnroll = computed(() =>
-    checking.value ||
-    !canEnrollResult.value ||
-    !canEnrollResult.value.allowed
-)
+watch(enrollmentClosed, (closed) => {
+    if (closed) {
+        selectedStudentId.value = ''
+    }
+})
+
+
+const severityConfig = computed(() => {
+    if (!canEnrollResult.value) return null
+
+    switch (canEnrollResult.value.severity) {
+        case 'error':
+            return {
+                icon: 'fa-circle-xmark',
+                classes: 'bg-red-100 text-red-700 border-red-300'
+            }
+        case 'warning':
+            return {
+                icon: 'fa-triangle-exclamation',
+                classes: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+            }
+        case 'info':
+            return {
+                icon: 'fa-circle-info',
+                classes: 'bg-blue-100 text-blue-700 border-blue-300'
+            }
+        case 'success':
+            return {
+                icon: 'fa-circle-check',
+                classes: 'bg-green-100 text-green-700 border-green-300'
+            }
+        default:
+            return null
+    }
+})
+
 
 </script>
 
@@ -105,6 +151,13 @@ const cannotEnroll = computed(() =>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
                 Manage Enrollments
             </h1>
+            <div class="flex items-center gap-2 mt-2">
+                <span class="w-3 h-3 rounded-full" :class="academicPeriod.is_active ? 'bg-green-500' : 'bg-red-500'" />
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    {{ academicPeriod.is_active ? 'Enrollment period open' : 'Enrollment period closed' }}
+                </span>
+            </div>
+
         </template>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 m-6">
@@ -138,6 +191,7 @@ const cannotEnroll = computed(() =>
                             <tr>
                                 <th class="px-4 py-2">Name</th>
                                 <th class="px-4 py-2 hidden md:table-cell">Document</th>
+                                <th class="px-4 py-2 text-center">Status</th>
                                 <th class="px-4 py-2 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -145,6 +199,14 @@ const cannotEnroll = computed(() =>
                             <tr v-for="stu in enrolled" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td class="px-4 py-2">{{ stu.name }}</td>
                                 <td class="px-4 py-2 hidden md:table-cell">{{ stu.document }}</td>
+                                <td class="px-4 py-2 text-center">
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="{
+                                        'bg-yellow-100 text-yellow-800': stu.status?.code === 'pre_enrolled',
+                                        'bg-green-100 text-green-800': stu.status?.code === 'enrolled'
+                                    }">
+                                        {{ stu.status?.description ?? '—' }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-2 text-center">
                                     <button @click="removeEnrollment(stu.id)"
                                         class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
@@ -168,30 +230,36 @@ const cannotEnroll = computed(() =>
                 class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Enroll a New Student</h2>
                 <div class="flex flex-col md:flex-row gap-4">
-                    <select v-model="selectedStudentId" class="input">
-                        <option disabled value="">Select a student…</option>
-                        <option v-for="stu in available" :key="stu.id" :value="stu.id">
+                    <select v-model="selectedStudentId" class="input" :disabled="enrollmentClosed"
+                        :title="enrollmentClosed ? 'The enrollment period is currently closed' : ''">
+                        <!-- Period closed message -->
+                        <option v-if="enrollmentClosed" disabled value="">
+                            ⚠ Enrollment period is closed
+                        </option>
+
+                        <!-- Normal flow -->
+                        <option v-else disabled value="">
+                            Select a student…
+                        </option>
+
+                        <option v-for="stu in available" :key="stu.id" :value="stu.id" v-if="!enrollmentClosed">
                             {{ stu.name }} ({{ stu.document }})
                         </option>
                     </select>
-                    <p v-if="canEnrollResult && !canEnrollResult.allowed" class="text-sm text-red-600 mt-2">
-                        {{ canEnrollResult.message }}
 
-                    </p>
+                    <div v-if="!enrollmentClosed && canEnrollResult && severityConfig"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm"
+                        :class="severityConfig.classes">
+                        <i class="fa-solid" :class="severityConfig.icon"></i>
+                        <span>{{ canEnrollResult.message }}</span>
+                    </div>
 
-                    <button :disabled="!selectedStudentId || enrolling || cannotEnroll" @click="enrollStudent"
-                        class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span v-if="checking">Checking...</span>
-                        <span v-else-if="canEnrollResult && !canEnrollResult.allowed">
-                            {{ canEnrollResult.message }}
-                        </span>
-                        <span v-else-if="enrolling">
-                            Enrolling...
-                        </span>
-                        <span v-else>
-                            Enroll
-                        </span>
 
+                    <button :disabled="enrollmentClosed || enrolling || !canEnrollResult?.allowed"
+                        @click="enrollStudent" class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span v-if="checking">Checking…</span>
+                        <span v-else-if="enrolling">Enrolling…</span>
+                        <span v-else>Enroll</span>
                     </button>
                 </div>
             </div>
