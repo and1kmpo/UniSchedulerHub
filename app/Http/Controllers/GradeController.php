@@ -8,30 +8,43 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\GradeStatus;
 use App\Enums\GradeStatuses;
+use App\Models\ClassGroup;
+use App\Models\SubjectEnrollment;
 use Illuminate\Support\Facades\Log;
 
 class GradeController extends Controller
 {
-    public function index(Subject $subject)
+    public function index(ClassGroup $group)
     {
-        $students = $subject->students()->with('user')->get();
+        $enrollments = $group->subjectEnrollments()->with([
+            'student.user',
+            'grade.state',
+            'status'
+        ])->get()
+            ->sortBy(fn($e) => $e->student->user->name)
+            ->values();
 
-        $grades = Grade::where('subject_id', $subject->id)
-            ->with(['student.user', 'state'])
-            ->get()
-            ->keyBy('student_id');
 
         return Inertia::render('Grades/Manage', [
-            'subject' => $subject,
-            'students' => $students,
-            'grades' => $grades,
+            'group' => $group,
+            'subject' => $group->subject,
+            'academicPeriod' => $group->academicPeriod,
+            'canEdit' => $group->academicPeriod->isInProgress(),
+            'enrollments' => $enrollments->map(fn($enrollment) => [
+                'id' => $enrollment->id,
+                'student' => [
+                    'id' => $enrollment->student->id,
+                    'name' => $enrollment->student->user->name,
+                ],
+                'grade' => optional($enrollment->grade),
+                'status' => $enrollment->status->code,
+            ]),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ClassGroup $group)
     {
         $request->validate([
-            'subject_id' => 'required|exists:subjects,id',
             'grades' => 'required|array',
             'grades.*.first_exam' => 'nullable|numeric|min:0|max:5',
             'grades.*.second_exam' => 'nullable|numeric|min:0|max:5',
@@ -43,10 +56,18 @@ class GradeController extends Controller
         $professorId = auth()->user()->professor->id;
         $updatedGrades = [];
 
-        foreach ($request->grades as $studentId => $gradeData) {
-            $updatedGrades[$studentId] = $this->updateStudentGrade(
-                $studentId,
-                $request->subject_id,
+        foreach ($request->grades as $enrollmentId  => $gradeData) {
+
+            $enrollment = $group->subjectEnrollments()
+                ->with('AcademicPeriod')
+                ->findOrFail($enrollmentId);
+
+            if (!$enrollment->academicPeriod->isInProgress()) {
+                abort(403, 'Grades can only be edited while the academic period is in progress.');
+            }
+
+            $updatedGrades[$enrollmentId] = $this->updateStudentGrade(
+                $enrollment,
                 $gradeData,
                 $professorId
             );
@@ -58,26 +79,15 @@ class GradeController extends Controller
         ]);
     }
 
-    private function updateStudentGrade($studentId, $subjectId, $gradeData, $professorId)
+    private function updateStudentGrade(SubjectEnrollment $enrollment, array $gradeData, int $professorId)
     {
         $finalGrade = $this->calculateFinalGrade($gradeData);
         $statusCode = $this->determineStatus($gradeData, $finalGrade);
 
         $state = GradeStatus::where('code', $statusCode)->first();
 
-        if (!$state) {
-            Log::warning("No se encontró un estado con código: {$statusCode}");
-            $statusId = null;
-        } else {
-            Log::info("Se encontró estado: {$state->code} con ID {$state->id}");
-            $statusId = $state->id;
-        }
-
         $grade = Grade::updateOrCreate(
-            [
-                'student_id' => $studentId,
-                'subject_id' => $subjectId,
-            ],
+            ['subject_enrollment_id' => $enrollment->id],
             [
                 'professor_id' => $professorId,
                 'partial_1' => $gradeData['first_exam'] ?? null,
@@ -86,7 +96,7 @@ class GradeController extends Controller
                 'activities' => $gradeData['activities'] ?? null,
                 'attendance' => $gradeData['attendance'] ?? null,
                 'final_grade' => $finalGrade,
-                'grade_status_id' => $statusId,
+                'grade_status_id' => optional($state)->id
             ]
         );
 

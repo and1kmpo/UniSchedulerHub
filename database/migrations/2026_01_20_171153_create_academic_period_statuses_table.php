@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('academic_period_statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique(); // draft, enrollment_open, etc
+            $table->string('code')->unique(); // draft, enrollment_open, enrollment_closed, in progress...
             $table->string('name');
             $table->boolean('is_final')->default(false);
             $table->timestamps();

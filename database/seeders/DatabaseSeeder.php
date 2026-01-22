@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use AcademicPeriodStatusSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder

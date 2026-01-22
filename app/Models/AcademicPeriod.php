@@ -88,4 +88,11 @@ class AcademicPeriod extends Model
     {
         return $this->is_active || $this->isEnrollmentOpen();
     }
+
+    // AcademicPeriod.php
+
+    public function allowsGradeEdition(): bool
+    {
+        return $this->isInProgress();
+    }
 }

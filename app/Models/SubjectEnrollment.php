@@ -15,13 +15,6 @@ class SubjectEnrollment extends Model
         'status_id',
     ];
 
-    protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
-        'enrollment_deadline' => 'datetime',
-        'unenrollment_deadline' => 'datetime',
-    ];
-
     public function student()
     {
         return $this->belongsTo(Student::class);
@@ -79,5 +72,10 @@ class SubjectEnrollment extends Model
         $this->update([
             'status_id' => $toStatus->id
         ]);
+    }
+
+    public function grade()
+    {
+        return $this->hasOne(Grade::class);
     }
 }
