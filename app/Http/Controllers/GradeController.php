@@ -16,6 +16,9 @@ class GradeController extends Controller
 {
     public function index(ClassGroup $group)
     {
+
+        $this->authorize('manageGrades', $group);
+
         $enrollments = $group->subjectEnrollments()->with([
             'student.user',
             'grade.state',
@@ -44,6 +47,9 @@ class GradeController extends Controller
 
     public function store(Request $request, ClassGroup $group)
     {
+
+        $this->authorize('manageGrades', $group);
+
         $request->validate([
             'grades' => 'required|array',
             'grades.*.first_exam' => 'nullable|numeric|min:0|max:5',
@@ -59,14 +65,14 @@ class GradeController extends Controller
         foreach ($request->grades as $enrollmentId  => $gradeData) {
 
             $enrollment = $group->subjectEnrollments()
-                ->with('AcademicPeriod')
+                ->with('academicPeriod')
                 ->findOrFail($enrollmentId);
 
             if (!$enrollment->academicPeriod->isInProgress()) {
                 abort(403, 'Grades can only be edited while the academic period is in progress.');
             }
 
-            $updatedGrades[$enrollmentId] = $this->updateStudentGrade(
+            $updatedGrades[$enrollmentId] = $this->updateEnrollmentGrade(
                 $enrollment,
                 $gradeData,
                 $professorId
@@ -79,7 +85,7 @@ class GradeController extends Controller
         ]);
     }
 
-    private function updateStudentGrade(SubjectEnrollment $enrollment, array $gradeData, int $professorId)
+    private function updateEnrollmentGrade(SubjectEnrollment $enrollment, array $gradeData, int $professorId)
     {
         $finalGrade = $this->calculateFinalGrade($gradeData);
         $statusCode = $this->determineStatus($gradeData, $finalGrade);
