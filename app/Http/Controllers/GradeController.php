@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Grades\GradeEvaluator;
 use App\Models\Grade;
 use App\Models\Subject;
 use Illuminate\Http\Request;
@@ -87,10 +88,11 @@ class GradeController extends Controller
 
     private function updateEnrollmentGrade(SubjectEnrollment $enrollment, array $gradeData, int $professorId)
     {
-        $finalGrade = $this->calculateFinalGrade($gradeData);
-        $statusCode = $this->determineStatus($gradeData, $finalGrade);
 
-        $state = GradeStatus::where('code', $statusCode)->first();
+        $evaluation = GradeEvaluator::evaluate($gradeData);
+        $state = $evaluation->statusCode
+
+            ? GradeStatus::where('code', $evaluation->statusCode)->first() : null;
 
         $grade = Grade::updateOrCreate(
             ['subject_enrollment_id' => $enrollment->id],
