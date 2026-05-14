@@ -11,7 +11,7 @@ use App\Models\SubjectEnrollmentStatus;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Services\EnrollmentService;
-
+use App\Services\EnrollmentStatusService;
 
 class GroupEnrollmentController extends Controller
 {
@@ -55,59 +55,110 @@ class GroupEnrollmentController extends Controller
         ]);
     }
 
-    public function store(Request $request, ClassGroup $classGroup, EnrollmentService $service)
-    {
+    public function store(
+        Request $request,
+        ClassGroup $classGroup,
+        EnrollmentService $service
+    ) {
+
+        $this->authorize('enroll', SubjectEnrollment::class);
+
         $request->validate([
             'student_id' => ['required', 'exists:students,id']
         ]);
 
         $student = Student::findOrFail($request->student_id);
 
-        $result = $service->canEnroll($student, $classGroup);
+        try {
+            $service->enroll($student, $classGroup);
 
-        if (! $result['allowed']) {
             return response()->json([
-                'message' => $result['message']
+                'status' => 'success',
+                'message' => 'Student enrolled successfully',
+            ], 200);
+        } catch (\DomainException $e) {
+
+            return response()->json([
+                'status' => 'blocked',
+                'code' => $e->getMessage(),
             ], 422);
+        } catch (\Throwable $e) {
+
+            Log::error('Enrollment error', [
+                'student_id' => $student->id,
+                'class_group_id' => $classGroup->id,
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An unexpected error occurred',
+            ], 500);
         }
-
-        $status = SubjectEnrollmentStatus::where('code', 'pre_enrolled')->firstOrFail();
-
-        // Crear inscripción
-        SubjectEnrollment::create([
-            'student_id' => $student->id,
-            'subject_id' => $classGroup->subject_id,
-            'academic_period_id' => currentAcademicPeriodId(),
-            'class_group_id' => $classGroup->id,
-            'status_id' => $status->id,
-        ]);
-
-        return response()->json(['message' => 'Student enrolled successfully']);
     }
 
     /* Remove a student's enrollment from a group  */
-    public function destroy($classGroupId, $studentId)
-    {
+    public function destroy(
+        $classGroupId,
+        $studentId
+    ) {
         try {
-            // Buscar la inscripción
             $enrollment = SubjectEnrollment::where('class_group_id', $classGroupId)
                 ->where('student_id', $studentId)
                 ->firstOrFail();
 
-            $enrollment->delete();
+            $this->authorize('unenroll', $enrollment);
+
+            app(EnrollmentService::class)->unenroll($enrollment);
 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Enrollment removed successfully.',
-            ]);
+            ], 200);
+        } catch (\DomainException $e) {
+
+            return response()->json([
+                'status' => 'blocked',
+                'code' => $e->getMessage(),
+            ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+
             return response()->json([
-                'error' => 'Enrollment not found.',
+                'status' => 'not_found',
+                'code' => $e->getMessage(),
             ], 404);
-        } catch (\Exception $e) {
-            Log::error('Error removing enrollment', ['exception' => $e]);
+        } catch (\Throwable $e) {
+
             return response()->json([
-                'error' => 'Could not remove enrollment.',
+                'status' => 'error',
+                'message' => 'Could not remove enrollment. An unexpected error occurred',
             ], 500);
+        }
+    }
+
+    public function changeStatus(
+        Request $request,
+        SubjectEnrollment $enrollment,
+        EnrollmentStatusService $service
+    ) {
+        $request->validate([
+            'to' => ['required', 'string'],
+        ]);
+
+        $this->authorize('changeStatus', [$enrollment, $request->to]);
+
+        try {
+            $service->transition($enrollment, $request->to);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Enrollment status updated',
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'status' => 'blocked',
+                'code' => $e->getMessage(),
+            ], 422);
         }
     }
 }

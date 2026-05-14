@@ -8,64 +8,23 @@ use Illuminate\Auth\Access\Response;
 
 class ClassGroupPolicy
 {
+
     public function manageGrades(User $user, ClassGroup $group): bool
     {
-        return $user->isProfessor()
+        return $user->professor
             && $group->professor_id === $user->professor->id;
     }
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        //
-    }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, ClassGroup $classGroup): bool
+    public function editGrades(User $user, ClassGroup $group): bool
     {
-        //
-    }
+        if (! $group->academicPeriod?->canEditGrades()) {
+            return false;
+        }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        //
-    }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, ClassGroup $classGroup): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, ClassGroup $classGroup): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, ClassGroup $classGroup): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, ClassGroup $classGroup): bool
-    {
-        //
+        return $user->professor?->id === $group->professor_id;
     }
 }

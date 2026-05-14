@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\Subject;
 use App\Models\Professor;
 use App\Http\Requests\ProfessorRequest;
+use App\Models\AcademicPeriod;
+use App\Models\ClassGroup;
 use Illuminate\Http\Request;
 
 class ProfessorController extends Controller
@@ -136,18 +138,20 @@ class ProfessorController extends Controller
     {
         $professor = auth()->user()->professor;
 
-        $subjects = $professor->subjects()
-            ->with([
-                'programs' => function ($query) {
-                    $query->select('programs.id', 'programs.name');
-                },
-                'students.user'
-            ])
+        $period = AcademicPeriod::where('is_active', true)->first();
+
+        $groups = ClassGroup::with([
+            'subject',
+            'subjectEnrollments.student.user'
+        ])
+            ->where('professor_id', $professor->id)
+            ->where('academic_period_id', optional($period)->id)
+            ->withCount('subjectEnrollments')
             ->get();
 
-
         return Inertia::render('Professors/MySubjects', [
-            'subjects' => $subjects
+            'groups' => $groups,
+            'period' => $period,
         ]);
     }
 

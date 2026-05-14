@@ -9,5 +9,13 @@ class SubjectEnrollmentStatus extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'label', 'color'];
+    protected $fillable = ['code', 'description', 'color'];
+
+    public function outgoingTransitions()
+    {
+        return $this->hasMany(
+            SubjectEnrollmentStatusTransition::class,
+            'from_status_id'
+        );
+    }
 }

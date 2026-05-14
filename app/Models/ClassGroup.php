@@ -84,6 +84,7 @@ class ClassGroup extends Model
         return $this->belongsTo(User::class, 'professor_id');
     }
 
+
     public function schedules()
     {
         return $this->hasMany(ClassSchedule::class);

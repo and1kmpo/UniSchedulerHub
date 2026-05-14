@@ -7,7 +7,11 @@
         </template>
         <div class="max-w-7xl mx-auto py-10">
 
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div v-if="props.groups.length === 0" class="text-center text-gray-500 py-10">
+                You have no assigned groups in the active academic period.
+            </div>
+
+            <table v-else class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
                 <thead class="bg-gray-100 text-center text-sm font-semibold text-gray-700">
                     <tr>
                         <th class="px-4 py-3">Subject</th>
@@ -18,18 +22,32 @@
                     </tr>
                 </thead>
                 <tbody class="text-sm text-gray-800 divide-y divide-gray-200 text-center">
-                    <tr v-for="subject in subjects" :key="subject.id">
-                        <td class="px-4 py-2">{{ subject.name }}</td>
-                        <td class="px-4 py-2">{{ subject.knowledge_area || '—' }}</td>
-                        <td class="px-4 py-2">{{ subject.credits }}</td>
-                        <td class="px-4 py-2">{{ subject.students?.length || 0 }}</td>
+                    <tr v-for="group in groups" :key="group.id">
                         <td class="px-4 py-2">
-                            <button @click="openModal(subject)"
-                                class="text-blue-600 hover:underline hover:text-blue-800 flex items-center">
+                            {{ group.subject.name }} <br>
+                            <span class="text-xs text-gray-500">{{ group.code }}</span>
+                        </td>
+
+                        <td class="px-4 py-2">
+                            {{ group.subject.knowledge_area }}
+                        </td>
+
+                        <td class="px-4 py-2">
+                            {{ group.subject.credits }}
+                        </td>
+
+                        <td class="px-4 py-2">
+                            {{ group.subject_enrollments_count }}
+                        </td>
+
+                        <td class="px-4 py-2 space-y-1">
+                            <button @click="openModal(group)" class="text-blue-600 hover:underline block">
                                 🔍 More details
                             </button>
-                            <a :href="`/subjects/${subject.id}/grades`" class="text-blue-600 hover:underline">📋
-                                Record grades</a>
+
+                            <a :href="`/groups/${group.id}/grades`" class="text-blue-600 hover:underline block">
+                                📋 Record grades
+                            </a>
                         </td>
                     </tr>
                 </tbody>
@@ -39,7 +57,7 @@
             <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl relative">
                     <h2 class="text-xl font-bold mb-4">
-                        {{ selectedSubject?.name }} Students
+                        {{ selectedGroup?.subject?.name }} – {{ selectedGroup.name }}
                     </h2>
 
                     <table class="w-full text-sm border border-gray-300 text-center">
@@ -52,21 +70,21 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(student, index) in selectedSubject.students.slice(0, 5)" :key="student.id"
-                                class="border-t">
+                            <tr v-for="(enrollment, index) in selectedGroup.subject_enrollments.slice(0, 5)"
+                                :key="enrollment.id" class="border-t">
                                 <td class="px-3 py-2">{{ index + 1 }}</td>
-                                <td class="px-3 py-2">{{ student.user?.name ?? '—' }}</td>
-                                <td class="px-3 py-2">{{ student.document }}</td>
-                                <td class="px-3 py-2">{{ student.user?.email ?? '—' }}</td>
+                                <td class="px-3 py-2">{{ enrollment.student.user.name ?? '—' }}</td>
+                                <td class="px-3 py-2">{{ enrollment.student.document ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ enrollment.student.user?.email ?? '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
                     <div class="mt-2 text-sm text-gray-500">
-                        Showing {{ Math.min(selectedSubject.students.length, 5) }} of
-                        {{ selectedSubject.students.length }} students.
+                        Showing {{ Math.min(selectedGroup.subject_enrollments.length, 5) }} of
+                        {{ selectedGroup.subject_enrollments.length }} students.
                     </div>
-                    <div class="mt-4 text-center" v-if="selectedSubject.students.length > 5">
-                        <a :href="`/subjects/${selectedSubject.id}/students`" class="text-blue-600 hover:underline">
+                    <div class="mt-4 text-center" v-if="selectedGroup.subject_enrollments.length > 5">
+                        <a :href="`/class-groups/${selectedGroup.id}/students`" class="text-blue-600 hover:underline">
                             👥 Show all students
                         </a>
                     </div>
@@ -86,29 +104,27 @@
 import { ref, onMounted } from 'vue';
 import AppLayout from "@/Layouts/AppLayout.vue";
 
-// Primero define los props
 const props = defineProps({
-    subjects: {
+    groups: {
         type: Array,
-        required: true
+        default: () => []
     }
 });
 
-// Luego puedes usar props.subjects
 onMounted(() => {
-    console.log('Subjects recibidos al montar:', props.subjects);
+    console.log('Groups recibidos:', props.groups);
 });
 
 const showModal = ref(false);
-const selectedSubject = ref(null);
+const selectedGroup = ref(null);
 
-function openModal(subject) {
-    selectedSubject.value = subject;
+function openModal(group) {
+    selectedGroup.value = group;
     showModal.value = true;
 }
 
 function closeModal() {
     showModal.value = false;
-    selectedSubject.value = null;
+    selectedGroup.value = null;
 }
 </script>

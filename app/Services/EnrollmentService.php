@@ -2,216 +2,396 @@
 
 namespace App\Services;
 
-use App\Models\SubjectEnrollment;
+use App\Domain\Academic\AcademicPeriodGuard;
+use App\Events\EnrollmentCreated;
+use App\Events\EnrollmentWithdrawn;
 use App\Models\ClassGroup;
 use App\Models\Student;
+use App\Models\SubjectEnrollment;
+use App\Models\SubjectEnrollmentStatus;
+use DomainException;
+use Illuminate\Support\Facades\DB;
 
 class EnrollmentService
 {
+    /* =========================================================
+     | PUBLIC API
+     |=========================================================*/
+
+    public function enroll(Student $student, ClassGroup $group): SubjectEnrollment
+    {
+        return DB::transaction(function () use ($student, $group) {
+
+            $group = $this->lockGroup($group);
+
+            $this->validateEnrollment($student, $group);
+
+            $statusId = $this->getDefaultStatusId();
+
+            $enrollment = SubjectEnrollment::create([
+                'student_id'         => $student->id,
+                'subject_id'         => $group->subject_id,
+                'class_group_id'     => $group->id,
+                'academic_period_id' => $group->academic_period_id,
+                'status_id'          => $statusId,
+                'enrolled_at'        => now(),
+            ]);
+
+            /* event(new EnrollmentCreated($enrollment)); */
+
+            return $enrollment->fresh([
+                'status',
+                'classGroup.schedules',
+            ]);
+        });
+    }
+
+    /**
+     * =========================================================
+     * CHANGE GROUP
+     * =========================================================
+     */
+    public function changeGroup(Student $student, ClassGroup $group): SubjectEnrollment
+    {
+        return DB::transaction(function () use ($student, $group) {
+
+            $group = $this->lockGroup($group);
+
+            $existing = SubjectEnrollment::where('student_id', $student->id)
+                ->where('subject_id', $group->subject_id)
+                ->where('academic_period_id', $group->academic_period_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $existing) {
+                throw new DomainException('BLOCK_NOT_ENROLLED');
+            }
+
+            if ($existing->class_group_id === $group->id) {
+                throw new DomainException('BLOCK_ALREADY_IN_GROUP');
+            }
+
+            // 🔒 mismas reglas académicas
+            $this->validateEnrollment(
+                $student,
+                $group,
+                ignoreExisting: true,
+                ignoreGroupId: $existing->class_group_id
+            );
+
+            $existing->update([
+                'class_group_id' => $group->id,
+            ]);
+
+            return $existing->fresh([
+                'status',
+                'classGroup.schedules',
+            ]);
+        });
+    }
+
+    /**
+     * =========================================================
+     * UNENROLL
+     * =========================================================
+     */
+    public function unenroll(SubjectEnrollment $enrollment): void
+    {
+        DB::transaction(function () use ($enrollment) {
+
+            $enrollment->loadMissing([
+                'academicPeriod',
+                'status',
+            ]);
+
+            $period = $enrollment->academicPeriod;
+
+            AcademicPeriodGuard::ensurePeriodNotFrozen($period);
+            AcademicPeriodGuard::ensureUnenrollmentAllowed($period);
+
+            if (! $enrollment->canUnenroll()) {
+                throw new DomainException('BLOCK_UNENROLL_INVALID_STATUS');
+            }
+
+            // 🔒 opcional futuro:
+            /*
+            if ($enrollment->grades()->exists()) {
+                throw new DomainException('BLOCK_HAS_GRADES');
+            }
+            */
+
+            $enrollment->delete();
+
+            /* event(new EnrollmentWithdrawn($enrollment)); */
+        });
+    }
+
+    /**
+     * =========================================================
+     * FRONTEND PREVIEW
+     * =========================================================
+     */
     public function canEnroll(Student $student, ClassGroup $group): array
     {
-        $group->loadMissing(['schedules', 'subject', 'academicPeriod']);
+        try {
 
-        /*
-    |--------------------------------------------------------------------------
-    | 1. Academic period validation (HIGHEST PRIORITY)
-    |--------------------------------------------------------------------------
-    */
-        if (!$group->academicPeriod?->is_active) {
-            return $this->block(
-                'BLOCK_PERIOD_CLOSED',
-                'Enrollment period is closed.',
-                'error'
-            );
+            $group->loadMissing([
+                'schedules',
+                'subject',
+                'academicPeriod',
+            ]);
+
+            $this->validateEnrollment($student, $group);
+
+            return [
+                'can_enroll' => true,
+                'reason' => null,
+            ];
+        } catch (DomainException $e) {
+
+            return [
+                'can_enroll' => false,
+                'reason' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /* =========================================================
+     | CORE PIPELINE
+     |=========================================================*/
+
+    private function validateEnrollment(
+        Student $student,
+        ClassGroup $group,
+        bool $ignoreExisting = false,
+        ?int $ignoreGroupId = null
+    ): void {
+
+        $period = $group->academicPeriod;
+
+        AcademicPeriodGuard::ensurePeriodNotFrozen($period);
+        AcademicPeriodGuard::ensureEnrollmentAllowed($period);
+
+        $this->ensureCurriculumAllows($student, $group);
+
+        $this->ensureStudentStatusAllows($student);
+
+        $this->ensureGroupHasSchedules($group);
+
+        if (! $ignoreExisting) {
+            $this->ensureNotAlreadyEnrolled($student, $group);
         }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 2. Curriculum  validation
-    |--------------------------------------------------------------------------
-    */
+        $this->ensureCapacityAvailable($group);
+
+        $this->ensureNoScheduleConflict(
+            $student,
+            $group,
+            $ignoreGroupId
+        );
+
+        $this->ensureCreditLimit($student, $group);
+
+        $this->ensureProbationCreditLimit($student, $group);
+    }
+
+    private function lockGroup(ClassGroup $group): ClassGroup
+    {
+        return ClassGroup::where('id', $group->id)
+            ->lockForUpdate()
+            ->with([
+                'schedules',
+                'subject',
+                'academicPeriod',
+            ])
+            ->firstOrFail();
+    }
+
+    private function getDefaultStatusId(): int
+    {
+        return SubjectEnrollmentStatus::where('code', 'pre_enrolled')
+            ->value('id')
+            ?? throw new DomainException('BLOCK_STATUS_MISCONFIGURED');
+    }
+
+    /* =========================================================
+     | VALIDATIONS
+     |=========================================================*/
+
+    private function ensureCurriculumAllows(Student $student, ClassGroup $group): void
+    {
         $curriculum = $student->curriculum;
 
-        if (!$curriculum) {
-            return $this->block(
-                'BLOCK_NO_CURRICULUM',
-                'Student does not have an assigned curriculum.',
-                'error'
-            );
+        if (! $curriculum) {
+            throw new DomainException('BLOCK_NO_CURRICULUM');
         }
 
-        $subjectInCurriculum = $curriculum->subjects()
+        $exists = $curriculum->subjects()
             ->where('subjects.id', $group->subject_id)
             ->exists();
 
-        if (!$subjectInCurriculum) {
-            return $this->block(
-                'BLOCK_OUT_OF_CURRICULUM',
-                'This subject does not belong to the student curriculum.',
-                'error'
-            );
+        if (! $exists) {
+            throw new DomainException('BLOCK_OUT_OF_CURRICULUM');
         }
+    }
 
+    private function ensureStudentStatusAllows(Student $student): void
+    {
+        match ($student->academic_status) {
 
-        /*
-    |--------------------------------------------------------------------------
-    | 3. Student academic status (hard blocks)
-    |--------------------------------------------------------------------------
-    */
-        switch ($student->academic_status) {
-            case 'suspended':
-                return $this->block(
-                    'BLOCK_STATUS',
-                    'Student is suspended and cannot enroll.',
-                    'error'
-                );
+            'suspended' =>
+            throw new DomainException('BLOCK_STATUS_SUSPENDED'),
 
-            case 'graduated':
-                return $this->block(
-                    'BLOCK_STATUS',
-                    'Graduated students cannot enroll in new subjects.',
-                    'error'
-                );
+            'graduated' =>
+            throw new DomainException('BLOCK_STATUS_GRADUATED'),
 
-            case 'withdrawn':
-                return $this->block(
-                    'BLOCK_STATUS',
-                    'Withdrawn students cannot enroll.',
-                    'error'
-                );
+            'withdrawn' =>
+            throw new DomainException('BLOCK_STATUS_WITHDRAWN'),
 
-            case 'active':
-            case 'probation':
-                break;
-            default:
-                return $this->block(
-                    'BLOCK_INVALID_STATUS',
-                    'Invalid academic status.'
-                );
+            'active',
+            'probation' => null,
+
+            default =>
+            throw new DomainException('BLOCK_INVALID_STATUS'),
+        };
+    }
+
+    private function ensureGroupHasSchedules(ClassGroup $group): void
+    {
+        if ($group->schedules->isEmpty()) {
+            throw new DomainException('BLOCK_GROUP_WITHOUT_SCHEDULE');
         }
+    }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 4. Already enrolled in subject
-    |--------------------------------------------------------------------------
-    */
-        $alreadyEnrolled = SubjectEnrollment::where('student_id', $student->id)
+    private function ensureNotAlreadyEnrolled(
+        Student $student,
+        ClassGroup $group
+    ): void {
+
+        $exists = SubjectEnrollment::where('student_id', $student->id)
             ->where('subject_id', $group->subject_id)
             ->where('academic_period_id', $group->academic_period_id)
             ->exists();
 
-        if ($alreadyEnrolled) {
-            return $this->block(
-                'BLOCK_ALREADY_ENROLLED',
-                'Student is already enrolled in this subject for the current academic period.'
-            );
+        if ($exists) {
+            throw new DomainException('BLOCK_ALREADY_ENROLLED');
+        }
+    }
+
+    private function ensureCapacityAvailable(ClassGroup $group): void
+    {
+        if ($group->capacity === null) {
+            return;
         }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 5. Group capacity
-    |--------------------------------------------------------------------------
-    */
-        $currentEnrollments = SubjectEnrollment::where('class_group_id', $group->id)->count();
+        $count = $group->subjectEnrollments()
+            ->whereHas(
+                'status',
+                fn($q) =>
+                $q->whereIn(
+                    'code',
+                    config('enrollment.active_status_codes')
+                )
+            )
+            ->lockForUpdate()
+            ->count();
 
-        if ($group->capacity !== null && $currentEnrollments >= $group->capacity) {
-            return $this->block(
-                'BLOCK_CAPACITY',
-                'This class group has reached its maximum capacity.'
-            );
+        if ($count >= $group->capacity) {
+            throw new DomainException('BLOCK_CAPACITY');
         }
+    }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 6. Schedule conflicts
-    |--------------------------------------------------------------------------
-    */
-        $studentEnrollments = SubjectEnrollment::with('classGroup.schedules')
+    private function ensureNoScheduleConflict(
+        Student $student,
+        ClassGroup $group,
+        ?int $ignoreGroupId = null
+    ): void {
+
+        $enrollments = SubjectEnrollment::with(
+            'classGroup.schedules'
+        )
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->when(
+                $ignoreGroupId,
+                fn($q) =>
+                $q->where('class_group_id', '!=', $ignoreGroupId)
+            )
             ->get();
 
-        foreach ($studentEnrollments as $enrollment) {
-            foreach ($enrollment->classGroup->schedules as $existing) {
-                foreach ($group->schedules as $incoming) {
-                    if (
-                        $existing->day === $incoming->day &&
-                        $this->schedulesOverlap($existing, $incoming)
-                    ) {
-                        return $this->block(
-                            'BLOCK_SCHEDULE_CONFLICT',
-                            'Schedule conflict with another enrolled class group.'
-                        );
-                    }
+        foreach ($enrollments as $enrollment) {
+
+            foreach ($group->schedules as $incoming) {
+
+                $conflict = $enrollment->classGroup->schedules
+                    ->contains(
+                        fn($existing) =>
+
+                        strtolower($existing->day) === strtolower($incoming->day)
+                            &&
+                            $this->schedulesOverlap($existing, $incoming)
+                    );
+
+                if ($conflict) {
+                    throw new DomainException('BLOCK_SCHEDULE_CONFLICT');
                 }
             }
         }
-
-        /*
-    |--------------------------------------------------------------------------
-    | 7. Probation credit limit (SOFT academic rule)
-    |--------------------------------------------------------------------------
-    */
-        if ($student->academic_status === 'probation') {
-
-            $maxCredits = config('enrollment.probation_max_credits');
-
-            $currentCredits = SubjectEnrollment::with('subject')
-                ->where('student_id', $student->id)
-                ->where('academic_period_id', $group->academic_period_id)
-                ->get()
-                ->sum(fn($e) => $e->subject->credits ?? 0);
-
-            $newCredits = $group->subject->credits ?? 0;
-
-            if (($currentCredits + $newCredits) > $maxCredits) {
-                return $this->block(
-                    'BLOCK_PROBATION_CREDITS',
-                    "Students on academic probation can enroll in a maximum of {$maxCredits} credits.",
-                    'warning',
-                    [
-                        'current_credits' => $currentCredits,
-                        'attempted_credits' => $newCredits,
-                        'max_credits' => $maxCredits,
-                    ]
-                );
-            }
-        }
-
-        /*
-    |--------------------------------------------------------------------------
-    | ✅ Allowed
-    |--------------------------------------------------------------------------
-    */
-        return $this->allow();
     }
 
+    /**
+     * 🔒 límite global normal
+     */
+    private function ensureCreditLimit(
+        Student $student,
+        ClassGroup $group
+    ): void {
 
+        $maxCredits = config('enrollment.max_credits', 21);
+
+        $currentCredits = SubjectEnrollment::with('subject')
+            ->where('student_id', $student->id)
+            ->where('academic_period_id', $group->academic_period_id)
+            ->get()
+            ->sum(fn($e) => $e->subject->credits ?? 0);
+
+        $newCredits = $group->subject->credits ?? 0;
+
+        if (($currentCredits + $newCredits) > $maxCredits) {
+            throw new DomainException('BLOCK_MAX_CREDITS');
+        }
+    }
+
+    /**
+     * 🔒 probation override
+     */
+    private function ensureProbationCreditLimit(
+        Student $student,
+        ClassGroup $group
+    ): void {
+
+        if ($student->academic_status !== 'probation') {
+            return;
+        }
+
+        $maxCredits = config('enrollment.probation_max_credits');
+
+        $currentCredits = SubjectEnrollment::with('subject')
+            ->where('student_id', $student->id)
+            ->where('academic_period_id', $group->academic_period_id)
+            ->get()
+            ->sum(fn($e) => $e->subject->credits ?? 0);
+
+        $newCredits = $group->subject->credits ?? 0;
+
+        if (($currentCredits + $newCredits) > $maxCredits) {
+            throw new DomainException('BLOCK_PROBATION_CREDITS');
+        }
+    }
 
     private function schedulesOverlap($a, $b): bool
     {
         return $a->start_time < $b->end_time
             && $a->end_time > $b->start_time;
-    }
-
-    private function block(string $code, string $message, string $severity = 'error', array $meta = []): array
-    {
-        return [
-            'allowed' => false,
-            'code' => $code,
-            'severity' => $severity,
-            'message' => $message,
-            'meta' => $meta,
-        ];
-    }
-
-    private function allow(): array
-    {
-        return [
-            'allowed' => true,
-            'code' => 'ALLOW_ENROLLMENT',
-            'severity' => 'success',
-            'message' => 'Enrollment allowed.',
-        ];
     }
 }

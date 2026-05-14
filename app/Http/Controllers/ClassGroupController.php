@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Services\EnrollmentService;
+use App\Services\ClassGroupService;
 
 
 class ClassGroupController extends Controller
@@ -201,12 +202,14 @@ class ClassGroupController extends Controller
             ->with('success', 'Class group updated with schedule');
     }
 
-    public function destroy($id)
+    public function destroy($id, ClassGroupService $service)
     {
         $classGroup = ClassGroup::findOrFail($id);
-        $classGroup->delete();
 
-        return redirect()->route('class-groups.index')->with('success', 'Class group deleted');
+        $service->delete($classGroup);
+
+        return redirect()->route('class-groups.index')
+            ->with('success', 'Class group deleted');
     }
 
     public function canEnroll(

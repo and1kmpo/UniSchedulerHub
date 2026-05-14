@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use DomainException;
+use App\Models\SubjectEnrollmentStatus;
+use App\Models\SubjectEnrollmentStatusTransition;
 
 class SubjectEnrollment extends Model
 {
@@ -40,9 +42,6 @@ class SubjectEnrollment extends Model
         return $this->belongsTo(ClassGroup::class);
     }
 
-    /**
-     * Cambia el estado respetando la tabla de transiciones
-     */
     public function transitionTo(string $toCode): void
     {
         $fromStatus = $this->status;
@@ -77,5 +76,34 @@ class SubjectEnrollment extends Model
     public function grade()
     {
         return $this->hasOne(Grade::class);
+    }
+
+    public function isActive(): bool
+    {
+        return in_array(
+            $this->status?->code,
+            config('enrollment.active_status_codes')
+        );
+    }
+
+    public function canEditGrades(): bool
+    {
+        return in_array($this->status?->code, ['enrolled']);
+    }
+
+    public function canUnenroll(): bool
+    {
+        return in_array($this->status?->code, ['pre_enrolled', 'enrolled']);
+    }
+
+    public function isFinal(): bool
+    {
+        return in_array($this->status?->code, [
+            'approved',
+            'failed',
+            'withdrawn',
+            'cancelled',
+            'revalidation',
+        ]);
     }
 }

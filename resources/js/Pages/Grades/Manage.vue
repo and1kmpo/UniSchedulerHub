@@ -32,40 +32,41 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="student in students" :key="student.id" :class="{
-                            'bg-yellow-100': isModified(student.id),
+                        <tr v-for="enrollment in enrollments" :key="enrollment.id" :class="{
+                            'bg-yellow-100': isModified(enrollment.id),
                             'odd:bg-white even:bg-gray-50': true
                         }">
-                            <td class="p-2 border">{{ student.user.name }}</td>
+                            <td class="p-2 border">{{ enrollment.student.name }}</td>
                             <td class="p-2 border">
-                                <input v-model="grades[student.id].partial_1" type="number" step="0.1" min="0" max="5"
-                                    class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
+                                <input v-model="grades[enrollment.id].partial_1" type="number" step="0.1" min="0"
+                                    max="5" class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
                             </td>
                             <td class="p-2 border">
-                                <input v-model="grades[student.id].partial_2" type="number" step="0.1" min="0" max="5"
-                                    class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
+                                <input v-model="grades[enrollment.id].partial_2" type="number" step="0.1" min="0"
+                                    max="5" class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
                             </td>
                             <td class="p-2 border">
-                                <input v-model="grades[student.id].partial_3" type="number" step="0.1" min="0" max="5"
-                                    class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
+                                <input v-model="grades[enrollment.id].partial_3" type="number" step="0.1" min="0"
+                                    max="5" class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
                             </td>
                             <td class="p-2 border">
-                                <input v-model="grades[student.id].activities" type="number" step="0.1" min="0" max="5"
-                                    class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
+                                <input v-model="grades[enrollment.id].activities" type="number" step="0.1" min="0"
+                                    max="5" class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
                             </td>
                             <td class="p-2 border">
-                                <input v-model="grades[student.id].attendance" type="number" step="1" min="0" max="100"
-                                    class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
+                                <input v-model="grades[enrollment.id].attendance" type="number" step="1" min="0"
+                                    max="100" class="border rounded px-2 py-1 w-20 focus:ring focus:outline-none" />
                             </td>
                             <!-- Final grade -->
                             <td class="p-2 border">
-                                <input :value="Number(grades[student.id].final_grade).toFixed(2) ?? '—'" type="text"
-                                    readonly class="inline-block w-16 text-center px-2 py-1 rounded text-sm font-medium"
-                                    :class="{
-                                        'bg-green-200 text-green-800': isNumeric(grades[student.id].final_grade) && grades[student.id].final_grade >= 3.0,
-                                        'bg-yellow-200 text-yellow-800': isNumeric(grades[student.id].final_grade) && grades[student.id].final_grade >= 2.5 && grades[student.id].final_grade < 3.0,
-                                        'bg-red-200 text-red-800': isNumeric(grades[student.id].final_grade) && grades[student.id].final_grade < 2.5,
-                                        'bg-gray-200 text-gray-600': !isNumeric(grades[student.id].final_grade)
+                                <input
+                                    :value="isNumeric(grades[enrollment.id].final_grade) ? Number(grades[enrollment.id].final_grade).toFixed(2) : '—'"
+                                    type="text" readonly
+                                    class="inline-block w-16 text-center px-2 py-1 rounded text-sm font-medium" :class="{
+                                        'bg-green-200 text-green-800': isNumeric(grades[enrollment.id].final_grade) && grades[enrollment.id].final_grade >= 3.0,
+                                        'bg-yellow-200 text-yellow-800': isNumeric(grades[enrollment.id].final_grade) && grades[enrollment.id].final_grade >= 2.5 && grades[enrollment.id].final_grade < 3.0,
+                                        'bg-red-200 text-red-800': isNumeric(grades[enrollment.id].final_grade) && grades[enrollment.id].final_grade < 2.5,
+                                        'bg-gray-200 text-gray-600': !isNumeric(grades[enrollment.id].final_grade)
                                     }" />
                             </td>
 
@@ -73,16 +74,16 @@
                             <td class="p-2 border text-center">
                                 <div class="relative group inline-block">
                                     <span class="inline-flex items-center gap-2 cursor-pointer" :class="{
-                                        'text-green-600': grades[student.id].state?.code === 'passed',
-                                        'text-red-600': grades[student.id].state?.code === 'failed',
-                                        'text-yellow-600': grades[student.id].state?.code === 'failed_attendance',
-                                        'text-gray-500': !grades[student.id].state
+                                        'text-green-600': grades[enrollment.id].state?.code === 'passed',
+                                        'text-red-600': grades[enrollment.id].state?.code === 'failed',
+                                        'text-yellow-600': grades[enrollment.id].state?.code === 'failed_attendance',
+                                        'text-gray-500': !grades[enrollment.id].state
                                     }">
-                                        <i v-if="grades[student.id].state?.code === 'passed'"
+                                        <i v-if="grades[enrollment.id].state?.code === 'passed'"
                                             class="fas fa-check-circle"></i>
-                                        <i v-else-if="grades[student.id].state?.code === 'failed'"
+                                        <i v-else-if="grades[enrollment.id].state?.code === 'failed'"
                                             class="fas fa-times-circle"></i>
-                                        <i v-else-if="grades[student.id].state?.code === 'failed_attendance'"
+                                        <i v-else-if="grades[enrollment.id].state?.code === 'failed_attendance'"
                                             class="fas fa-exclamation-triangle"></i>
                                         <i v-else class="fas fa-clock"></i>
 
@@ -91,14 +92,14 @@
                                                 passed: 'Passed',
                                                 failed: 'Failed',
                                                 failed_attendance: 'Failed - Attendance'
-                                            }[grades[student.id].state?.code] || 'Pending'
+                                            }[grades[enrollment.id].state?.code] || 'Pending'
                                         }}
                                     </span>
 
                                     <!-- Tooltip -->
                                     <div
                                         class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-pre z-20">
-                                        {{ grades[student.id].state?.label || 'Waiting for complete grades' }}
+                                        {{ grades[enrollment.id].state?.label || 'Waiting for complete grades' }}
                                     </div>
                                 </div>
                             </td>
@@ -128,11 +129,29 @@ import { reactive, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
 import { ref } from 'vue';
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const {
+    success,
+    error,
+    info,
+    confirm,
+    toastSuccess,
+    toastError,
+    custom,
+    loading,
+    close,
+} = useAlert();
 
 const props = defineProps({
+    group: Object,
     subject: Object,
-    students: Array,
-    grades: Object
+    academicPeriod: Object,
+    canEdit: Boolean,
+    enrollments: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const grades = reactive({});
@@ -142,47 +161,56 @@ const isNumeric = (val) => !isNaN(parseFloat(val)) && isFinite(val);
 
 
 // Inicializar notas actuales y originales
-props.students.forEach(student => {
+props.enrollments.forEach(enrollment => {
     const original = {
-        partial_1: props.grades[student.id]?.partial_1 ?? '',
-        partial_2: props.grades[student.id]?.partial_2 ?? '',
-        partial_3: props.grades[student.id]?.partial_3 ?? '',
-        activities: props.grades[student.id]?.activities ?? '',
-        attendance: props.grades[student.id]?.attendance ?? '',
-        final_grade: props.grades[student.id]?.final_grade ?? '',
-        state: props.grades[student.id]?.state ?? ''
+        partial_1: enrollment.grade?.partial_1 ?? '',
+        partial_2: enrollment.grade?.partial_2 ?? '',
+        partial_3: enrollment.grade?.partial_3 ?? '',
+        activities: enrollment.grade?.activities ?? '',
+        attendance: enrollment.grade?.attendance ?? '',
+        final_grade: enrollment.grade?.final_grade ?? '',
+        state: enrollment.grade?.state ?? null
     };
 
-    grades[student.id] = { ...original };
-    originalGrades[student.id] = { ...original };
+    grades[enrollment.id] = { ...original };
+    originalGrades[enrollment.id] = { ...original };
 });
 
 const getChangedGrades = () => {
     const changed = {};
-    for (const [studentId, grade] of Object.entries(grades)) {
-        const original = originalGrades[studentId];
+    for (const [enrollmentId, grade] of Object.entries(grades)) {
+        const original = originalGrades[enrollmentId];
         const hasChanges = Object.keys(grade).some(key => grade[key] !== original[key]);
         if (hasChanges) {
-            changed[studentId] = grade;
+            changed[enrollmentId] = grade;
         }
     }
     return changed;
 };
 
-const submitGrades = () => {
+const submitGrades = async () => {
     const changedGrades = getChangedGrades();
 
     if (Object.keys(changedGrades).length === 0) {
-        console.log('There are no changes to save.');
-        alert('There are no changes to save.');
+        info(
+            "There are no modified grades to save.",
+            "No changes detected"
+        );
         return;
     }
+
+    const confirmed = await confirm(
+        "Grades will be updated for the selected students.",
+        "Save changes?"
+    );
+
+    if (!confirmed) return;
 
     isSubmitting.value = true;
 
     const formattedGrades = {};
-    for (const [studentId, grade] of Object.entries(changedGrades)) {
-        formattedGrades[studentId] = {
+    for (const [enrollmentId, grade] of Object.entries(changedGrades)) {
+        formattedGrades[enrollmentId] = {
             first_exam: grade.partial_1 ?? null,
             second_exam: grade.partial_2 ?? null,
             third_exam: grade.partial_3 ?? null,
@@ -191,14 +219,19 @@ const submitGrades = () => {
         };
     }
 
-    axios.post(route('grades.store'), {
-        subject_id: props.subject.id,
+    loading(
+        "Saving grades...",
+        "Please wait while the grades are being updated."
+    );
+
+
+    axios.post(route('groups.grades.store', props.group.id), {
         grades: formattedGrades,
     }).then(response => {
         const updated = response.data.updated_grades;
 
-        Object.entries(updated).forEach(([studentId, updatedGrade]) => {
-            grades[studentId] = {
+        Object.entries(updated).forEach(([enrollmentId, updatedGrade]) => {
+            grades[enrollmentId] = {
                 partial_1: updatedGrade.partial_1 ?? '',
                 partial_2: updatedGrade.partial_2 ?? '',
                 partial_3: updatedGrade.partial_3 ?? '',
@@ -208,13 +241,23 @@ const submitGrades = () => {
                 state: updatedGrade.state ?? '',
             };
 
-            // Actualiza el original también
-            originalGrades[studentId] = { ...grades[studentId] };
+            originalGrades[enrollmentId] = { ...grades[enrollmentId] };
+
         });
-    }).catch(error => {
-        console.error('❌ Error al guardar calificaciones:', error.response?.data);
+    }).catch(err => {
+        console.error('❌ Error al guardar calificaciones:', err.response?.data);
+        error(
+            "An unexpected error occurred while saving the grades. Please try again.",
+            "Error saving grades"
+        );
     }).finally(() => {
+
         isSubmitting.value = false;
+        close();
+
+        setTimeout(() => {
+            toastSuccess("Grades saved successfully");
+        }, 150);
     });
 };
 

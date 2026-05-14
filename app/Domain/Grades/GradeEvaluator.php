@@ -14,8 +14,8 @@ class GradeEvaluator
 
         $final = self::calculateFinal($data);
 
-        if (!isset($data['attendance']) || $data['attendance'] < 80) {
-            return GradeEvaluationResult::failedAttendance($final);
+        if (!isset($data['attendance']) || !is_numeric($data['attendance'])) {
+            return GradeEvaluationResult::pending();
         }
 
         return $final >= 3.0
