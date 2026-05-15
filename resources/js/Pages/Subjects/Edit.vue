@@ -1,10 +1,15 @@
 <script setup>
-import { watch } from "vue";
-import { router, useForm } from "@inertiajs/vue3";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
 
-import AppLayout from "@/Layouts/AppLayout.vue";
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
 import SubjectForm from "@/Components/Subjects/Form.vue";
-import PageHeader from "@/Components/UI/PageHeader.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const props = defineProps({
     subject: {
@@ -14,29 +19,31 @@ const props = defineProps({
 });
 
 const form = useForm({
-    name: "",
-    description: "",
-    credits: "",
-    knowledge_area: "",
-    elective: false,
+    name: props.subject.name ?? "",
+    description: props.subject.description ?? "",
+    credits: props.subject.credits ?? "",
+    knowledge_area: props.subject.knowledge_area ?? "",
+    elective: Boolean(props.subject.elective),
 });
 
-watch(
-    () => props.subject,
-    (subject) => {
-        if (!subject) return;
+const submit = () => {
+    form.put(route("subjects.update", props.subject.id), {
 
-        form.name = subject.name ?? "";
-        form.description = subject.description ?? "";
-        form.credits = subject.credits ?? "";
-        form.knowledge_area = subject.knowledge_area ?? "";
-        form.elective = Boolean(subject.elective);
-    },
-    { immediate: true }
-);
+        preserveScroll: true,
 
-const handleSubmit = () => {
-    form.put(route("subjects.update", props.subject.id));
+        onSuccess: (page) => {
+
+            success(
+                page.props.flash?.success ||
+                "Subject updated successfully"
+            );
+        },
+
+        onError: () => {
+
+            error("Failed to update subject");
+        },
+    });
 };
 
 const handleCancel = () => {
@@ -45,17 +52,12 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <AppLayout title="Edit Subject">
-        <template #header>
-            <PageHeader title="Edit Subject" subtitle="Update subject information" />
-        </template>
+    <CrudPageLayout title="Edit Subject" subtitle="Update university subject information">
+        <CrudContainer>
 
-        <div class="px-4 py-6 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-4xl">
-                <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-900 sm:p-6">
-                    <SubjectForm updating :form="form" :handleCancel="handleCancel" @submit="handleSubmit" />
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <SubjectForm :form="form" :processing="form.processing" :updating="true" :handleCancel="handleCancel"
+                @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

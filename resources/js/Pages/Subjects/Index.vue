@@ -151,8 +151,8 @@ const deleteSubject = async (subject) => {
                 <template #cell-elective="{ row }">
 
                     <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="row.elective
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                         ">
                         {{ row.elective ? "YES" : "NO" }}
                     </span>
