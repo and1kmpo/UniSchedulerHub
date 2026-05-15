@@ -1,100 +1,83 @@
-<script>
-export default {
-    name: "SubjectForm",
-};
-</script>
-
 <script setup>
-import FormSection from "@/Components/FormSection.vue";
-import InputError from "@/Components/InputError.vue";
-import InputLabel from "@/Components/InputLabel.vue";
-import PrimaryButton from "@/Components/PrimaryButton.vue";
-import DangerButton from "@/Components/DangerButton.vue";
-import TextInput from "@/Components/TextInput.vue";
+import FormSection from "@/Components/UI/Forms/FormSection.vue";
+import FormGrid from "@/Components/UI/Forms/FormGrid.vue";
+import FormActions from "@/Components/UI/Forms/FormActions.vue";
+
+import BaseInput from "@/Components/UI/Forms/BaseInput.vue";
+import BaseTextarea from "@/Components/UI/Forms/BaseTextarea.vue";
+import BaseCheckbox from "@/Components/UI/Forms/BaseCheckbox.vue";
+
+import BaseButton from "@/Components/UI/BaseButton.vue";
 
 defineProps({
     form: {
         type: Object,
         required: true,
     },
+
     updating: {
         type: Boolean,
-        required: false,
         default: false,
     },
-    handleCancel: Function,
+
+    processing: {
+        type: Boolean,
+        default: false,
+    },
+
+    handleCancel: {
+        type: Function,
+        required: true,
+    },
 });
 
 defineEmits(["submit"]);
 </script>
 
 <template>
-    <div v-if="form && Object.keys(form).length > 0">
-        <FormSection @submitted="$emit('submit')">
-            <template #title>{{
-                updating ? "Update subject" : "Create new subject"
-            }}</template>
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+        <FormSection :title="updating ? 'Update Subject' : 'Create Subject'" :description="updating
+            ? 'Update the selected subject information.'
+            : 'Create a new university subject.'
+            ">
+            <FormGrid :cols="2">
 
-            <template #description>
-                {{
-                    updating
-                        ? "Update the selected subject"
-                        : "Create new subject from scratch"
-                }}
-            </template>
+                <BaseInput v-model="form.name" label="Subject" placeholder="Enter subject name"
+                    :error="form.errors.name" required />
 
-            <template #form>
-                <div class="col-span-6 space-y-5">
-                    <div>
-                    <InputLabel for="name" value="Subject" />
-                    <TextInput id="name" v-model="form.name" type="text" autocomplete="name" class="mt-1 block w-full"
-                        placeholder="Enter a subject name" />
-                    <InputError :message="form.errors.name" class="mt-2" />
-                    </div>
+                <BaseInput v-model="form.credits" type="number" label="Credits" placeholder="Enter subject credits"
+                    :error="form.errors.credits" required />
 
-                    <div>
-                    <InputLabel for="description" value="Description" />
-                    <TextInput id="description" v-model="form.description" type="text" autocomplete="description"
-                        class="mt-1 block w-full" placeholder="Enter program description" />
-                    <InputError :message="form.errors.description" class="mt-2" />
-                    </div>
-
-                    <div>
-                    <InputLabel for="credits" value="Credits" />
-                    <TextInput id="credits" v-model="form.credits" type="number" min="1" max="50" autocomplete="credits"
-                        class="mt-1 block w-full" placeholder="Enter number credits for this subject" />
-                    <InputError :message="form.errors.credits" class="mt-2" />
-                    </div>
-
-                    <div>
-                    <InputLabel for="knowledge_area" value="Knowledge area" />
-                    <TextInput id="knowledge_area" v-model="form.knowledge_area" type="text"
-                        autocomplete="knowledge_area" class="mt-1 block w-full"
-                        placeholder="Enter knowledge area for this subject" />
-                    <InputError :message="form.errors.knowledge_area" class="mt-2" />
-                    </div>
-
-                    <div>
-                    <InputLabel for="elective" value="Elective" />
-                    <select v-model="form.elective" name="elective" id="elective"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
-                        <option :value="true">Yes</option>
-                        <option :value="false">No</option>
-                    </select>
-                    <InputError :message="form.errors.elective" class="mt-2" />
-                    </div>
+                <div class="md:col-span-2">
+                    <BaseTextarea v-model="form.description" label="Description" placeholder="Enter subject description"
+                        :error="form.errors.description" rows="4" />
                 </div>
-            </template>
 
-            <template #actions>
-                <PrimaryButton class="bg-indigo-700 hover:bg-indigo-600 rounded p-2 px-4 text-white">
-                    {{ updating ? "Update" : "Create" }}
-                </PrimaryButton>
+                <BaseInput v-model="form.knowledge_area" label="Knowledge Area" placeholder="Enter knowledge area"
+                    :error="form.errors.knowledge_area" required />
 
-                <DangerButton @click="handleCancel" class="ml-2">Cancel</DangerButton>
-            </template>
+                <BaseCheckbox
+                    v-model="form.elective"
+                    label="Elective Subject"
+                    description="Available as an elective option."
+                    :error="form.errors.elective"
+                />
+
+            </FormGrid>
         </FormSection>
-    </div>
 
-    <div v-else class="text-gray-500 text-sm">Loading form...</div>
+        <FormActions>
+
+            <BaseButton type="button" variant="secondary" @click="handleCancel">
+                Cancel
+            </BaseButton>
+
+            <BaseButton type="submit" variant="primary" :disabled="processing">
+                <i v-if="processing" class="fa-solid fa-spinner fa-spin mr-2"></i>
+
+                {{ updating ? "Update Subject" : "Create Subject" }}
+            </BaseButton>
+
+        </FormActions>
+    </form>
 </template>

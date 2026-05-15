@@ -1,8 +1,15 @@
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import SubjectForm from "@/Components/Subjects/Form.vue";
-import PageHeader from "@/Components/UI/PageHeader.vue";
 import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import SubjectForm from "@/Components/Subjects/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const form = useForm({
     name: "",
@@ -12,8 +19,24 @@ const form = useForm({
     elective: false,
 });
 
-const handleSubmit = () => {
-    form.post(route("subjects.store"));
+const submit = () => {
+    form.post(route("subjects.store"), {
+
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+
+            success(
+                page.props.flash?.success ||
+                "Subject created successfully"
+            );
+        },
+
+        onError: () => {
+
+            error("Failed to create subject");
+        },
+    });
 };
 
 const handleCancel = () => {
@@ -22,17 +45,11 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <AppLayout title="Create Subject">
-        <template #header>
-            <PageHeader title="Create Subject" subtitle="Add a subject to the academic catalog" />
-        </template>
+    <CrudPageLayout title="Create Subject" subtitle="Create a new university subject">
+        <CrudContainer>
 
-        <div class="px-4 py-6 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-4xl">
-                <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-900 sm:p-6">
-                    <SubjectForm :form="form" :handleCancel="handleCancel" @submit="handleSubmit" />
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <SubjectForm :form="form" :processing="form.processing" :handleCancel="handleCancel" @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>
