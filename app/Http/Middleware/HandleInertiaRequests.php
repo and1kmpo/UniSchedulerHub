@@ -54,16 +54,6 @@ class HandleInertiaRequests extends Middleware
 
     public function handle($request, Closure $next)
     {
-        $response = $next($request);
-
-        if (
-            $request->header('X-Inertia') &&
-            $response instanceof \Illuminate\Http\JsonResponse
-        ) {
-            // Permite respuestas JSON en peticiones Inertia
-            return $response;
-        }
-
-        return $response;
+        return parent::handle($request, $next);
     }
 }

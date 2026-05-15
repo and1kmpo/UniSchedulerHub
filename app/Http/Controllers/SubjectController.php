@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Http\Requests\SubjectRequest;
 use App\Models\Subject;
+use Illuminate\Database\QueryException;
 
 class SubjectController extends Controller
 {
@@ -77,19 +78,56 @@ class SubjectController extends Controller
     {
         $this->authorize('delete', $subject);
 
-        $hasStudents = $subject->students()->exists();
+        $blockers = $this->deletionBlockers($subject);
 
-        if ($hasStudents) {
-            return response()->json([
-                'error' => 'This subject has associated students and cannot be deleted.'
-            ], 422);
+        if (! empty($blockers)) {
+            return back()->withErrors([
+                'message' => 'This subject cannot be deleted because it is associated with: '
+                    . implode(', ', $blockers)
+                    . '. Remove those associations first.'
+            ]);
         }
 
-        $subject->delete();
+        try {
+            $subject->delete();
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return back()->withErrors([
+                    'message' => 'This subject cannot be deleted because it is associated with other records.'
+                ]);
+            }
 
-        return response()->json([
-            'message' => 'Subject successfully deleted.'
-        ]);
+            throw $exception;
+        }
+
+        return redirect()
+            ->route('subjects.index')
+            ->with('success', 'Subject deleted successfully');
+    }
+
+    private function deletionBlockers(Subject $subject): array
+    {
+        $relations = [
+            'professors' => 'professors',
+            'students' => 'students',
+            'enrollments' => 'enrollments',
+            'classGroups' => 'class groups',
+            'curricula' => 'curricula',
+            'programs' => 'programs',
+            'grades' => 'grades',
+            'prerequisites' => 'prerequisites',
+            'isPrerequisiteFor' => 'subjects that use it as a prerequisite',
+        ];
+
+        $blockers = [];
+
+        foreach ($relations as $relation => $label) {
+            if ($subject->{$relation}()->exists()) {
+                $blockers[] = $label;
+            }
+        }
+
+        return $blockers;
     }
 
     public function getSubjectsWithProfessors()

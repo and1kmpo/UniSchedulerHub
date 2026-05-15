@@ -53,7 +53,19 @@ class Subject extends Model
 
     public function grades()
     {
-        return $this->hasMany(Grade::class);
+        return $this->hasManyThrough(
+            Grade::class,
+            SubjectEnrollment::class,
+            'subject_id',
+            'subject_enrollment_id',
+            'id',
+            'id'
+        );
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(SubjectEnrollment::class);
     }
 
     // Materias que son prerrequisitos de esta materia

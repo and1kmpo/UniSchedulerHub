@@ -151,7 +151,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     /**
      * ────────────── GENERAL ──────────────
      */
-    Route::resource('/subjects', SubjectController::class);
+    Route::resource('subjects', SubjectController::class);
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
 
