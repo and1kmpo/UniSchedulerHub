@@ -90,6 +90,18 @@ onBeforeUnmount(() => {
                 </Link>
 
                 <div class="flex items-center md:order-2 space-x-3 rtl:space-x-reverse relative">
+                    <button
+                        @click="toggleDarkMode"
+                        type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-blue-600 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                    >
+                        <i :class="[
+                            darkMode ? 'fas fa-moon' : 'fas fa-sun',
+                            'transition-transform ease-in-out duration-300',
+                        ]"></i>
+                    </button>
+
                     <button id="avatar-button" @click="userDropdownOpen = !userDropdownOpen" type="button"
                         class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
                         <img class="w-8 h-8 rounded-full object-cover" :src="page.props.auth.user.profile_photo_url"
@@ -390,17 +402,9 @@ onBeforeUnmount(() => {
             </div>
         </nav>
 
-        <header class="bg-white dark:bg-gray-800 shadow">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <header class="bg-white shadow dark:bg-gray-800">
+            <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
                 <slot name="header"></slot>
-                <button @click="toggleDarkMode"
-                    class="text-gray-500 dark:text-gray-400 hover:text-blue-500 focus:outline-none transition duration-300 ease-in-out transform hover:scale-110">
-                    <i :class="[
-                        darkMode ? 'fas fa-moon' : 'fas fa-sun',
-                        'transition-transform ease-in-out duration-300',
-                    ]" class="w-6 h-6"></i>
-                </button>
-
             </div>
         </header>
 

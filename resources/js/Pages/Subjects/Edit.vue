@@ -4,6 +4,7 @@ import { router, useForm } from "@inertiajs/vue3";
 
 import AppLayout from "@/Layouts/AppLayout.vue";
 import SubjectForm from "@/Components/Subjects/Form.vue";
+import PageHeader from "@/Components/UI/PageHeader.vue";
 
 const props = defineProps({
     subject: {
@@ -46,14 +47,12 @@ const handleCancel = () => {
 <template>
     <AppLayout title="Edit Subject">
         <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Edit Subject
-            </h1>
+            <PageHeader title="Edit Subject" subtitle="Update subject information" />
         </template>
 
-        <div class="py-12">
-            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white shadow-xl sm:rounded-lg p-6">
+        <div class="px-4 py-6 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-4xl">
+                <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-900 sm:p-6">
                     <SubjectForm updating :form="form" :handleCancel="handleCancel" @submit="handleSubmit" />
                 </div>
             </div>

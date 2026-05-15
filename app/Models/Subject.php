@@ -18,6 +18,11 @@ class Subject extends Model
         'elective',
     ];
 
+    protected $casts = [
+        'credits' => 'integer',
+        'elective' => 'boolean',
+    ];
+
     protected static function booted()
     {
         static::creating(function ($subject) {

@@ -6,19 +6,42 @@ use Inertia\Inertia;
 use App\Http\Requests\SubjectRequest;
 use App\Models\Subject;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $subjects = Subject::paginate(5);
+        $subjects = Subject::query()
 
-        if (request()->wantsJson()) {
-            return response()->json($subjects);
-        }
+            ->when($request->search, function ($query, $search) {
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('knowledge_area', 'like', "%{$search}%");
+                });
+            })
+
+            ->when(
+                $request->filled('elective'),
+                fn($query) =>
+                $query->where('elective', $request->elective)
+            )
+
+            ->latest()
+            ->paginate(5)
+            ->withQueryString();
 
         return Inertia::render('Subjects/Index', [
-            'subjects' => $subjects
+
+            'subjects' => $subjects,
+
+            'filters' => $request->only([
+                'search',
+                'elective',
+            ]),
         ]);
     }
 
