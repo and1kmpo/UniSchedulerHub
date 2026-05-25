@@ -3,11 +3,11 @@ import FormSection from "@/Components/UI/Forms/FormSection.vue";
 import FormGrid from "@/Components/UI/Forms/FormGrid.vue";
 import FormActions from "@/Components/UI/Forms/FormActions.vue";
 
-import BaseInput from "@/Components/UI/Forms/BaseInput.vue";
-import BaseTextarea from "@/Components/UI/Forms/BaseTextarea.vue";
-import BaseCheckbox from "@/Components/UI/Forms/BaseCheckbox.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
+import BaseTextarea from "@/Components/UI/Base/BaseTextarea.vue";
+import BaseCheckbox from "@/Components/UI/Base/BaseCheckbox.vue";
 
-import BaseButton from "@/Components/UI/BaseButton.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 
 defineProps({
     form: {
@@ -56,12 +56,8 @@ defineEmits(["submit"]);
                 <BaseInput v-model="form.knowledge_area" label="Knowledge Area" placeholder="Enter knowledge area"
                     :error="form.errors.knowledge_area" required />
 
-                <BaseCheckbox
-                    v-model="form.elective"
-                    label="Elective Subject"
-                    description="Available as an elective option."
-                    :error="form.errors.elective"
-                />
+                <BaseCheckbox v-model="form.elective" label="Elective Subject"
+                    description="Available as an elective option." :error="form.errors.elective" />
 
             </FormGrid>
         </FormSection>

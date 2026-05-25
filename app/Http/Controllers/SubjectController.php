@@ -2,45 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\SubjectFilter;
 use Inertia\Inertia;
 use App\Http\Requests\SubjectRequest;
+use App\Models\Student;
 use App\Models\Subject;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, SubjectFilter $filters)
     {
-        $subjects = Subject::query()
-
-            ->when($request->search, function ($query, $search) {
-
-                $query->where(function ($q) use ($search) {
-
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhere('knowledge_area', 'like', "%{$search}%");
-                });
-            })
-
-            ->when(
-                $request->filled('elective'),
-                fn($query) =>
-                $query->where('elective', $request->elective)
-            )
-
-            ->latest()
+        $subjects = $filters->apply(Subject::query())
             ->paginate(5)
             ->withQueryString();
 
         return Inertia::render('Subjects/Index', [
-
             'subjects' => $subjects,
 
             'filters' => $request->only([
                 'search',
                 'elective',
+                'sort',
+                'direction',
             ]),
         ]);
     }
@@ -69,8 +54,16 @@ class SubjectController extends Controller
     {
         $this->authorize('view', $subject);
 
+        $students = Student::query()
+            ->whereHas('enrollments', function ($query) use ($subject) {
+                $query->where('subject_id', $subject->id);
+            })
+            ->with(['user', 'program'])
+            ->paginate(10);
+
         return Inertia::render('Subjects/Show', [
             'subject' => $subject,
+            'students' => $students,
         ]);
     }
 

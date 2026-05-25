@@ -1,6 +1,11 @@
 <script setup>
 import { reactive, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+
+import {
+    Link,
+    router,
+} from "@inertiajs/vue3";
+
 import { route } from "ziggy-js";
 
 import { useAlert } from "@/Components/Composables/useAlert";
@@ -8,14 +13,18 @@ import { useAlert } from "@/Components/Composables/useAlert";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 
-import CrudFilters from "@/Components/UI/CrudFilters.vue";
-import DataTable from "@/Components/UI/DataTable.vue";
-import TablePagination from "@/Components/UI/TablePagination.vue";
-import EmptyState from "@/Components/UI/EmptyState.vue";
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 
-import BaseButton from "@/Components/UI/BaseButton.vue";
-import BaseInput from "@/Components/UI/BaseInput.vue";
-import BaseSelect from "@/Components/UI/BaseSelect.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 
 const { confirm, success, error } = useAlert();
 
@@ -32,11 +41,33 @@ const props = defineProps({
 });
 
 const columns = [
-    { key: "name", label: "Subject" },
-    { key: "description", label: "Description" },
-    { key: "credits", label: "Credits" },
-    { key: "knowledge_area", label: "Knowledge Area" },
-    { key: "elective", label: "Elective" },
+    {
+        key: "name",
+        label: "Subject",
+        sortable: true,
+    },
+
+    {
+        key: "description",
+        label: "Description",
+    },
+
+    {
+        key: "credits",
+        label: "Credits",
+        sortable: true,
+    },
+
+    {
+        key: "knowledge_area",
+        label: "Knowledge Area",
+        sortable: true,
+    },
+
+    {
+        key: "elective",
+        label: "Elective",
+    },
 ];
 
 const filterForm = reactive({
@@ -45,13 +76,18 @@ const filterForm = reactive({
 });
 
 watch(
-    () => ({ ...filterForm }),
+    () => ({
+        ...filterForm,
+    }),
     () => {
         router.get(
             route("subjects.index"),
             {
                 search: filterForm.search,
                 elective: filterForm.elective,
+                sort: props.filters?.sort,
+                direction: props.filters?.direction,
+                page: 1,
             },
             {
                 preserveState: true,
@@ -66,6 +102,7 @@ watch(
 );
 
 const clearFilters = () => {
+
     filterForm.search = "";
     filterForm.elective = "";
 };
@@ -79,35 +116,43 @@ const deleteSubject = async (subject) => {
 
     if (!confirmed) return;
 
-    router.delete(route("subjects.destroy", subject.id), {
+    router.delete(
+        route("subjects.destroy", subject.id),
+        {
+            preserveScroll: true,
 
-        preserveScroll: true,
+            onSuccess: (page) => {
 
-        onSuccess: (page) => {
+                success(
+                    page.props.flash?.success ||
+                    "Subject deleted successfully"
+                );
+            },
 
-            success(
-                page.props.flash?.success ||
-                "Subject deleted successfully"
-            );
-        },
+            onError: () => {
 
-        onError: () => {
-
-            error("Failed to delete subject");
-        },
-    });
+                error(
+                    "Failed to delete subject"
+                );
+            },
+        }
+    );
 };
 </script>
 
 <template>
     <CrudPageLayout title="Subjects" subtitle="Manage university subjects">
+
         <template #actions>
 
             <Link :href="route('subjects.create')">
 
                 <BaseButton variant="primary">
+
                     <i class="fa-solid fa-plus mr-2"></i>
+
                     Create Subject
+
                 </BaseButton>
 
             </Link>
@@ -116,68 +161,93 @@ const deleteSubject = async (subject) => {
 
         <CrudContainer>
 
-            <!-- FILTERS -->
+            <!-- TOOLBAR -->
 
-            <CrudFilters title="Filters">
+            <TableToolbar>
 
-                <div class="w-full sm:max-w-xs">
-                    <BaseInput v-model="filterForm.search" placeholder="Search subject..." />
-                </div>
+                <template #search>
 
-                <div class="w-full sm:max-w-xs">
-                    <BaseSelect v-model="filterForm.elective" placeholder="Elective status" :options="[
-                        {
-                            label: 'Elective',
-                            value: 1,
-                        },
-                        {
-                            label: 'Non elective',
-                            value: 0,
-                        },
-                    ]" />
-                </div>
+                    <div class="w-full lg:max-w-sm">
 
-                <BaseButton variant="secondary" @click="clearFilters">
-                    <i class="fa-solid fa-rotate-left mr-2"></i>
-                    Reset
-                </BaseButton>
+                        <TableSearch v-model="filterForm.search" placeholder="Search subjects..." />
 
-            </CrudFilters>
+                    </div>
+
+                </template>
+
+                <template #filters>
+
+                    <div class="w-full sm:max-w-xs">
+
+                        <BaseSelect v-model="filterForm.elective" placeholder="Elective status" :options="[
+                            {
+                                label: 'Elective',
+                                value: 1,
+                            },
+                            {
+                                label: 'Non elective',
+                                value: 0,
+                            },
+                        ]" />
+
+                    </div>
+
+                </template>
+
+                <template #actions>
+
+                    <BaseButton variant="secondary" @click="clearFilters">
+
+                        <i class="fa-solid fa-rotate-left mr-2"></i>
+
+                        Reset
+
+                    </BaseButton>
+
+                </template>
+
+            </TableToolbar>
 
             <!-- TABLE -->
 
-            <DataTable v-if="subjects.data.length" :columns="columns" :rows="subjects.data">
+            <DataTable v-if="subjects.data.length" :columns="columns" :rows="subjects.data" :filters="filters" sortable>
+
+                <!-- ELECTIVE -->
 
                 <template #cell-elective="{ row }">
 
-                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="row.elective
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                        ">
-                        {{ row.elective ? "YES" : "NO" }}
-                    </span>
+                    <StatusBadge :label="row.elective ? 'YES' : 'NO'" :variant="row.elective
+                            ? 'success'
+                            : 'gray'
+                        " />
 
                 </template>
+
+                <!-- ACTIONS -->
 
                 <template #actions="{ row }">
 
                     <div class="flex items-center justify-center gap-2">
 
-                        <Link :href="route('subjects.edit', row.id)">
+                        <!-- SHOW -->
 
-                            <button
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-500/10"
-                                type="button">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                        <Link :href="route('subjects.show', row.id)">
+
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
 
                         </Link>
 
-                        <button @click="deleteSubject(row)"
-                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-800 dark:text-red-300 dark:hover:bg-red-500/10"
-                            type="button">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <!-- EDIT -->
+
+                        <Link :href="route('subjects.edit', row.id)">
+
+                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+
+                        </Link>
+
+                        <!-- DELETE -->
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteSubject(row)" />
 
                     </div>
 
@@ -193,8 +263,11 @@ const deleteSubject = async (subject) => {
                 <Link :href="route('subjects.create')">
 
                     <BaseButton variant="primary">
+
                         <i class="fa-solid fa-plus mr-2"></i>
+
                         Create Subject
+
                     </BaseButton>
 
                 </Link>

@@ -29,7 +29,7 @@ class Subject extends Model
             if (empty($subject->code)) {
                 $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $subject->name), 0, 3));
                 $nextNumber = self::count() + 1;
-                $subject->code = $prefix . str_pad($nextNumber, 2, '0', STR_PAD_LEFT); // Ej: MAT01
+                $subject->code = $prefix . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
             }
         });
     }
@@ -40,17 +40,6 @@ class Subject extends Model
         return $this->belongsToMany(Professor::class, 'professor_subject');
     }
 
-    public function pivotProfessor()
-    {
-        return $this->belongsTo(Professor::class, 'professor_id', 'id')->with('user');
-    }
-
-    public function students()
-    {
-        return $this->belongsToMany(Student::class, 'student_subject_professor')
-            ->withPivot('professor_id')
-            ->withTimestamps();
-    }
     public function programs()
     {
         return $this->belongsToMany(Program::class)->withPivot('semester')->withTimestamps();
