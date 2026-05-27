@@ -19,6 +19,7 @@ class Student extends Model
         'city',
         'semester',
         'program_id',
+        'curriculum_id',
         'academic_status'
     ];
 
@@ -59,6 +60,18 @@ class Student extends Model
     public function grades()
     {
         return $this->hasMany(Grade::class);
+    }
+
+    public function enrollmentGrades()
+    {
+        return $this->hasManyThrough(
+            Grade::class,
+            SubjectEnrollment::class,
+            'student_id',
+            'subject_enrollment_id',
+            'id',
+            'id'
+        );
     }
 
     public function enrollments()

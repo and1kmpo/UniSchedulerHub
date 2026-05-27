@@ -1,19 +1,30 @@
-<script>
-export default {
-    name: "StudentCreate"
-};
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
-import StudentForm from "@/Components/Students/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import StudentForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 defineProps({
     programs: {
-        type: Object,
+        type: Array,
         required: true,
+    },
+
+    curricula: {
+        type: Array,
+        default: () => [],
+    },
+
+    academicStatuses: {
+        type: Array,
+        default: () => [],
     },
 });
 
@@ -22,37 +33,45 @@ const form = useForm({
     name: "",
     phone: "",
     email: "",
+    password: "",
     address: "",
     city: "",
-    picture: "",
     semester: "",
     program_id: "",
+    curriculum_id: "",
+    academic_status: "active",
 });
 
+const submit = () => {
+    form.post(route("students.store"), {
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+            success(
+                page.props.flash?.success ||
+                "Student created successfully"
+            );
+        },
+
+        onError: () => {
+            error("Failed to create student");
+        },
+    });
+};
+
 const handleCancel = () => {
-    Inertia.visit(route("students.index"));
+    router.visit(route("students.index"));
 };
 </script>
 
 <template>
-    <AppLayout title="Create student">
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Create new student
-            </h1>
-        </template>
+    <CrudPageLayout title="Create Student" subtitle="Create a student profile and linked user account">
+        <CrudContainer>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <StudentForm :form="form" @submit="form.post(route('students.store'))"
-                                :handleCancel="handleCancel" :programs="programs" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <StudentForm :form="form" :programs="programs" :curricula="curricula"
+                :academicStatuses="academicStatuses" :processing="form.processing" :handleCancel="handleCancel"
+                @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

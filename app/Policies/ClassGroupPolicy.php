@@ -12,7 +12,7 @@ class ClassGroupPolicy
     public function manageGrades(User $user, ClassGroup $group): bool
     {
         return $user->professor
-            && $group->professor_id === $user->professor->id;
+            && $group->professor_id === $user->id;
     }
 
     public function editGrades(User $user, ClassGroup $group): bool
@@ -25,6 +25,6 @@ class ClassGroupPolicy
             return true;
         }
 
-        return $user->professor?->id === $group->professor_id;
+        return $user->id === $group->professor_id;
     }
 }

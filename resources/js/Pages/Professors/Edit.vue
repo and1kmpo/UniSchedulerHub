@@ -1,14 +1,15 @@
-<script>
-export default {
-    name: "ProfessorsEdit",
-};
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
-import ProfessorForm from "@/Components/Professors/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import ProfessorForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const props = defineProps({
     professor: {
@@ -18,44 +19,44 @@ const props = defineProps({
 });
 
 const form = useForm({
-    name: props.professor.professor.name,
-    document: props.professor.professor.document,
-    phone: props.professor.professor.phone,
-    email: props.professor.professor.email,
-    address: props.professor.professor.address,
-    city: props.professor.professor.city,
+    name: props.professor.user?.name ?? "",
+    document: props.professor.document ?? "",
+    phone: props.professor.phone ?? "",
+    email: props.professor.user?.email ?? "",
+    password: "",
+    address: props.professor.address ?? "",
+    city: props.professor.city ?? "",
 });
 
+const submit = () => {
+    form.put(route("professors.update", props.professor.id), {
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+            success(
+                page.props.flash?.success ||
+                "Professor updated successfully"
+            );
+        },
+
+        onError: () => {
+            error("Failed to update professor");
+        },
+    });
+};
+
 const handleCancel = () => {
-    Inertia.visit(route("professors.index"));
+    router.visit(route("professors.index"));
 };
 </script>
 
 <template>
-    <AppLayout title="Edit professor">
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Edit professor
-            </h1>
-        </template>
+    <CrudPageLayout title="Edit Professor" subtitle="Update professor profile and contact information">
+        <CrudContainer>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <ProfessorForm :updating="true" :form="form" @submit="
-                                form.put(
-                                    route(
-                                        'professors.update',
-                                        props.professor.id
-                                    )
-                                )
-                                " :handleCancel="handleCancel" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <ProfessorForm :form="form" :processing="form.processing" :updating="true" :handleCancel="handleCancel"
+                @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

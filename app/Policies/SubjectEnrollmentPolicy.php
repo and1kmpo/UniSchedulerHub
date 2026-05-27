@@ -57,7 +57,7 @@ class SubjectEnrollmentPolicy
         }
 
         if ($user->hasRole('professor')) {
-            return $enrollment->classGroup?->professor_id === $user->professor?->id;
+            return $enrollment->classGroup?->professor_id === $user->id;
         }
 
         return false;
@@ -69,7 +69,7 @@ class SubjectEnrollmentPolicy
     public function grade(User $user, SubjectEnrollment $enrollment): bool
     {
         return $user->hasRole('professor')
-            && $enrollment->classGroup?->professor_id === $user->professor?->id;
+            && $enrollment->classGroup?->professor_id === $user->id;
     }
 
     /**
@@ -97,7 +97,7 @@ class SubjectEnrollmentPolicy
             // académicos (docente)
             'approved', 'failed' =>
             $user->hasRole('professor')
-                && $enrollment->classGroup?->professor_id === $user->professor?->id,
+                && $enrollment->classGroup?->professor_id === $user->id,
 
             default => false,
         };

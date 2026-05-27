@@ -19,7 +19,7 @@ class GradePolicy
             return false;
         }
 
-        return $group->professor_id === $user->professor?->id;
+        return $group->professor_id === $user->id;
     }
 
     public function delete(User $user, Grade $grade): bool

@@ -1,54 +1,54 @@
-<script>
-export default {
-    name: "ProfessorsCreate",
-};
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
-import ProfessorForm from "@/Components/Professors/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import ProfessorForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const form = useForm({
     document: "",
     name: "",
     phone: "",
     email: "",
+    password: "",
     address: "",
     city: "",
-    picture: "",
 });
 
+const submit = () => {
+    form.post(route("professors.store"), {
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+            success(
+                page.props.flash?.success ||
+                "Professor created successfully"
+            );
+        },
+
+        onError: () => {
+            error("Failed to create professor");
+        },
+    });
+};
+
 const handleCancel = () => {
-    Inertia.visit(route("professors.index"));
+    router.visit(route("professors.index"));
 };
-
-const handleSubmit = () => {
-    console.log('Envío del formulario');
-    form.post(route('professors.store'));
-};
-
 </script>
 
 <template>
-    <AppLayout title="Create professor">
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Create new professor
-            </h1>
-        </template>
+    <CrudPageLayout title="Create Professor" subtitle="Create a professor profile and linked user account">
+        <CrudContainer>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <ProfessorForm :form="form" @submit="handleSubmit()" :handleCancel="handleCancel" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <ProfessorForm :form="form" :processing="form.processing" :handleCancel="handleCancel" @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

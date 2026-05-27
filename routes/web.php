@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\AcademicPeriodController;
@@ -22,10 +23,25 @@ use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
 
 Route::get('/', fn() => redirect()->route('login'));
+Route::get('/favicon.ico', fn() => redirect('/favicon.svg'));
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+
+    Route::get('/dashboard', function (Request $request) {
+        $user = $request->user();
+
+        if ($user->hasRole('admin') || $user->hasRole('professor')) {
+            return redirect()->route('dashboard');
+        }
+
+        if ($user->hasRole('student')) {
+            return redirect()->route('student.subjects');
+        }
+
+        return redirect('/');
+    });
 
     /**
      * ────────────── ADMIN & PROFESSOR ──────────────

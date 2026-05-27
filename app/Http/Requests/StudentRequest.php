@@ -2,52 +2,74 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
+use App\Models\Student;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StudentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-    public function rules()
+    public function rules(): array
     {
-        // Obtén el usuario desde la ruta (puede ser un ID de usuario)
-        $user = User::with('student')->find($this->route('student'));
+        $student = $this->route('student');
 
-        // Asegúrate de que $user sea un objeto válido y obtén el ID del estudiante
-        $studentId = $user?->student?->id;
+        if (! $student instanceof Student && $student) {
+            $student = Student::with('user')->find($student);
+        }
 
+        $user = $student?->user;
 
         return [
             'document' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('students', 'document')->ignore($studentId),
+                Rule::unique('students', 'document')->ignore($student?->id),
             ],
-            'name' => 'required|string|max:50',
-            'phone' => 'required|string|max:15',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id ?? null)],
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:50',
-            'semester' => 'required|integer',
-            'program_id' => 'required|exists:programs,id',
+            'name' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:15'],
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->ignore($user?->id),
+            ],
+            'password' => [
+                $this->isMethod('post') ? 'required' : 'nullable',
+                'string',
+                'min:6',
+            ],
+            'address' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:50'],
+            'semester' => ['required', 'integer', 'min:1', 'max:20'],
+            'program_id' => ['required', 'exists:programs,id'],
+            'curriculum_id' => ['nullable', 'exists:curricula,id'],
+            'academic_status' => [
+                'nullable',
+                Rule::in(array_merge(
+                    Student::ENROLLABLE_STATUSES,
+                    Student::BLOCKED_STATUSES
+                )),
+            ],
         ];
     }
 
-    public function messages()
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'document' => is_string($this->document) ? trim($this->document) : $this->document,
+            'name' => is_string($this->name) ? trim($this->name) : $this->name,
+            'phone' => is_string($this->phone) ? trim($this->phone) : $this->phone,
+            'email' => is_string($this->email) ? trim($this->email) : $this->email,
+            'address' => is_string($this->address) ? trim($this->address) : $this->address,
+            'city' => is_string($this->city) ? trim($this->city) : $this->city,
+        ]);
+    }
+
+    public function messages(): array
     {
         return [
             'document.required' => __('The document number is required.'),
@@ -63,6 +85,8 @@ class StudentRequest extends FormRequest
             'email.required' => __('The email address is required.'),
             'email.email' => __('The email address must be a valid email.'),
             'email.unique' => __('The email address is already in use.'),
+            'password.required' => __('The password is required.'),
+            'password.min' => __('The password must be at least 6 characters.'),
             'address.required' => __('The address is required.'),
             'address.string' => __('The address must be a string.'),
             'address.max' => __('The address must not exceed 255 characters.'),

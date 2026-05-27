@@ -10,6 +10,7 @@ class Professor extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'document',
         'name',
         'phone',
@@ -26,6 +27,11 @@ class Professor extends Model
     public function subjects()
     {
         return $this->belongsToMany(Subject::class, 'professor_subject');
+    }
+
+    public function classGroups()
+    {
+        return $this->hasMany(ClassGroup::class, 'professor_id', 'user_id');
     }
 
     // Relación inversa con la tabla pivot `student_subject_professor`
