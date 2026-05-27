@@ -13,7 +13,7 @@ const props = defineProps({
     },
     mode: {
         type: String,
-        default: 'create', // 'create' o 'edit'
+        default: 'create',
     }
 })
 

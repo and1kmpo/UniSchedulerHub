@@ -17,20 +17,38 @@ class StudentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $students = User::role('Student')
-            ->whereHas('student') // <- solo los que tienen relación creada
-            ->with(['student.program', 'student.subjects'])
-            ->paginate(5);
+    public function index(
+        Request $request,
+        StudentFilter $filters
+    ) {
+        $students = $filters
+            ->apply(
+                Student::query()
+                    ->with([
+                        'user',
+                        'program',
+                    ])
+            )
+            ->paginate(10)
+            ->withQueryString();
 
-        if (request()->wantsJson()) {
-            return response()->json($students);
-        }
+        return Inertia::render('Students/Index', [
 
-        return inertia('Students/Index', ['students' => $students]);
+            'students' => $students,
+
+            'filters' => $request->only([
+                'search',
+                'program',
+                'sort',
+                'direction',
+            ]),
+
+            'programs' => Program::select(
+                'id',
+                'name'
+            )->orderBy('name')->get(),
+        ]);
     }
-
 
     /**
      * Show the form for creating a new resource.

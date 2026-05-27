@@ -1,8 +1,15 @@
-<!-- resources/js/Pages/Programs/Create.vue -->
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
-import { router } from "@inertiajs/vue3";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import ProgramForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const form = useForm({
     name: "",
@@ -10,42 +17,42 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route("programs.store"), {
-        onSuccess: () => {
-            router.visit(route("programs.index"));
-        },
-    });
+
+    form.post(
+        route("programs.store"),
+        {
+            preserveScroll: true,
+
+            onSuccess: (page) => {
+
+                success(
+                    page.props.flash?.success ||
+                    "Program created successfully"
+                );
+            },
+
+            onError: () => {
+
+                error("Failed to create program");
+            },
+        }
+    );
+};
+
+const handleCancel = () => {
+
+    router.visit(
+        route("programs.index")
+    );
 };
 </script>
 
 <template>
-    <AppLayout title="Create Program">
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Create Program</h2>
-        </template>
+    <CrudPageLayout title="Create Program" subtitle="Create a new academic program">
+        <CrudContainer>
 
-        <div class="py-10 max-w-2xl mx-auto">
-            <form @submit.prevent="submit" class="bg-white p-6 rounded-lg shadow space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Name</label>
-                    <input v-model="form.name" type="text" class="mt-1 block w-full rounded border-gray-300" />
-                    <span class="text-sm text-red-600" v-if="form.errors.name">{{ form.errors.name }}</span>
-                </div>
+            <ProgramForm :form="form" :processing="form.processing" :handleCancel="handleCancel" @submit="submit" />
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea v-model="form.description" class="mt-1 block w-full rounded border-gray-300"></textarea>
-                    <span class="text-sm text-red-600" v-if="form.errors.description">{{ form.errors.description
-                        }}</span>
-                </div>
-
-                <div class="flex justify-end space-x-2">
-                    <button type="button" @click="$inertia.visit(route('programs.index'))"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
-                    <button type="submit"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded">Create</button>
-                </div>
-            </form>
-        </div>
-    </AppLayout>
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

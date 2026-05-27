@@ -2,18 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\ProgramFilter;
+use App\Http\Requests\ProgramRequest;
 use App\Models\Program;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProgramController extends Controller
 {
-    public function index()
+    public function index(Request $request, ProgramFilter $filters)
     {
-        $programs = Program::orderBy('id', 'desc')->get();
+        $programs = $filters
+            ->apply(
+                Program::query()
+            )
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Programs/Index', [
-            'programs' => $programs
+
+            'programs' => $programs,
+
+            'filters' => $request->only([
+                'search',
+                'sort',
+                'direction',
+            ]),
         ]);
     }
 
@@ -22,16 +37,18 @@ class ProgramController extends Controller
         return Inertia::render('Programs/Create');
     }
 
-    public function store(Request $request)
+    public function store(ProgramRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        $program = Program::create($request->validated());
 
-        Program::create($validated);
-
-        return redirect()->route('programs.index')->with('success', 'Programa creado correctamente.');
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Program created successfully',
+                'data' => $program,
+            ], 201)
+            : redirect()
+            ->route('programs.index')
+            ->with('success', 'Program created successfully');
     }
 
 
@@ -42,21 +59,92 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function update(Request $request, Program $program)
+    public function update(ProgramRequest $request, Program $program)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+        $program->update($request->validated());
+
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Program updated successfully',
+            ])
+            : redirect()
+            ->route('programs.index')
+            ->with('success', 'Program updated successfully');
+    }
+
+    public function show(Program $program)
+    {
+        $program
+            ->load('activeCurriculum')
+            ->loadCount([
+                'students',
+                'subjects',
+                'curricula',
+            ]);
+
+        $students = $program
+            ->students()
+            ->with('user')
+            ->paginate(10, ['*'], 'students_page')
+            ->withQueryString();
+
+        $subjects = $program
+            ->subjects()
+            ->paginate(10, ['subjects.*'], 'subjects_page')
+            ->withQueryString();
+
+        return Inertia::render('Programs/Show', [
+            'program' => $program,
+            'students' => $students,
+            'subjects' => $subjects,
         ]);
-
-        $program->update($validated);
-
-        return redirect()->route('programs.index')->with('success', 'Programa actualizado.');
     }
 
     public function destroy(Program $program)
     {
-        $program->delete();
-        return redirect()->route('programs.index')->with('success', 'Programa eliminado correctamente.');
+        $blockers = $this->deletionBlockers($program);
+
+        if (! empty($blockers)) {
+            return back()->withErrors([
+                'message' => 'This program cannot be deleted because it is associated with: '
+                    . implode(', ', $blockers)
+                    . '. Remove those associations first.',
+            ]);
+        }
+
+        try {
+            $program->delete();
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return back()->withErrors([
+                    'message' => 'This program cannot be deleted because it is associated with other records.',
+                ]);
+            }
+
+            throw $exception;
+        }
+
+        return redirect()
+            ->route('programs.index')
+            ->with('success', 'Program deleted successfully');
+    }
+
+    private function deletionBlockers(Program $program): array
+    {
+        $relations = [
+            'students' => 'students',
+            'subjects' => 'subjects',
+            'curricula' => 'curricula',
+        ];
+
+        $blockers = [];
+
+        foreach ($relations as $relation => $label) {
+            if ($program->{$relation}()->exists()) {
+                $blockers[] = $label;
+            }
+        }
+
+        return $blockers;
     }
 }

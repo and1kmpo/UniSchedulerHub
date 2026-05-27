@@ -1,97 +1,233 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
-import axios from 'axios';
-import { route } from 'ziggy-js';
-import { useAlert } from '@/Components/Composables/useAlert';
-import EditButton from '@/Components/EditButton.vue';
-import DeleteButton from '@/Components/DeleteButton.vue';
+import { reactive, watch } from "vue";
+
+import {
+    Link,
+    router,
+} from "@inertiajs/vue3";
+
+import { route } from "ziggy-js";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 
 const { confirm, success, error } = useAlert();
 
 const props = defineProps({
-    programs: Array
+    programs: {
+        type: Object,
+        required: true,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
-const programList = ref([...props.programs]);
+const columns = [
+    {
+        key: "name",
+        label: "Program",
+        sortable: true,
+    },
 
-// Watch for changes in props
-watch(() => props.programs, (newVal) => {
-    programList.value = [...newVal];
+    {
+        key: "description",
+        label: "Description",
+    },
+
+    {
+        key: "created_at",
+        label: "Created",
+        sortable: true,
+    },
+];
+
+const filterForm = reactive({
+    search: props.filters.search || "",
 });
 
-const confirmDelete = async (program) => {
-    const confirmed = await confirm(`Delete "${program.name}"?`, "This action cannot be undone.");
+watch(
+    () => ({
+        ...filterForm,
+    }),
+    () => {
+
+        router.get(
+            route("programs.index"),
+            {
+                search: filterForm.search,
+                sort: props.filters?.sort,
+                direction: props.filters?.direction,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+    {
+        deep: true,
+    }
+);
+
+const clearFilters = () => {
+
+    filterForm.search = "";
+};
+
+const deleteProgram = async (program) => {
+
+    const confirmed = await confirm(
+        `This will permanently delete "${program.name}"`,
+        "Delete Program"
+    );
+
     if (!confirmed) return;
 
-    axios.post(`/programs/${program.id}`, {
-        _method: 'DELETE'
-    })
-        .then(() => {
-            success("The program was successfully deleted.", "Deleted");
-            router.reload({ only: ['programs'] });
-        })
-        .catch((err) => {
-            console.error("Error deleting:", err);
-            error(err.response?.data?.message || "An error occurred while deleting", "Error");
-        });
+    router.delete(
+        route("programs.destroy", program.id),
+        {
+            preserveScroll: true,
+
+            onSuccess: (page) => {
+
+                success(
+                    page.props.flash?.success ||
+                    "Program deleted successfully"
+                );
+            },
+
+            onError: () => {
+
+                error(
+                    "Failed to delete program"
+                );
+            },
+        }
+    );
 };
 </script>
 
 <template>
-    <AppLayout title="Programs">
-        <template #header>
-            <h2 class="font-semibold text-2xl text-gray-800 dark:text-gray-100 leading-tight">
-                Program Management
-            </h2>
+    <CrudPageLayout title="Programs" subtitle="Manage academic programs">
+        <template #actions>
+
+            <Link :href="route('programs.create')">
+
+                <BaseButton variant="primary">
+
+                    <i class="fa-solid fa-plus mr-2" />
+
+                    Create Program
+
+                </BaseButton>
+
+            </Link>
+
         </template>
 
-        <div class="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <div class="flex items-center justify-between mb-6">
+        <CrudContainer>
 
-                <Link :href="route('programs.create')"
-                    class="inline-flex items-center bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 dark:focus:ring-offset-gray-900">
-                <i class="fa-solid fa-plus">&nbsp;</i> New Program
+            <!-- TOOLBAR -->
+
+            <TableToolbar>
+
+                <template #search>
+
+                    <div class="w-full lg:max-w-sm">
+
+                        <TableSearch v-model="filterForm.search" placeholder="Search programs..." />
+
+                    </div>
+
+                </template>
+
+                <template #actions>
+
+                    <BaseButton variant="secondary" @click="clearFilters">
+                        <i class="fa-solid fa-rotate-left mr-2" />
+
+                        Reset
+
+                    </BaseButton>
+
+                </template>
+
+            </TableToolbar>
+
+            <!-- TABLE -->
+
+            <DataTable v-if="programs.data.length" :columns="columns" :rows="programs.data" :filters="filters" sortable>
+
+                <template #cell-created_at="{ value }">
+
+                    <StatusBadge :label="new Date(value).toLocaleDateString()" variant="gray" />
+
+                </template>
+
+                <template #actions="{ row }">
+
+                    <div class="flex items-center justify-center gap-2">
+
+                        <Link :href="route('programs.show', row.id)">
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                        </Link>
+
+                        <Link :href="route('programs.edit', row.id)">
+                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                        </Link>
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteProgram(row)" />
+
+                    </div>
+
+                </template>
+
+            </DataTable>
+
+            <!-- EMPTY STATE -->
+
+            <EmptyState v-else title="No programs found" description="Create your first academic program to begin."
+                icon="fa-solid fa-graduation-cap">
+
+                <Link :href="route('programs.create')">
+
+                    <BaseButton variant="primary">
+
+                        <i class="fa-solid fa-plus mr-2" />
+
+                        Create Program
+
+                    </BaseButton>
+
                 </Link>
-            </div>
 
-            <div class="overflow-x-auto bg-white dark:bg-gray-900 rounded-lg shadow-md">
-                <table
-                    class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm text-left text-gray-700 dark:text-gray-100">
-                    <thead
-                        class="bg-gray-50 dark:bg-gray-800 uppercase text-xs text-gray-600 dark:text-gray-300 tracking-wider">
-                        <tr>
-                            <th scope="col" class="px-6 py-4">#</th>
-                            <th scope="col" class="px-6 py-4">Name</th>
-                            <th scope="col" class="px-6 py-4">ID</th>
-                            <th scope="col" class="px-6 py-4">Description</th>
-                            <th scope="col" class="px-6 py-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(program, i) in programList" :key="program.id"
-                            class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
-                                {{ i + 1 }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {{ program.name }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {{ program.id }}
-                            </td>
-                            <td class="px-6 py-4 break-words max-w-sm">
-                                {{ program.description }}
-                            </td>
-                            <td class="px-6 py-4 text-center space-x-2">
-                                <EditButton :href="route('programs.edit', program.id)" />
-                                <DeleteButton :onClick="() => confirmDelete(program)" />
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </AppLayout>
+            </EmptyState>
+
+            <!-- PAGINATION -->
+
+            <TablePagination v-if="programs.data.length" :data="programs" />
+
+        </CrudContainer>
+
+    </CrudPageLayout>
 </template>

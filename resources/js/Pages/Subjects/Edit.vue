@@ -5,7 +5,7 @@ import { route } from "ziggy-js";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 
-import SubjectForm from "@/Components/Subjects/Form.vue";
+import SubjectForm from "./Partials/Form.vue";
 
 import { useAlert } from "@/Components/Composables/useAlert";
 
