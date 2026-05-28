@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\Building;
 use App\Models\ClassGroup;
+use App\Services\ClassroomService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -32,7 +33,7 @@ class ClassroomController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ClassroomService $service)
     {
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
@@ -41,26 +42,10 @@ class ClassroomController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $building = Building::findOrFail($validated['building_id']);
-        $prefix   = $building->code;
-        $floor    = $validated['floor'];
+        $service->create($validated);
 
-        $count = Classroom::where('building_id', $building->id)
-            ->where('floor', $floor)
-            ->count() + 1;
-
-        $consecutive = str_pad($count, 2, '0', STR_PAD_LEFT);
-        $name = "{$prefix}-F{$floor}-{$consecutive}";
-
-        Classroom::create([
-            'name'        => $name,
-            'building_id' => $building->id,
-            'floor'       => $floor,
-            'capacity'    => $validated['capacity'] ?? null,
-            'description' => $validated['description'] ?? null,
-        ]);
-
-        return redirect()->route('classrooms.index')->with('success', 'Classroom created successfully.');
+        return redirect()->route('classrooms.index')
+            ->with('success', 'Classroom created successfully.');
     }
 
     public function preview(Request $request)
@@ -111,7 +96,7 @@ class ClassroomController extends Controller
         ]);
     }
 
-    public function update(Request $request, Classroom $classroom)
+    public function update(Request $request, Classroom $classroom, ClassroomService $service)
     {
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
@@ -120,50 +105,26 @@ class ClassroomController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Si el building o floor cambió
-        if ($validated['building_id'] != $classroom->building_id || $validated['floor'] != $classroom->floor) {
-            // Inactivar el aula actual
-            $classroom->update(['status' => 'inactive']);
+        $service->update($classroom, $validated);
 
-            // Crear nueva aula con lógica de store()
-            $building = Building::findOrFail($validated['building_id']);
-            $prefix   = $building->code;
-            $floor    = $validated['floor'];
-
-            $count = Classroom::where('building_id', $building->id)
-                ->where('floor', $floor)
-                ->count() + 1;
-
-            $consecutive = str_pad($count, 2, '0', STR_PAD_LEFT);
-            $name = "{$prefix}-F{$floor}-{$consecutive}";
-
-            Classroom::create([
-                'name'        => $name,
-                'building_id' => $building->id,
-                'floor'       => $floor,
-                'capacity'    => $validated['capacity'] ?? null,
-                'description' => $validated['description'] ?? null,
-            ]);
-
-            return redirect()->route('classrooms.index')->with('success', 'Aula movida correctamente. Se creó un nuevo registro.');
-        }
-
-        // Si no cambió la ubicación, actualizar normalmente
-        $classroom->update([
-            'capacity'    => $validated['capacity'],
-            'description' => $validated['description'],
-        ]);
-
-        return redirect()->route('classrooms.index')->with('success', 'Classroom updated successfully.');
+        return redirect()->route('classrooms.index')
+            ->with('success', 'Classroom updated successfully.');
     }
 
 
-    public function destroy(Classroom $classroom)
+    public function destroy(Classroom $classroom, ClassroomService $service)
     {
-        $classroom->delete();
+        try {
+            $service->delete($classroom);
 
-        return redirect()->route('classrooms.index')
-            ->with('success', 'Classroom deleted successfully');
+            return redirect()->route('classrooms.index')
+                ->with('success', 'Classroom deleted successfully');
+        } catch (\DomainException $e) {
+
+            return back()->withErrors([
+                'error' => 'This classroom is currently in use.'
+            ]);
+        }
     }
 
     public function schedule($id)

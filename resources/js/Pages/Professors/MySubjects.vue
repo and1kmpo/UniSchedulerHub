@@ -1,114 +1,120 @@
+<script setup>
+import { computed, ref } from "vue";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import RelatedSection from "@/Components/UI/Show/RelatedSection.vue";
+
+const props = defineProps({
+    groups: {
+        type: Array,
+        default: () => [],
+    },
+
+    period: {
+        type: Object,
+        default: null,
+    },
+});
+
+const selectedGroup = ref(null);
+
+const columns = [
+    { key: "subject", label: "Subject" },
+    { key: "code", label: "Group" },
+    { key: "knowledge_area", label: "Knowledge Area" },
+    { key: "credits", label: "Credits" },
+    { key: "students", label: "Students" },
+];
+
+const rows = computed(() =>
+    props.groups.map((group) => ({
+        id: group.id,
+        subject: group.subject?.name ?? "N/A",
+        code: group.code ?? group.name,
+        knowledge_area: group.subject?.knowledge_area ?? "N/A",
+        credits: group.subject?.credits ?? "N/A",
+        students: group.subject_enrollments_count,
+        source: group,
+    }))
+);
+
+const openModal = (row) => {
+    selectedGroup.value = row.source;
+};
+
+const closeModal = () => {
+    selectedGroup.value = null;
+};
+</script>
+
 <template>
-    <AppLayout>
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                My Subjects
-            </h1>
-        </template>
-        <div class="max-w-7xl mx-auto py-10">
+    <CrudPageLayout title="My Class Groups" :subtitle="period
+        ? `Assigned groups for ${period.name}`
+        : 'Assigned groups for the active academic period'
+        ">
+        <CrudContainer>
 
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-                <thead class="bg-gray-100 text-center text-sm font-semibold text-gray-700">
-                    <tr>
-                        <th class="px-4 py-3">Subject</th>
-                        <th class="px-4 py-3">Knowledge area</th>
-                        <th class="px-4 py-3">Credits</th>
-                        <th class="px-4 py-3">Students</th>
-                        <th class="px-4 py-3">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="text-sm text-gray-800 divide-y divide-gray-200 text-center">
-                    <tr v-for="subject in subjects" :key="subject.id">
-                        <td class="px-4 py-2">{{ subject.name }}</td>
-                        <td class="px-4 py-2">{{ subject.knowledge_area || '—' }}</td>
-                        <td class="px-4 py-2">{{ subject.credits }}</td>
-                        <td class="px-4 py-2">{{ subject.students?.length || 0 }}</td>
-                        <td class="px-4 py-2">
-                            <button @click="openModal(subject)"
-                                class="text-blue-600 hover:underline hover:text-blue-800 flex items-center">
-                                🔍 More details
-                            </button>
-                            <a :href="`/subjects/${subject.id}/grades`" class="text-blue-600 hover:underline">📋
-                                Record grades</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <RelatedSection title="Assigned Class Groups"
+                description="Subjects and groups currently assigned to you">
 
-            <!-- Modal de Estudiantes -->
-            <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl relative">
-                    <h2 class="text-xl font-bold mb-4">
-                        {{ selectedSubject?.name }} Students
+                <DataTable v-if="rows.length" :columns="columns" :rows="rows">
+
+                    <template #actions="{ row }">
+                        <div class="flex items-center justify-center gap-2">
+                            <BaseButton size="sm" variant="secondary" @click="openModal(row)">
+                                <i class="fa-solid fa-eye mr-2"></i>
+                                Details
+                            </BaseButton>
+
+                            <a :href="route('groups.grades.index', row.id)">
+                                <BaseButton size="sm" variant="primary">
+                                    <i class="fa-solid fa-clipboard-list mr-2"></i>
+                                    Grades
+                                </BaseButton>
+                            </a>
+                        </div>
+                    </template>
+
+                </DataTable>
+
+                <EmptyState v-else title="No assigned groups"
+                    description="You have no assigned class groups in the active academic period."
+                    icon="fa-solid fa-users-rectangle" />
+
+            </RelatedSection>
+
+        </CrudContainer>
+
+        <div v-if="selectedGroup"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            role="dialog" aria-label="Group students modal">
+            <div class="w-full max-w-3xl rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900 dark:text-gray-200">
+                <div class="mb-4 flex items-center justify-between gap-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ selectedGroup.subject?.name }} - {{ selectedGroup.name }}
                     </h2>
 
-                    <table class="w-full text-sm border border-gray-300 text-center">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-3 py-2 border">#</th>
-                                <th class="px-3 py-2 border">Name</th>
-                                <th class="px-3 py-2 border">Document</th>
-                                <th class="px-3 py-2 border">Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(student, index) in selectedSubject.students.slice(0, 5)" :key="student.id"
-                                class="border-t">
-                                <td class="px-3 py-2">{{ index + 1 }}</td>
-                                <td class="px-3 py-2">{{ student.user?.name ?? '—' }}</td>
-                                <td class="px-3 py-2">{{ student.document }}</td>
-                                <td class="px-3 py-2">{{ student.user?.email ?? '—' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="mt-2 text-sm text-gray-500">
-                        Showing {{ Math.min(selectedSubject.students.length, 5) }} of
-                        {{ selectedSubject.students.length }} students.
-                    </div>
-                    <div class="mt-4 text-center" v-if="selectedSubject.students.length > 5">
-                        <a :href="`/subjects/${selectedSubject.id}/students`" class="text-blue-600 hover:underline">
-                            👥 Show all students
-                        </a>
-                    </div>
-
-
-
-                    <button class="absolute top-2 right-2 text-gray-500 hover:text-black" @click="closeModal">
-                        ✖
+                    <button class="text-gray-500 hover:text-red-500" @click="closeModal" aria-label="Close">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
+
+                <DataTable :columns="[
+                    { key: 'name', label: 'Student' },
+                    { key: 'document', label: 'Document' },
+                    { key: 'email', label: 'Email' },
+                ]" :rows="selectedGroup.subject_enrollments.map((enrollment) => ({
+                    id: enrollment.id,
+                    name: enrollment.student?.user?.name ?? 'N/A',
+                    document: enrollment.student?.document ?? 'N/A',
+                    email: enrollment.student?.user?.email ?? 'N/A',
+                }))" />
             </div>
         </div>
-    </AppLayout>
+    </CrudPageLayout>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue';
-import AppLayout from "@/Layouts/AppLayout.vue";
-
-// Primero define los props
-const props = defineProps({
-    subjects: {
-        type: Array,
-        required: true
-    }
-});
-
-// Luego puedes usar props.subjects
-onMounted(() => {
-    console.log('Subjects recibidos al montar:', props.subjects);
-});
-
-const showModal = ref(false);
-const selectedSubject = ref(null);
-
-function openModal(subject) {
-    selectedSubject.value = subject;
-    showModal.value = true;
-}
-
-function closeModal() {
-    showModal.value = false;
-    selectedSubject.value = null;
-}
-</script>

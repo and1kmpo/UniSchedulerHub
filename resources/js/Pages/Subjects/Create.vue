@@ -1,14 +1,15 @@
-<script>
-export default {
-    name: "SubjectsCreate",
-};
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { useForm } from "@inertiajs/vue3";
-import SubjectForm from "@/Components/Subjects/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import SubjectForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const form = useForm({
     name: "",
@@ -18,35 +19,37 @@ const form = useForm({
     elective: false,
 });
 
+const submit = () => {
+    form.post(route("subjects.store"), {
+
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+
+            success(
+                page.props.flash?.success ||
+                "Subject created successfully"
+            );
+        },
+
+        onError: () => {
+
+            error("Failed to create subject");
+        },
+    });
+};
+
 const handleCancel = () => {
-    Inertia.visit(route("subjects.index"));
+    router.visit(route("subjects.index"));
 };
 </script>
 
 <template>
-    <AppLayout title="Create subject">
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Create new subject
-            </h1>
-        </template>
+    <CrudPageLayout title="Create Subject" subtitle="Create a new university subject">
+        <CrudContainer>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div
-                        class="bg-white overflow-hidden shadow-xl sm:rounded-lg"
-                    >
-                        <div class="p-6 bg-white border-b border-gray-200">
-                            <SubjectForm
-                                :form="form"
-                                @submit="form.post(route('programs.store'))"
-                                :handleCancel="handleCancel"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+            <SubjectForm :form="form" :processing="form.processing" :handleCancel="handleCancel" @submit="submit" />
+
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

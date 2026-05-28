@@ -4,78 +4,77 @@ namespace App\Policies;
 
 use App\Models\Subject;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class SubjectPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * View any subjects
      */
     public function viewAny(User $user): bool
     {
-        //
+        return $user->hasAnyRole(['admin', 'professor']);
     }
 
     /**
-     * Determine whether the user can view the model.
+     * View single subject
      */
     public function view(User $user, Subject $subject): bool
-{
-    // Admin siempre puede ver
-    if ($user->hasRole('admin')) {
-        return true;
+    {
+        // Admin puede todo
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Profesor solo materias asignadas
+        if ($user->hasRole('professor')) {
+            $professor = $user->professor;
+
+            return $professor
+                && $professor->subjects()
+                ->where('subjects.id', $subject->id)
+                ->exists();
+        }
+
+        return false;
     }
-
-    // Si es profesor, permitir solo si tiene asignada la materia
-    if ($user->hasRole('professor')) {
-        $professor = $user->professor;
-
-        return $professor
-            && $professor->subjects()->where('subjects.id', $subject->id)->exists();
-    }
-
-    return false;
-}
-
-
 
     /**
-     * Determine whether the user can create models.
+     * Create subjects
      */
     public function create(User $user): bool
     {
-        //
+        return $user->hasRole('admin');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Update subjects
      */
     public function update(User $user, Subject $subject): bool
     {
-        //
+        return $user->hasRole('admin');
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Delete subjects
      */
     public function delete(User $user, Subject $subject): bool
     {
-        //
+        return $user->hasRole('admin');
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Restore subjects
      */
     public function restore(User $user, Subject $subject): bool
     {
-        //
+        return $user->hasRole('admin');
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Force delete
      */
     public function forceDelete(User $user, Subject $subject): bool
     {
-        //
+        return $user->hasRole('admin');
     }
 }

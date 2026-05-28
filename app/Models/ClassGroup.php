@@ -84,6 +84,7 @@ class ClassGroup extends Model
         return $this->belongsTo(User::class, 'professor_id');
     }
 
+
     public function schedules()
     {
         return $this->hasMany(ClassSchedule::class);
@@ -97,5 +98,10 @@ class ClassGroup extends Model
     public function students()
     {
         return $this->hasManyThrough(Student::class, SubjectEnrollment::class, 'class_group_id', 'id', 'id', 'student_id');
+    }
+
+    public function academicPeriod()
+    {
+        return $this->belongsTo(AcademicPeriod::class);
     }
 }

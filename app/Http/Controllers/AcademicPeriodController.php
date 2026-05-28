@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
+use App\Services\AcademicPeriodService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -185,5 +186,18 @@ class AcademicPeriodController extends Controller
         $period->update(['is_active' => true]);
 
         return back()->with('success', 'Academic period activated.');
+    }
+
+    public function close(AcademicPeriod $period, AcademicPeriodService $service)
+    {
+        if (! $period->is_active) {
+            return back()->withErrors('This academic period is already closed.');
+        }
+
+        $service->closePeriod($period);
+
+        return redirect()
+            ->route('academic-periods.index')
+            ->with('success', 'Academic period closed successfully.');
     }
 }

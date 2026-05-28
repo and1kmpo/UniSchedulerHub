@@ -1,0 +1,53 @@
+<script setup>
+defineProps({
+    icon: {
+        type: String,
+        required: true,
+    },
+
+    color: {
+        type: String,
+        default: "gray",
+    },
+
+    type: {
+        type: String,
+        default: "button",
+    },
+});
+
+const colors = {
+    sky: `
+        text-sky-600
+        hover:bg-sky-50
+        hover:text-sky-800
+        dark:text-sky-300
+        dark:hover:bg-sky-500/10
+    `,
+
+    indigo: `
+        text-indigo-600
+        hover:bg-indigo-50
+        hover:text-indigo-800
+        dark:text-indigo-300
+        dark:hover:bg-indigo-500/10
+    `,
+
+    red: `
+        text-red-600
+        hover:bg-red-50
+        hover:text-red-800
+        dark:text-red-300
+        dark:hover:bg-red-500/10
+    `,
+};
+</script>
+
+<template>
+    <button :type="type" :class="[
+        'inline-flex h-9 w-9 items-center justify-center rounded-lg transition',
+        colors[color],
+    ]">
+        <i :class="icon"></i>
+    </button>
+</template>

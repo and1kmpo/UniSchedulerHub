@@ -48,7 +48,7 @@ export function useAlert() {
     const confirm = async (
         message = "Are you sure?",
         title = "Confirm",
-        useHtml = false
+        useHtml = false,
     ) => {
         const result = await Swal.fire({
             title,
@@ -84,11 +84,28 @@ export function useAlert() {
         Swal.fire(options);
     };
 
+    // ⏳ Loading modal
+    const loading = (title = "Loading...", text = "Please wait") => {
+        Swal.fire({
+            title,
+            text,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
+    };
+
+    // ❌ Close current alert
+    const close = () => {
+        Swal.close();
+    };
+
     //Alert Confirm but with preconfirm
     const confirmWithPreConfirm = async (title, text, preConfirm) => {
         if (!title || !text || !preConfirm) {
             console.error(
-                "confirmWithPreConfirm requiere title, text y preConfirm"
+                "confirmWithPreConfirm requiere title, text y preConfirm",
             );
             return;
         }
@@ -120,5 +137,7 @@ export function useAlert() {
         toastSuccess,
         toastError,
         custom,
+        loading,
+        close,
     };
 }

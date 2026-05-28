@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\AcademicPeriodController;
@@ -22,10 +23,25 @@ use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
 
 Route::get('/', fn() => redirect()->route('login'));
+Route::get('/favicon.ico', fn() => redirect('/favicon.svg'));
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+
+    Route::get('/dashboard', function (Request $request) {
+        $user = $request->user();
+
+        if ($user->hasRole('admin') || $user->hasRole('professor')) {
+            return redirect()->route('dashboard');
+        }
+
+        if ($user->hasRole('student')) {
+            return redirect()->route('student.subjects');
+        }
+
+        return redirect('/');
+    });
 
     /**
      * ────────────── ADMIN & PROFESSOR ──────────────
@@ -68,6 +84,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/class-groups/{id}', [ClassGroupController::class, 'show'])->name('class-groups.show');
 
         Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
+        Route::middleware(['auth', 'role:admin'])->group(function () {
+            Route::post('/academic-periods/{period}/close', [AcademicPeriodController::class, 'close'])->name('academic-periods.close');
+        });
+
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
 
         Route::resource('buildings', BuildingController::class);
@@ -86,30 +106,68 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::middleware(['role:professor'])->group(function () {
         Route::get('/professor/subjects', [ProfessorController::class, 'mySubjects'])->name('professor.subjects');
         Route::get('/subjects/{subject}/students', [ProfessorController::class, 'viewAllStudents'])->name('subjects.students.view');
-        Route::get('/subjects/{subject}/grades', [GradeController::class, 'index'])->name('grades.index');
-        Route::post('/grades', [GradeController::class, 'store'])->name('grades.store');
+        Route::get('/groups/{group}/grades', [GradeController::class, 'index'])->name('groups.grades.index')->can('manageGrades', 'group');
+        Route::post('/groups/{group}/grades', [GradeController::class, 'store'])->name('groups.grades.store')->can('manageGrades', 'group');
+        Route::get(
+            '/class-groups/{classGroup}/grades',
+            [GradeController::class, 'indexByGroup']
+        )->name('class-groups.grades')
+            ->can('manageGrades', 'classGroup');
+
+        Route::post(
+            '/class-groups/{classGroup}/grades',
+            [GradeController::class, 'storeByGroup']
+        )->name('class-groups.grades.store')
+            ->can('manageGrades', 'classGroup');
     });
 
     /**
      * ────────────── STUDENT ──────────────
      */
     Route::middleware(['role:student'])->group(function () {
-        Route::get('/student/subjects', [StudentController::class, 'mySubjects'])->name('student.subjects');
-        Route::get('/student/{subject}/grades', [StudentController::class, 'viewGrades'])->name('student.subject.grades');
-        Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])->name('student.subject.grades.json');
-        Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])->name('student.grades.summary');
 
-        Route::get('/student/subject-enrollment', [SubjectEnrollmentController::class, 'index'])->name('student.subject-enrollment.index');
-        Route::post('/student/subject-enrollment/{subject}', [SubjectEnrollmentController::class, 'enroll'])->name('student.subject-enrollment.enroll');
-        Route::post('/student/subject-unenrollment/{subject}', [SubjectEnrollmentController::class, 'unenroll'])->name('student.subject-enrollment.unenroll');
-        Route::get('student/subject-enrollment/{subject}/groups', [SubjectEnrollmentController::class, 'groups'])->name('student.subject-enrollment.groups');
+        Route::get('/student/subjects', [StudentController::class, 'mySubjects'])
+            ->name('student.subjects');
+
+        Route::get('/student/{subject}/grades', [StudentController::class, 'viewGrades'])
+            ->name('student.subject.grades');
+
+        Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])
+            ->name('student.subject.grades.json');
+
+        Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])
+            ->name('student.grades.summary');
+
+
+        /**
+         * 🎯 Enrollment Module
+         */
+        Route::prefix('student/subject-enrollment')->group(function () {
+
+            // Vista principal
+            Route::get('/', [SubjectEnrollmentController::class, 'index'])
+                ->name('student.subject-enrollment.index');
+
+            // 🔹 Enroll / Change group (usa ClassGroup)
+            Route::post('/groups/{classGroup}', [SubjectEnrollmentController::class, 'enroll'])
+                ->name('student.subject-enrollment.enroll');
+
+            // 🔹 Unenroll (usa SubjectEnrollment)
+            Route::delete('/{enrollment}', [SubjectEnrollmentController::class, 'unenroll'])
+                ->name('student.subject-enrollment.unenroll');
+
+            // 🔹 Obtener grupos por materia
+            Route::get('/subjects/{subject}/groups', [SubjectEnrollmentController::class, 'groups'])
+                ->name('student.subject-enrollment.groups');
+        });
+
         Route::resource('curricula', CurriculumController::class);
     });
 
     /**
      * ────────────── GENERAL ──────────────
      */
-    Route::resource('/subjects', SubjectController::class);
+    Route::resource('subjects', SubjectController::class);
     Route::resource('/professors', ProfessorController::class);
     Route::resource('/students', StudentController::class);
 

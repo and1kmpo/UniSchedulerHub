@@ -2,102 +2,156 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\SubjectFilter;
 use Inertia\Inertia;
 use App\Http\Requests\SubjectRequest;
 use App\Models\Student;
 use App\Models\Subject;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request, SubjectFilter $filters)
     {
-        $subjects = Subject::paginate(5);
+        $subjects = $filters->apply(Subject::query())
+            ->paginate(5)
+            ->withQueryString();
 
-        if (request()->wantsJson()) {
-            return response()->json($subjects);
-        }
+        return Inertia::render('Subjects/Index', [
+            'subjects' => $subjects,
 
-        return inertia('Subjects/Index', ['subjects' => $subjects]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return inertia('Subjects/Create');
-    }
-
-    /**
-     * 
-     * Store a newly created resource in storage.
-     * @param App\Http\Requests\SubjectRequest
-     * @return \illuminate\Http\Response
-     */
-    public function store(SubjectRequest $request)
-    {
-        $validatedData = $request->validated();
-        Subject::create($validatedData);
-        return redirect()->route('subjects.index');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Subject $subject)
-    {
-        $this->authorize('view', $subject); // Aquí aplica la política correctamente
-
-        return Inertia::render('Subjects/Show', [
-            'subject' => $subject,
+            'filters' => $request->only([
+                'search',
+                'elective',
+                'sort',
+                'direction',
+            ]),
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Subjects/Create');
+    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    public function store(SubjectRequest $request)
+    {
+        $this->authorize('create', Subject::class);
+
+        $subject = Subject::create($request->validated());
+
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Subject created successfully',
+                'data' => $subject
+            ], 201)
+            : redirect()->route('subjects.index')
+            ->with('success', 'Subject created successfully');
+    }
+
+    public function show(Subject $subject)
+    {
+        $this->authorize('view', $subject);
+
+        $students = Student::query()
+            ->whereHas('enrollments', function ($query) use ($subject) {
+                $query->where('subject_id', $subject->id);
+            })
+            ->with(['user', 'program'])
+            ->paginate(10);
+
+        return Inertia::render('Subjects/Show', [
+            'subject' => $subject,
+            'students' => $students,
+        ]);
+    }
+
     public function edit(Subject $subject)
     {
-        return inertia('Subjects/Edit', ['subject' => $subject]);
+        $this->authorize('update', $subject);
+
+        return Inertia::render('Subjects/Edit', [
+            'subject' => $subject
+        ]);
     }
-    /**
-     * Update the specified resource in storage.
-     */
+
     public function update(SubjectRequest $request, Subject $subject)
     {
-        $validatedData = $request->validated();
-        $subject->update($validatedData);
+        $this->authorize('update', $subject);
 
-        return redirect()->route('subjects.index');
+        $subject->update($request->validated());
+
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Subject updated successfully'
+            ])
+            : redirect()->route('subjects.index')
+            ->with('success', 'Subject updated successfully');
     }
 
-    /**
-     * @param Program $program
-     * Remove the specified resource from storage.
-     */
     public function destroy(Subject $subject)
     {
-        $hasStudents = Student::whereHas('subjects', function ($query) use ($subject) {
-            $query->where('subject_id', $subject->id);
-        })->exists();
+        $this->authorize('delete', $subject);
 
-        if ($hasStudents) {
-            return response()->json(['error' => 'This subject has associated students and cannot be eliminated.'], 422);
+        $blockers = $this->deletionBlockers($subject);
+
+        if (! empty($blockers)) {
+            return back()->withErrors([
+                'message' => 'This subject cannot be deleted because it is associated with: '
+                    . implode(', ', $blockers)
+                    . '. Remove those associations first.'
+            ]);
         }
 
-        $subject->delete();
-        return response()->json(['message' => 'Subject successfully deleted.']);
+        try {
+            $subject->delete();
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return back()->withErrors([
+                    'message' => 'This subject cannot be deleted because it is associated with other records.'
+                ]);
+            }
+
+            throw $exception;
+        }
+
+        return redirect()
+            ->route('subjects.index')
+            ->with('success', 'Subject deleted successfully');
+    }
+
+    private function deletionBlockers(Subject $subject): array
+    {
+        $relations = [
+            'professors' => 'professors',
+            'students' => 'students',
+            'enrollments' => 'enrollments',
+            'classGroups' => 'class groups',
+            'curricula' => 'curricula',
+            'programs' => 'programs',
+            'grades' => 'grades',
+            'prerequisites' => 'prerequisites',
+            'isPrerequisiteFor' => 'subjects that use it as a prerequisite',
+        ];
+
+        $blockers = [];
+
+        foreach ($relations as $relation => $label) {
+            if ($subject->{$relation}()->exists()) {
+                $blockers[] = $label;
+            }
+        }
+
+        return $blockers;
     }
 
     public function getSubjectsWithProfessors()
     {
-        // Get only subjects with an assigned professor
-        $subjectsWithProfessors = Subject::has('professors')->get();
+        $subjects = Subject::with('professors')
+            ->has('professors')
+            ->get();
 
-        return response()->json($subjectsWithProfessors);
+        return response()->json($subjects);
     }
 }

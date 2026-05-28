@@ -8,6 +8,7 @@ use App\Models\ClassSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Services\ClassScheduleService;
 
 class ClassScheduleController extends Controller
 {
@@ -22,11 +23,13 @@ class ClassScheduleController extends Controller
         ]);
     }
 
-    public function store(Request $request, ClassGroup $classGroup)
-    {
+    public function store(
+        Request $request,
+        ClassGroup $classGroup,
+        ClassScheduleService $service
+    ) {
         $data = $this->validateSchedule($request);
 
-        // Conflict same group
         if ($conflict = $this->findConflict(
             ClassSchedule::where('class_group_id', $classGroup->id),
             $data['day'],
@@ -36,7 +39,6 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'group');
         }
 
-        // Conflict same classroom
         if (
             !empty($data['classroom_id']) &&
             ($conflict = $this->findConflict(
@@ -49,17 +51,19 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'classroom');
         }
 
-        // If all is OK, SAVE
-        $classGroup->schedules()->create($data);
+        $service->create($classGroup, $data);
 
         return $this->successResponse($request, 'Schedule created.', 201);
     }
 
-    public function update(Request $request, ClassGroup $classGroup, ClassSchedule $schedule)
-    {
+    public function update(
+        Request $request,
+        ClassGroup $classGroup,
+        ClassSchedule $schedule,
+        ClassScheduleService $service
+    ) {
         $data = $this->validateSchedule($request);
 
-        // Conflicto en el mismo grupo (ignorando este mismo horario)
         if ($conflict = $this->findConflict(
             $classGroup->schedules(),
             $data['day'],
@@ -70,7 +74,6 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'group');
         }
 
-        // Conflicto en el mismo aula (ignorando este mismo horario)
         if (
             !empty($data['classroom_id']) &&
             ($conflict = $this->findConflict(
@@ -84,16 +87,18 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'classroom');
         }
 
-        $schedule->update($data);
+        $service->update($schedule, $data);
 
-        return $request->expectsJson()
-            ? response()->json(['message' => 'Schedule updated.'])
-            : back()->with('success', 'Schedule updated.');
+        return $this->successResponse($request, 'Schedule updated.');
     }
 
-    public function destroy(ClassGroup $classGroup, ClassSchedule $schedule)
-    {
-        $schedule->delete();
+    public function destroy(
+        ClassGroup $classGroup,
+        ClassSchedule $schedule,
+        ClassScheduleService $service
+    ) {
+        $service->delete($schedule);
+
         return back()->with('success', 'Schedule deleted.');
     }
 
@@ -109,7 +114,7 @@ class ClassScheduleController extends Controller
 
         $classrooms = Classroom::where('status', 'active')->orderBy('name')->get();
 
-        $editable = auth()->user()->hasRole('admin');
+        $editable = auth()->check() && auth()->user()->hasRole('admin');
 
         /*   // temporal: inspección rápida
         return response()->json($classGroup->load('schedules.classGroup.professor', 'schedules.classroom')->toArray()); */

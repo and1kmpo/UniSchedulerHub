@@ -10,7 +10,11 @@ class Building extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'code'];
+    protected $fillable = [
+        'name',
+        'code',
+        'description',
+    ];
 
     protected static function booted()
     {

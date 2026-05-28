@@ -2,263 +2,298 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use App\Models\Student;
+use App\Filters\StudentFilter;
 use App\Http\Requests\StudentRequest;
+use App\Models\Curriculum;
 use App\Models\Grade;
-use App\Models\User;
 use App\Models\Program;
+use App\Models\Student;
 use App\Models\Subject;
+use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class StudentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request, StudentFilter $filters)
     {
-        $students = User::role('Student')
-            ->whereHas('student') // <- solo los que tienen relación creada
-            ->with(['student.program', 'student.subjects'])
-            ->paginate(5);
+        $students = $filters
+            ->apply(
+                Student::query()
+                    ->with(['user', 'program', 'curriculum'])
+                    ->withCount('enrollments')
+            )
+            ->paginate(10)
+            ->withQueryString();
 
-        if (request()->wantsJson()) {
-            return response()->json($students);
-        }
-
-        return inertia('Students/Index', ['students' => $students]);
+        return Inertia::render('Students/Index', [
+            'students' => $students,
+            'filters' => $request->only([
+                'search',
+                'program',
+                'academic_status',
+                'semester',
+                'sort',
+                'direction',
+            ]),
+            ...$this->formOptions(),
+        ]);
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $programs = Program::all()->pluck('name', 'id');
-        $subjects = Subject::all()->pluck('name', 'id');
-        return inertia('Students/Create', [
-            'programs' => $programs,
-            'subjects' => $subjects
-        ]);
+        return Inertia::render('Students/Create', $this->formOptions());
     }
 
-    /**
-     *
-     * Store a newly created resource in storage.
-     * @param App\Http\Requests\StudentRequest
-     * @return \illuminate\Http\Response
-     */
     public function store(StudentRequest $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'document' => 'required|string',
-            'phone' => 'nullable|string',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string',
-            'semester' => 'nullable|integer',
-            'program_id' => 'required|exists:programs,id',
-        ]);
+        $validated = $request->validated();
 
-        $user = User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => bcrypt($validatedData['password']),
-        ]);
+        $student = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'status' => User::STATUS_ACTIVE,
+            ]);
 
-        $user->assignRole('Student');
+            $user->assignRole('student');
 
-        $user->student()->create([
-            'document' => $validatedData['document'],
-            'name' => $validatedData['name'],
-            'phone' => $validatedData['phone'],
-            'address' => $validatedData['address'],
-            'city' => $validatedData['city'],
-            'semester' => $validatedData['semester'],
-            'program_id' => $validatedData['program_id'],
-        ]);
+            return $user->student()->create([
+                'document' => $validated['document'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'city' => $validated['city'],
+                'semester' => $validated['semester'],
+                'program_id' => $validated['program_id'],
+                'curriculum_id' => $validated['curriculum_id'] ?? null,
+                'academic_status' => $validated['academic_status'] ?? Student::STATUS_ACTIVE,
+            ]);
+        });
 
-        return redirect()->route('students.index');
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Student created successfully',
+                'data' => $student->load(['user', 'program', 'curriculum']),
+            ], 201)
+            : redirect()
+            ->route('students.index')
+            ->with('success', 'Student created successfully');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Student $student)
     {
-        //
-    }
+        $student
+            ->load(['user', 'program', 'curriculum'])
+            ->loadCount(['enrollments', 'enrollmentGrades']);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(User $student)
-    {
-        // Obtén la lista de programas
-        $student->load('student.program');
-        $programs = Program::all()->pluck('name', 'id');
+        $enrollments = $student
+            ->enrollments()
+            ->with([
+                'subject',
+                'academicPeriod',
+                'status',
+                'classGroup',
+                'grade.state',
+            ])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        return inertia('Students/Edit', [
+        return Inertia::render('Students/Show', [
             'student' => $student,
-            'programs' => $programs,
+            'enrollments' => $enrollments,
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(StudentRequest $request, $user_id)
+    public function edit(Student $student)
     {
-        // Obtén el usuario y carga la relación con student
-        $user = User::with('student')->findOrFail($user_id);
+        $student->load(['user', 'program', 'curriculum']);
 
-        //Validar datos recibidos
-        $validatedData = $request->validated();
-        // Actualiza el estudiante relacionado
-        $user->student->update($validatedData);
+        return Inertia::render('Students/Edit', [
+            'student' => $student,
+            ...$this->formOptions(),
+        ]);
+    }
 
-        // Actualizar también el email en la tabla users, si aplica
-        if (isset($validatedData['email'])) {
-            $user->update(['email' => $validatedData['email']]);
+    public function update(StudentRequest $request, Student $student)
+    {
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($student, $validated) {
+            $student->user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
+
+            if (! empty($validated['password'])) {
+                $student->user->update([
+                    'password' => Hash::make($validated['password']),
+                ]);
+            }
+
+            $student->update([
+                'document' => $validated['document'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'city' => $validated['city'],
+                'semester' => $validated['semester'],
+                'program_id' => $validated['program_id'],
+                'curriculum_id' => $validated['curriculum_id'] ?? null,
+                'academic_status' => $validated['academic_status'] ?? $student->academic_status,
+            ]);
+        });
+
+        return request()->wantsJson()
+            ? response()->json([
+                'message' => 'Student updated successfully',
+            ])
+            : redirect()
+            ->route('students.index')
+            ->with('success', 'Student updated successfully');
+    }
+
+    public function destroy(Student $student)
+    {
+        $blockers = $this->deletionBlockers($student);
+
+        if (! empty($blockers)) {
+            return back()->withErrors([
+                'message' => 'This student cannot be deleted because it is associated with: '
+                    . implode(', ', $blockers)
+                    . '. Remove those associations first.',
+            ]);
         }
 
-        return redirect()->route('students.index');
-    }
+        try {
+            $student->user?->delete();
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return back()->withErrors([
+                    'message' => 'This student cannot be deleted because it is associated with other records.',
+                ]);
+            }
 
-    /**
-     * @param Program $program
-     * Remove the specified resource from storage.
-     */
-    public function destroy(User  $student)
-    {
-        $student->student()->delete();
-        return redirect()->route('students.index');
+            throw $exception;
+        }
+
+        return redirect()
+            ->route('students.index')
+            ->with('success', 'Student deleted successfully');
     }
 
     public function assignSubjectForm()
     {
-        $students = Student::all();
-        return inertia('Students/AssignSubject', ['students' => $students]);
+        $students = Student::with(['user', 'program'])->orderBy('document')->get();
+
+        return Inertia::render('Students/AssignSubject', [
+            'students' => $students,
+        ]);
     }
 
     public function getAssignedSubjects($studentId)
     {
-        $student = Student::with('subjects')->findOrFail($studentId);
+        $student = Student::findOrFail($studentId);
 
-        $assignedSubjects = $student->subjects;
+        $subjects = $student
+            ->enrollments()
+            ->with(['subject', 'status', 'classGroup'])
+            ->get()
+            ->map(fn($enrollment) => [
+                'id' => $enrollment->subject?->id,
+                'name' => $enrollment->subject?->name,
+                'credits' => $enrollment->subject?->credits,
+                'status' => $enrollment->status?->code,
+                'group' => $enrollment->classGroup?->code,
+            ])
+            ->filter(fn($subject) => $subject['id'])
+            ->values();
 
-        return response()->json($assignedSubjects);
+        return response()->json($subjects);
     }
-
 
     public function assignSubjects(Request $request)
     {
-        try {
-            // Validar los datos de entrada
-            $request->validate([
-                'student_id' => 'required|exists:students,id',
-                'subject_ids' => 'required|array',
-            ]);
-
-            // Extraer datos del request
-            $studentId = $request->input('student_id');
-            $subjectIds = $request->input('subject_ids');
-
-            // Buscar al estudiante
-            $student = Student::findOrFail($studentId);
-
-            // Calcular créditos totales
-            $totalCredits = Subject::whereIn('id', $subjectIds)->sum('credits');
-
-            // Validar que cumpla con el mínimo
-            if ($totalCredits < 7) {
-                return response()->json(['error' => 'The selected subjects do not meet the minimum requirement of 7 credits.'], 422);
-            }
-
-            // Obtener y asignar materias
-            $subjects = Subject::whereIn('id', $subjectIds)->get(['id']);
-            foreach ($subjects as $subject) {
-                $professorId = $subject->professors()->pluck('professors.id')->first();
-
-                if ($professorId !== null) {
-                    $student->subjects()->syncWithoutDetaching([$subject->id => ['professor_id' => $professorId]]);
-                } else {
-                    Log::warning('Subject without professor assigned:', ['subject_id' => $subject->id]);
-                }
-            }
-            return response()->json(['success' => true, 'message' => 'Successfully assigned subjects.'], 200);
-        } catch (\Exception $exception) {
-            return response()->json(['error' => 'Error when assigning subject: ' . $exception->getMessage()], 500);
-        }
+        return response()->json([
+            'error' => 'Use the subject enrollment workflow to enroll a student into a class group.',
+        ], 422);
     }
-
 
     public function unassignSubject($studentId, $subjectId)
     {
-        try {
-            $student = Student::findOrFail($studentId);
-            $totalCredits = $student->subjects->sum('credits');
-            $subject = Subject::findOrFail($subjectId);
-            $subjectCredits = $subject->credits;
-
-
-            if (($totalCredits - $subjectCredits) < 7) {
-                Log::warning('Cannot unassign due to minimum credit restriction.', [
-                    'remaining_credits' => $totalCredits - $subjectCredits
-                ]);
-                return response()->json(['error' => 'Cannot unassign this subject. The student must have at least 7 credits assigned.'], 422);
-            }
-
-            $student->subjects()->detach($subjectId);
-
-            return response()->json(['success' => true, 'message' => 'Subject successfully unassigned.']);
-        } catch (\Exception $exception) {
-            return response()->json(['success' => false, 'message' => 'Error when unassigning subject.'], 500);
-        }
+        return response()->json([
+            'error' => 'Use the subject enrollment workflow to withdraw a subject enrollment.',
+        ], 422);
     }
 
     public function mySubjects()
     {
         $student = auth()->user()->student;
 
-        $subjects = $student->subjects()->get()->map(
-            function ($subject) {
-                $professorId = $subject->pivot->professor_id;
-                $professor = \App\Models\Professor::with('user')->find($professorId);
-
-                $subject->professor_name = optional($professor?->user)->name ?? 'Unassigned';
-                return $subject;
-            }
-        );
+        $subjects = $student
+            ->enrollments()
+            ->with([
+                'subject',
+                'status',
+                'classGroup.professor',
+                'classGroup.schedules',
+                'grade.state',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn($enrollment) => [
+                'id' => $enrollment->subject?->id,
+                'name' => $enrollment->subject?->name,
+                'credits' => $enrollment->subject?->credits,
+                'status' => $enrollment->status?->code,
+                'status_label' => $enrollment->status?->label,
+                'professor_name' => $enrollment->classGroup?->professor?->name ?? 'Unassigned',
+                'group' => $enrollment->classGroup?->code,
+                'schedules' => $enrollment->classGroup?->schedules ?? [],
+                'grade' => $enrollment->grade,
+            ])
+            ->filter(fn($subject) => $subject['id'])
+            ->values();
 
         return Inertia::render('Students/MySubjects', [
-            'subjects' => $subjects
+            'subjects' => $subjects,
         ]);
     }
 
     public function viewGrades($subjectId)
     {
-        $studentId = auth()->user()->student->id;
-
-        $grade = Grade::with('state')->where('student_id', $studentId)->where('subject_id', $subjectId)->first();
-
+        $student = auth()->user()->student;
         $subject = Subject::findOrFail($subjectId);
 
-        return Inertia::render('Students/SubjectGrades', ['subject' => $subject, 'grade' => $grade]);
+        $grade = Grade::with('state')
+            ->whereHas('enrollment', function ($query) use ($student, $subjectId) {
+                $query
+                    ->where('student_id', $student->id)
+                    ->where('subject_id', $subjectId);
+            })
+            ->latest()
+            ->first();
+
+        return Inertia::render('Students/SubjectGrades', [
+            'subject' => $subject,
+            'grade' => $grade,
+        ]);
     }
 
     public function getGradeJson($subjectId)
     {
-        $studentId = auth()->user()->student->id;
+        $student = auth()->user()->student;
 
         $grade = Grade::with('state')
-            ->where('student_id', $studentId)
-            ->where('subject_id', $subjectId)
+            ->whereHas('enrollment', function ($query) use ($student, $subjectId) {
+                $query
+                    ->where('student_id', $student->id)
+                    ->where('subject_id', $subjectId);
+            })
+            ->latest()
             ->first();
 
         return response()->json(['grade' => $grade]);
@@ -268,30 +303,64 @@ class StudentController extends Controller
     {
         $student = auth()->user()->student;
 
-        // Todas las asignaturas asignadas al estudiante
-        $subjects = $student->subjects()->with('grades.state')->get();
-
-        // Mapeamos cada asignatura y buscamos si tiene calificación
-        $gradesSummary = $subjects->map(function ($subject) use ($student) {
-            $grade = Grade::with('state')
-                ->where('student_id', $student->id)
-                ->where('subject_id', $subject->id)
-                ->first();
-
-            return [
+        $gradesSummary = $student
+            ->enrollments()
+            ->with(['subject', 'grade.state'])
+            ->get()
+            ->map(fn($enrollment) => [
                 'subject' => [
-                    'id' => $subject->id,
-                    'name' => $subject->name
+                    'id' => $enrollment->subject?->id,
+                    'name' => $enrollment->subject?->name,
                 ],
-                'partial_1'   => $grade->partial_1 ?? null,
-                'partial_2'   => $grade->partial_2 ?? null,
-                'partial_3'   => $grade->partial_3 ?? null,
-                'activities'  => $grade->activities ?? null,
-                'final_grade' => $grade->final_grade ?? null,
-                'state'       => $grade?->state,
-            ];
-        });
+                'partial_1' => $enrollment->grade?->partial_1,
+                'partial_2' => $enrollment->grade?->partial_2,
+                'partial_3' => $enrollment->grade?->partial_3,
+                'activities' => $enrollment->grade?->activities,
+                'final_grade' => $enrollment->grade?->final_grade,
+                'state' => $enrollment->grade?->state,
+            ]);
 
         return response()->json(['grades' => $gradesSummary]);
+    }
+
+    private function formOptions(): array
+    {
+        return [
+            'programs' => Program::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get(),
+            'curricula' => Curriculum::query()
+                ->select('id', 'program_id', 'name', 'code', 'is_active')
+                ->orderBy('name')
+                ->get(),
+            'academicStatuses' => collect(array_merge(
+                Student::ENROLLABLE_STATUSES,
+                Student::BLOCKED_STATUSES
+            ))
+                ->map(fn($status) => [
+                    'label' => str($status)->replace('_', ' ')->title()->toString(),
+                    'value' => $status,
+                ])
+                ->values(),
+        ];
+    }
+
+    private function deletionBlockers(Student $student): array
+    {
+        $relations = [
+            'enrollments' => 'enrollments',
+            'enrollmentGrades' => 'grades',
+        ];
+
+        $blockers = [];
+
+        foreach ($relations as $relation => $label) {
+            if ($student->{$relation}()->exists()) {
+                $blockers[] = $label;
+            }
+        }
+
+        return array_unique($blockers);
     }
 }

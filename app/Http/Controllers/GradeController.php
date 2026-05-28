@@ -2,36 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Grade;
-use App\Models\Subject;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\GradeStatus;
-use App\Enums\GradeStatuses;
-use Illuminate\Support\Facades\Log;
+use App\Models\ClassGroup;
+use App\Models\SubjectEnrollment;
+use App\Services\GradeService;
 
 class GradeController extends Controller
 {
-    public function index(Subject $subject)
+    public function index(ClassGroup $group)
     {
-        $students = $subject->students()->with('user')->get();
+        $this->authorize('manageGrades', $group);
 
-        $grades = Grade::where('subject_id', $subject->id)
-            ->with(['student.user', 'state'])
+        $group->loadMissing(['subject', 'academicPeriod']);
+
+        $enrollments = $group->subjectEnrollments()
+            ->with([
+                'student.user',
+                'grade.state',
+                'status'
+            ])
             ->get()
-            ->keyBy('student_id');
+            ->sortBy(fn($e) => $e->student->user->name)
+            ->values();
 
         return Inertia::render('Grades/Manage', [
-            'subject' => $subject,
-            'students' => $students,
-            'grades' => $grades,
+            'group' => $group,
+            'subject' => $group->subject,
+            'academicPeriod' => $group->academicPeriod,
+
+            'canEdit' => auth()->user()->can('editGrades', $group),
+
+            'enrollments' => $enrollments->map(fn($enrollment) => [
+                'id' => $enrollment->id,
+                'student' => [
+                    'id' => $enrollment->student->id,
+                    'name' => $enrollment->student->user->name,
+                ],
+                'grade' => $enrollment->grade ? [
+                    'partial_1'   => $enrollment->grade->partial_1,
+                    'partial_2'   => $enrollment->grade->partial_2,
+                    'partial_3'   => $enrollment->grade->partial_3,
+                    'activities'  => $enrollment->grade->activities,
+                    'attendance'  => $enrollment->grade->attendance,
+                    'final_grade' => $enrollment->grade->final_grade,
+                    'state' => $enrollment->grade->state ? [
+                        'code'  => $enrollment->grade->state->code,
+                        'label' => $enrollment->grade->state->label,
+                    ] : null,
+                ] : null,
+                'status' => $enrollment->status->code,
+            ]),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ClassGroup $group, GradeService $gradeService)
     {
+        $this->authorize('manageGrades', $group);
+
         $request->validate([
-            'subject_id' => 'required|exists:subjects,id',
             'grades' => 'required|array',
             'grades.*.first_exam' => 'nullable|numeric|min:0|max:5',
             'grades.*.second_exam' => 'nullable|numeric|min:0|max:5',
@@ -43,91 +72,19 @@ class GradeController extends Controller
         $professorId = auth()->user()->professor->id;
         $updatedGrades = [];
 
-        foreach ($request->grades as $studentId => $gradeData) {
-            $updatedGrades[$studentId] = $this->updateStudentGrade(
-                $studentId,
-                $request->subject_id,
-                $gradeData,
-                $professorId
-            );
+        foreach ($request->grades as $enrollmentId => $gradeData) {
+
+            $enrollment = $group->subjectEnrollments()
+                ->with('academicPeriod')
+                ->findOrFail($enrollmentId);
+
+            $updatedGrades[$enrollmentId] = $gradeService
+                ->update($enrollment, $gradeData, $professorId);
         }
 
         return response()->json([
             'success' => true,
             'updated_grades' => $updatedGrades,
         ]);
-    }
-
-    private function updateStudentGrade($studentId, $subjectId, $gradeData, $professorId)
-    {
-        $finalGrade = $this->calculateFinalGrade($gradeData);
-        $statusCode = $this->determineStatus($gradeData, $finalGrade);
-
-        $state = GradeStatus::where('code', $statusCode)->first();
-
-        if (!$state) {
-            Log::warning("No se encontró un estado con código: {$statusCode}");
-            $statusId = null;
-        } else {
-            Log::info("Se encontró estado: {$state->code} con ID {$state->id}");
-            $statusId = $state->id;
-        }
-
-        $grade = Grade::updateOrCreate(
-            [
-                'student_id' => $studentId,
-                'subject_id' => $subjectId,
-            ],
-            [
-                'professor_id' => $professorId,
-                'partial_1' => $gradeData['first_exam'] ?? null,
-                'partial_2' => $gradeData['second_exam'] ?? null,
-                'partial_3' => $gradeData['third_exam'] ?? null,
-                'activities' => $gradeData['activities'] ?? null,
-                'attendance' => $gradeData['attendance'] ?? null,
-                'final_grade' => $finalGrade,
-                'grade_status_id' => $statusId,
-            ]
-        );
-
-        return $grade->load('state');
-    }
-
-    private function calculateFinalGrade($data): ?float
-    {
-        $required = ['first_exam', 'second_exam', 'third_exam', 'activities'];
-
-        foreach ($required as $key) {
-            if (!isset($data[$key]) || !is_numeric($data[$key])) {
-                return null; // Nota incompleta, no se calcula aún
-            }
-        }
-
-        return round(
-            ($data['first_exam'] ?? 0) * 0.25 +
-                ($data['second_exam'] ?? 0) * 0.25 +
-                ($data['third_exam'] ?? 0) * 0.30 +
-                ($data['activities'] ?? 0) * 0.20,
-            2
-        );
-    }
-
-    private function determineStatus(array $gradeData, ?float $finalGrade): ?string
-    {
-        if (
-            $finalGrade === null ||
-            !isset($gradeData['attendance']) ||
-            !is_numeric($gradeData['attendance'])
-        ) {
-            return null;
-        }
-
-        if ($gradeData['attendance'] < 80) {
-            return GradeStatuses::FAILED_ATTENDANCE->value;
-        }
-
-        return $finalGrade >= 3.0
-            ? GradeStatuses::PASSED->value
-            : GradeStatuses::FAILED->value;
     }
 }

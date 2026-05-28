@@ -1,166 +1,228 @@
-    <script>
-    export default {
-        name: "StudentsIndex",
-    };
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { defineProps, onMounted } from "vue";
-import Swal from "sweetalert2";
-import { Link } from "@inertiajs/vue3";
-import { Inertia } from "@inertiajs/inertia";
+import { computed, reactive, watch } from "vue";
+import { Link, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+
+const { confirm, success, error } = useAlert();
 
 const props = defineProps({
     students: {
         type: Object,
         required: true,
     },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    programs: {
+        type: Array,
+        default: () => [],
+    },
+
+    academicStatuses: {
+        type: Array,
+        default: () => [],
+    },
 });
 
-onMounted(() => {
-    console.log("Props recibidas:", JSON.parse(JSON.stringify(props.students)));
+const columns = [
+    { key: "document", label: "Document", sortable: true },
+    { key: "name", label: "Student" },
+    { key: "email", label: "Email" },
+    { key: "program", label: "Program" },
+    { key: "semester", label: "Semester", sortable: true },
+    { key: "academic_status", label: "Status", sortable: true },
+    { key: "enrollments_count", label: "Enrollments" },
+];
+
+const filterForm = reactive({
+    search: props.filters.search || "",
+    program: props.filters.program || "",
+    academic_status: props.filters.academic_status || "",
+    semester: props.filters.semester || "",
 });
 
+const rows = computed(() =>
+    props.students.data.map((student) => ({
+        id: student.id,
+        document: student.document,
+        name: student.user?.name,
+        email: student.user?.email,
+        phone: student.phone,
+        program: student.program?.name ?? "N/A",
+        semester: student.semester,
+        academic_status: student.academic_status,
+        enrollments_count: student.enrollments_count,
+    }))
+);
 
-const deleteStudent = (id, name) => {
-    Swal.fire({
-        title: '¿Are you sure to delete "' + name + '"?',
-        text: "You won't be able to reverse this",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#4338CA",
-        cancelButtonColor: "#d33",
-        confirmButtonText: '<i class="fas fa-trash"></i> Yes, delete',
-        cancelButtonText: '<i class="fas fa-ban"></i> No, cancel',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Utiliza el ID del programa en la URL de la solicitud DELETE
-            Inertia.delete(route("students.destroy", { student: id }))
-                .then(() => {
-                    Swal.fire(
-                        'Deleted"',
-                        "Student deleted successfully!",
-                        "success"
-                    );
-                })
-                .catch((error) => {
-                    console.error(error);
-                    Swal.fire("Error", "Error deleting student", "error");
-                });
-        }
+const programOptions = computed(() =>
+    props.programs.map((program) => ({
+        label: program.name,
+        value: program.id,
+    }))
+);
+
+const semesterOptions = Array.from({ length: 10 }, (_, index) => ({
+    label: `Semester ${index + 1}`,
+    value: index + 1,
+}));
+
+watch(
+    () => ({
+        ...filterForm,
+    }),
+    () => {
+        router.get(
+            route("students.index"),
+            {
+                search: filterForm.search,
+                program: filterForm.program,
+                academic_status: filterForm.academic_status,
+                semester: filterForm.semester,
+                sort: props.filters?.sort,
+                direction: props.filters?.direction,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+    {
+        deep: true,
+    }
+);
+
+const clearFilters = () => {
+    filterForm.search = "";
+    filterForm.program = "";
+    filterForm.academic_status = "";
+    filterForm.semester = "";
+};
+
+const deleteStudent = async (student) => {
+    const confirmed = await confirm(
+        `This will permanently delete "${student.name}"`,
+        "Delete Student"
+    );
+
+    if (!confirmed) return;
+
+    router.delete(route("students.destroy", student.id), {
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+            success(
+                page.props.flash?.success ||
+                "Student deleted successfully"
+            );
+        },
+
+        onError: () => {
+            error("Failed to delete student");
+        },
     });
 };
 </script>
 
-    <template>
-        <AppLayout>
-            <template #header>
-                <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Students
-                </h1>
-            </template>
+<template>
+    <CrudPageLayout title="Students" subtitle="Manage student records and academic status">
+        <template #actions>
+            <Link :href="route('students.create')">
+                <BaseButton variant="primary">
+                    <i class="fa-solid fa-plus mr-2"></i>
+                    Create Student
+                </BaseButton>
+            </Link>
+        </template>
 
-            <div class="py-12 ">
-                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="mt-4 overflow-x-auto">
-                            <div class="sm:overflow-x-auto">
-                                <table class="min-w-full bg-white shadow-md rounded-xl text-center">
-                                    <!-- Encabezado de la tabla -->
-                                    <thead>
-                                        <tr class="bg-blue-gray-100 text-gray-700">
-                                            <th class="py-3 px-4 text-center hidden sm:table-cell">#</th>
-                                            <th class="py-3 px-4 text-center">
-                                                Document
-                                            </th>
-                                            <th class="py-3 px-4 text-center">
-                                                Student
-                                            </th>
-                                            <th class="py-3 px-4 text-center hidden sm:table-cell">Phone</th>
-                                            <th class="py-3 px-4 text-center hidden sm:table-cell">Email</th>
-                                            <th class="py-3 px-4 text-center hidden md:table-cell">
-                                                Address
-                                            </th>
-                                            <th class="py-3 px-4 text-center hidden md:table-cell">City</th>
-                                            <th class="py-3 px-4 text-center hidden md:table-cell">
-                                                Semester
-                                            </th>
-                                            <th class="py-3 px-4 text-center hidden lg:table-cell">
-                                                Program
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <!-- Cuerpo de la tabla -->
-                                    <tbody class="text-blue-gray-900">
-                                        <tr class="border-b border-blue-gray-200" v-for="(user, i) in students.data"
-                                            :key="user.id">
-                                            <!-- Columna # -->
-                                            <td class="py-3 px-4 hidden sm:table-cell">
-                                                {{
-                                                    (students.current_page - 1) *
-                                                    students.per_page +
-                                                    i +
-                                                    1
-                                                }}
-                                            </td>
-                                            <!-- Documento -->
-                                            <td class="py-3 px-4">
-                                                {{ user.student.document }}
-                                            </td>
-                                            <!-- Nombre del estudiante -->
-                                            <td class="py-3 px-4">
-                                                {{ user.name }}
-                                            </td>
-                                            <!-- Teléfono -->
-                                            <td class="py-3 px-4 hidden sm:table-cell">
-                                                {{ user.student.phone }}
-                                            </td>
-                                            <!-- Correo electrónico -->
-                                            <td class="py-3 px-4 hidden sm:table-cell">
-                                                {{ user.email }}
-                                            </td>
-                                            <!-- Dirección (visible en tablets y pantallas más grandes) -->
-                                            <td class="py-3 px-4 hidden md:table-cell">
-                                                {{ user.student.address }}
-                                            </td>
-                                            <!-- Ciudad (visible en tablets y pantallas más grandes) -->
-                                            <td class="py-3 px-4 hidden md:table-cell">
-                                                {{ user.student.city }}
-                                            </td>
-                                            <!-- Semestre (visible en tablets y pantallas más grandes) -->
-                                            <td class="py-3 px-4 hidden md:table-cell">
-                                                {{ user.student.semester }}
-                                            </td>
-                                            <!-- Programa (visible en pantallas más grandes) -->
-                                            <td class="py-3 px-4 hidden lg:table-cell">
-                                                {{ user.student.program.name }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+        <CrudContainer>
 
-                            <!-- Paginación -->
-                            <div class="flex justify-center m-4">
-                                <div class="flex items-center">
-                                    <Link v-if="students.current_page > 1" :href="students.prev_page_url"
-                                        class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
-                                    <i class="fa-solid fa-angles-left"></i>
-                                    </Link>
-                                    <div class="text-sm mx-2">
-                                        Page {{ students.current_page }} of {{ students.last_page }}
-                                    </div>
-                                    <Link v-if="students.current_page < students.last_page"
-                                        :href="students.next_page_url"
-                                        class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
-                                    <i class="fa-solid fa-angles-right"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
+            <TableToolbar>
+                <template #search>
+                    <div class="w-full lg:max-w-sm">
+                        <TableSearch v-model="filterForm.search" placeholder="Search students..." />
                     </div>
-                </div>
-            </div>
-        </AppLayout>
-    </template>
+                </template>
+
+                <template #filters>
+                    <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-3xl">
+                        <BaseSelect v-model="filterForm.program" placeholder="Program" :options="programOptions" />
+
+                        <BaseSelect v-model="filterForm.academic_status" placeholder="Academic status"
+                            :options="academicStatuses" />
+
+                        <BaseSelect v-model="filterForm.semester" placeholder="Semester" :options="semesterOptions" />
+                    </div>
+                </template>
+
+                <template #actions>
+                    <BaseButton variant="secondary" @click="clearFilters">
+                        <i class="fa-solid fa-rotate-left mr-2"></i>
+                        Reset
+                    </BaseButton>
+                </template>
+            </TableToolbar>
+
+            <DataTable v-if="rows.length" :columns="columns" :rows="rows" :filters="filters" sortable>
+                <template #cell-academic_status="{ value }">
+                    <StatusBadge :label="value ? value.replace('_', ' ').toUpperCase() : 'N/A'" :variant="{
+                        active: 'success',
+                        probation: 'warning',
+                        suspended: 'danger',
+                        graduated: 'success',
+                        withdrawn: 'gray',
+                    }[value] || 'gray'" />
+                </template>
+
+                <template #actions="{ row }">
+                    <div class="flex items-center justify-center gap-2">
+                        <Link :href="route('students.show', row.id)">
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                        </Link>
+
+                        <Link :href="route('students.edit', row.id)">
+                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                        </Link>
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteStudent(row)" />
+                    </div>
+                </template>
+            </DataTable>
+
+            <EmptyState v-else title="No students found" description="Create your first student record to begin."
+                icon="fa-solid fa-user-graduate">
+                <Link :href="route('students.create')">
+                    <BaseButton variant="primary">
+                        <i class="fa-solid fa-plus mr-2"></i>
+                        Create Student
+                    </BaseButton>
+                </Link>
+            </EmptyState>
+
+            <TablePagination v-if="rows.length" :data="students" />
+
+        </CrudContainer>
+    </CrudPageLayout>
+</template>

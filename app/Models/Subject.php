@@ -18,13 +18,18 @@ class Subject extends Model
         'elective',
     ];
 
+    protected $casts = [
+        'credits' => 'integer',
+        'elective' => 'boolean',
+    ];
+
     protected static function booted()
     {
         static::creating(function ($subject) {
             if (empty($subject->code)) {
                 $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $subject->name), 0, 3));
                 $nextNumber = self::count() + 1;
-                $subject->code = $prefix . str_pad($nextNumber, 2, '0', STR_PAD_LEFT); // Ej: MAT01
+                $subject->code = $prefix . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
             }
         });
     }
@@ -35,17 +40,6 @@ class Subject extends Model
         return $this->belongsToMany(Professor::class, 'professor_subject');
     }
 
-    public function pivotProfessor()
-    {
-        return $this->belongsTo(Professor::class, 'professor_id', 'id')->with('user');
-    }
-
-    public function students()
-    {
-        return $this->belongsToMany(Student::class, 'student_subject_professor')
-            ->withPivot('professor_id')
-            ->withTimestamps();
-    }
     public function programs()
     {
         return $this->belongsToMany(Program::class)->withPivot('semester')->withTimestamps();
@@ -53,7 +47,19 @@ class Subject extends Model
 
     public function grades()
     {
-        return $this->hasMany(Grade::class);
+        return $this->hasManyThrough(
+            Grade::class,
+            SubjectEnrollment::class,
+            'subject_id',
+            'subject_enrollment_id',
+            'id',
+            'id'
+        );
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(SubjectEnrollment::class);
     }
 
     // Materias que son prerrequisitos de esta materia

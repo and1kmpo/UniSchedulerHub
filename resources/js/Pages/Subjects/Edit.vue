@@ -1,13 +1,15 @@
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import SubjectForm from "@/Components/Subjects/Form.vue";
-import { Inertia } from "@inertiajs/inertia";
-import { useForm } from "@inertiajs/vue3";
-import { watch } from "vue";
-import axios from 'axios';
-import { router } from '@inertiajs/vue3'; // Si quieres redirigir tras guardar
-import { useAlert } from '@/Components/Composables/useAlert'; // Opcional si ya lo usas
-const { success, error } = useAlert(); // Si tienes alertas definidas
+import { useForm, router } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import SubjectForm from "./Partials/Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const props = defineProps({
     subject: {
@@ -17,54 +19,45 @@ const props = defineProps({
 });
 
 const form = useForm({
-    name: "",
-    description: "",
-    credits: "",
-    knowledge_area: "",
-    elective: "",
+    name: props.subject.name ?? "",
+    description: props.subject.description ?? "",
+    credits: props.subject.credits ?? "",
+    knowledge_area: props.subject.knowledge_area ?? "",
+    elective: Boolean(props.subject.elective),
 });
-const submitUpdate = async () => {
-    try {
-        await axios.post(`/subjects/${props.subject.id}`, {
-            ...form.data(),
-            _method: 'PUT',
-        });
 
-        success('Subject updated successfully.');
-        router.visit(route('subjects.index')); // Redirige tras guardar
-    } catch (err) {
-        if (err.response?.status === 422) {
-            form.setErrors(err.response.data.errors); // Para mostrar errores de validación
-        } else {
-            error('Failed to update subject.');
-        }
-    }
+const submit = () => {
+    form.put(route("subjects.update", props.subject.id), {
+
+        preserveScroll: true,
+
+        onSuccess: (page) => {
+
+            success(
+                page.props.flash?.success ||
+                "Subject updated successfully"
+            );
+        },
+
+        onError: () => {
+
+            error("Failed to update subject");
+        },
+    });
 };
-watch(
-    () => props.subject,
-    (subject) => {
-        if (subject) {
-            form.name = subject.name ?? "";
-            form.description = subject.description ?? "";
-            form.credits = subject.credits ?? "";
-            form.knowledge_area = subject.knowledge_area ?? "";
-            form.elective = subject.elective ?? "";
-        }
-    },
-    { immediate: true }
-);
 
 const handleCancel = () => {
-    router.visit(route("subjects.index")); // ✔️ Correcto para Vue 3
+    router.visit(route("subjects.index"));
 };
-
 </script>
 
 <template>
-    <AppLayout title="Edit Subject">
-        <h1 class="text-2xl font-bold mb-4">Edit Subject</h1>
+    <CrudPageLayout title="Edit Subject" subtitle="Update university subject information">
+        <CrudContainer>
 
-        <SubjectForm :updating="true" :form="form" :handleCancel="handleCancel" @submit="submitUpdate" />
+            <SubjectForm :form="form" :processing="form.processing" :updating="true" :handleCancel="handleCancel"
+                @submit="submit" />
 
-    </AppLayout>
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

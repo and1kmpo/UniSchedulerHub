@@ -1,166 +1,284 @@
-<script>
-export default {
-    name: "SubjectsIndex",
-};
-</script>
-
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
-import { defineProps } from "vue";
-import Swal from "sweetalert2";
-import { Link } from "@inertiajs/vue3";
-import { Inertia } from "@inertiajs/inertia";
+import { reactive, watch } from "vue";
 
-defineProps({
+import {
+    Link,
+    router,
+} from "@inertiajs/vue3";
+
+import { route } from "ziggy-js";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+
+const { confirm, success, error } = useAlert();
+
+const props = defineProps({
     subjects: {
         type: Object,
         required: true,
     },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
-const deleteSubject = (id, name) => {
-    Swal.fire({
-        title: 'Are you sure you want to delete "' + name + '"?',
-        text: "This action cannot be undone",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: 'Yes, delete',
-        cancelButtonText: 'Cancel',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Use the subject ID in the DELETE request URL
-            axios.delete(`/subjects/${id}`)
-                .then(() => {
-                    Swal.fire(
-                        'Deleted',
-                        response.data.message,
-                        'success'
-                    ).then(() => {
-                        location.reload();
-                    });
-                })
-                .catch((error) => {
-                    console.error(error);
-                    Swal.fire(
-                        'Error',
-                        error.response.data.error,
-                        'error'
-                    );
-                });
-        }
-    });
+const columns = [
+    {
+        key: "name",
+        label: "Subject",
+        sortable: true,
+    },
+
+    {
+        key: "description",
+        label: "Description",
+    },
+
+    {
+        key: "credits",
+        label: "Credits",
+        sortable: true,
+    },
+
+    {
+        key: "knowledge_area",
+        label: "Knowledge Area",
+        sortable: true,
+    },
+
+    {
+        key: "elective",
+        label: "Elective",
+    },
+];
+
+const filterForm = reactive({
+    search: props.filters.search || "",
+    elective: props.filters.elective || "",
+});
+
+watch(
+    () => ({
+        ...filterForm,
+    }),
+    () => {
+        router.get(
+            route("subjects.index"),
+            {
+                search: filterForm.search,
+                elective: filterForm.elective,
+                sort: props.filters?.sort,
+                direction: props.filters?.direction,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+    {
+        deep: true,
+    }
+);
+
+const clearFilters = () => {
+
+    filterForm.search = "";
+    filterForm.elective = "";
 };
 
+const deleteSubject = async (subject) => {
 
+    const confirmed = await confirm(
+        `This will permanently delete "${subject.name}"`,
+        "Delete Subject"
+    );
 
+    if (!confirmed) return;
+
+    router.delete(
+        route("subjects.destroy", subject.id),
+        {
+            preserveScroll: true,
+
+            onSuccess: (page) => {
+
+                success(
+                    page.props.flash?.success ||
+                    "Subject deleted successfully"
+                );
+            },
+
+            onError: () => {
+
+                error(
+                    "Failed to delete subject"
+                );
+            },
+        }
+    );
+};
 </script>
 
 <template>
-    <AppLayout>
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Subjects
-            </h1>
+    <CrudPageLayout title="Subjects" subtitle="Manage university subjects">
+
+        <template #actions>
+
+            <Link :href="route('subjects.create')">
+
+                <BaseButton variant="primary">
+
+                    <i class="fa-solid fa-plus mr-2"></i>
+
+                    Create Subject
+
+                </BaseButton>
+
+            </Link>
+
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    <div class="flex justify-between">
-                        <Link :href="route('subjects.create')"
-                            class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
-                        Create Subject
+        <CrudContainer>
+
+            <!-- TOOLBAR -->
+
+            <TableToolbar>
+
+                <template #search>
+
+                    <div class="w-full lg:max-w-sm">
+
+                        <TableSearch v-model="filterForm.search" placeholder="Search subjects..." />
+
+                    </div>
+
+                </template>
+
+                <template #filters>
+
+                    <div class="w-full sm:max-w-xs">
+
+                        <BaseSelect v-model="filterForm.elective" placeholder="Elective status" :options="[
+                            {
+                                label: 'Elective',
+                                value: 1,
+                            },
+                            {
+                                label: 'Non elective',
+                                value: 0,
+                            },
+                        ]" />
+
+                    </div>
+
+                </template>
+
+                <template #actions>
+
+                    <BaseButton variant="secondary" @click="clearFilters">
+
+                        <i class="fa-solid fa-rotate-left mr-2"></i>
+
+                        Reset
+
+                    </BaseButton>
+
+                </template>
+
+            </TableToolbar>
+
+            <!-- TABLE -->
+
+            <DataTable v-if="subjects.data.length" :columns="columns" :rows="subjects.data" :filters="filters" sortable>
+
+                <!-- ELECTIVE -->
+
+                <template #cell-elective="{ row }">
+
+                    <StatusBadge :label="row.elective ? 'YES' : 'NO'" :variant="row.elective
+                            ? 'success'
+                            : 'gray'
+                        " />
+
+                </template>
+
+                <!-- ACTIONS -->
+
+                <template #actions="{ row }">
+
+                    <div class="flex items-center justify-center gap-2">
+
+                        <!-- SHOW -->
+
+                        <Link :href="route('subjects.show', row.id)">
+
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+
                         </Link>
+
+                        <!-- EDIT -->
+
+                        <Link :href="route('subjects.edit', row.id)">
+
+                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+
+                        </Link>
+
+                        <!-- DELETE -->
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteSubject(row)" />
+
                     </div>
 
-                    <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center">
-                            <thead>
-                                <tr class="bg-blue-gray-100 text-gray-700">
-                                    <th class="py-3 px-4 text-center">#</th>
-                                    <th class="py-3 px-4 text-center">
-                                        Subject
-                                    </th>
-                                    <th class="py-3 px-4 text-center">
-                                        Description
-                                    </th>
-                                    <th class="py-3 px-4 text-center">
-                                        Credits
-                                    </th>
-                                    <th class="py-3 px-4 text-center">
-                                        Knowledge area
-                                    </th>
-                                    <th class="py-3 px-4 text-center">
-                                        Elective
-                                    </th>
-                                    <th class="py-3 px-4 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-blue-gray-900">
-                                <tr class="border-b border-blue-gray-200" v-for="(subject, i) in subjects.data"
-                                    :key="subject.id">
-                                    <td class="py-3 px-4">
-                                        {{
-                                            (subjects.current_page - 1) *
-                                            subjects.per_page +
-                                            i +
-                                            1
-                                        }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ subject.name }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ subject.description }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ subject.credits }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ subject.knowledge_area }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ subject.elective == 1 ? "YES" : "NO" }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <Link :href="route('subjects.edit', subject.id)"
-                                            class="inline-flex items-center justify-center p-2 text-indigo-800 dark:text-indigo-400 hover:scale-110 hover:-translate-y-1 transition-transform duration-300">
-                                        <i class="fas fa-edit"></i>
-                                        </Link>
+                </template>
 
+            </DataTable>
 
-                                        <Link href="#" @click="deleteSubject(subject.id, subject.name)"
-                                            class="inline-flex items-center justify-center text-red-600 dark:text-red-400 hover:scale-110 hover:-translate-y-1 transition-transform duration-300">
-                                        <i class="fas fa-trash"></i>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="flex items-center justify-center m-4">
+            <!-- EMPTY STATE -->
 
-                            <Link v-if="subjects.current_page > 1" :href="subjects.prev_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
-                            <i class="fa-solid fa-angles-left"></i>
-                            </Link>
+            <EmptyState v-else title="No subjects found" description="Create your first subject to begin."
+                icon="fa-solid fa-book">
 
-                            <div class="text-sm mx-4">
-                                Page {{ subjects.current_page }} of
-                                {{ subjects.last_page }}
-                            </div>
+                <Link :href="route('subjects.create')">
 
-                            <Link v-if="subjects.current_page < subjects.last_page
-                            " :href="subjects.next_page_url"
-                                class="bg-indigo-700 hover:bg-indigo-500 hover:text-black rounded p-2 px-4 text-white">
-                            <i class="fa-solid fa-angles-right"></i>
-                            </Link>
+                    <BaseButton variant="primary">
 
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
+                        <i class="fa-solid fa-plus mr-2"></i>
+
+                        Create Subject
+
+                    </BaseButton>
+
+                </Link>
+
+            </EmptyState>
+
+            <!-- PAGINATION -->
+
+            <TablePagination v-if="subjects.data.length" :data="subjects" />
+
+        </CrudContainer>
+
+    </CrudPageLayout>
 </template>
