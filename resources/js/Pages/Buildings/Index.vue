@@ -1,85 +1,229 @@
-<template>
-    <AppLayout>
-        <template #header>
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Buildings</h1>
-                <Link :href="route('buildings.create')"
-                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow transition">
-                <i class="fa-solid fa-plus"></i>
-                New Building
-                </Link>
-            </div>
-        </template>
-
-        <div class="mt-6 px-4 sm:px-6 lg:px-8">
-            <div v-if="buildings.length === 0"
-                class="rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900 p-6 text-center text-gray-500 dark:text-gray-300">
-                No buildings have been registered yet.
-            </div>
-            <div v-else
-                class="rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900 overflow-x-auto mb-8">
-                <table class="min-w-full text-sm text-center">
-                    <thead>
-                        <tr
-                            class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider">
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Code</th>
-                            <th class="px-4 py-3">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="building in buildings.data" :key="building.id"
-                            class="even:bg-gray-50 dark:even:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">
-                                {{ building.name }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ building.code }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <EditButton :href="route('buildings.edit', { building: building.id })" class="mr-2" />
-                                <DeleteButton :onClick="() => deleteBuilding(building.id)" />
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <Pagination :links="buildings.links" />
-        </div>
-    </AppLayout>
-</template>
-
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue'
-import { Link } from '@inertiajs/vue3'
-import { useAlert } from '@/Components/Composables/useAlert'
-import EditButton from '@/Components/EditButton.vue'
-import DeleteButton from '@/Components/DeleteButton.vue'
-import Pagination from '@/Components/Pagination.vue'
+import { reactive, watch } from "vue";
+
+import {
+    Link,
+    router,
+} from "@inertiajs/vue3";
+
+import { route } from "ziggy-js";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+
+const { confirm, success, error } = useAlert();
 
 const props = defineProps({
-    buildings: Object
-})
+    buildings: {
+        type: Object,
+        required: true,
+    },
 
-console.log(props.buildings);
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+});
 
-const { toastSuccess, toastError, confirm } = useAlert()
+const columns = [
+    {
+        key: "name",
+        label: "Building",
+        sortable: true,
+    },
 
+    {
+        key: "code",
+        label: "Code",
+        sortable: true,
+    },
 
-const deleteBuilding = async (id) => {
-    const confirmed = await confirm('Are you sure you want to delete this building?', 'Confirm Deletion')
+    {
+        key: "description",
+        label: "Description",
+    },
 
-    if (!confirmed) return
+    {
+        key: "classrooms_count",
+        label: "Classrooms",
+    },
+];
 
-    try {
-        await axios.post(route('buildings.destroy', id), {
-            _method: 'DELETE'
-        })
-        toastSuccess('Building deleted successfully')
-        location.reload()
-    } catch (error) {
-        console.error(error)
-        toastError('Could not delete the building')
+const filterForm = reactive({
+    search: props.filters.search || "",
+});
+
+watch(
+    () => ({
+        ...filterForm,
+    }),
+    () => {
+
+        router.get(
+            route("buildings.index"),
+            {
+                search: filterForm.search,
+                sort: props.filters?.sort,
+                direction: props.filters?.direction,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+    {
+        deep: true,
     }
-}
+);
+
+const clearFilters = () => {
+
+    filterForm.search = "";
+};
+
+const deleteBuilding = async (building) => {
+
+    const confirmed = await confirm(
+        `This will permanently delete "${building.name}"`,
+        "Delete Building"
+    );
+
+    if (!confirmed) return;
+
+    router.delete(
+        route("buildings.destroy", building.id),
+        {
+            preserveScroll: true,
+
+            onSuccess: (page) => {
+
+                success(
+                    page.props.flash?.success ||
+                    "Building deleted successfully"
+                );
+            },
+
+            onError: () => {
+
+                error(
+                    "Failed to delete building"
+                );
+            },
+        }
+    );
+};
 </script>
+
+<template>
+    <CrudPageLayout title="Buildings" subtitle="Manage university infrastructure buildings">
+        <template #actions>
+
+            <Link :href="route('buildings.create')">
+
+                <BaseButton variant="primary">
+
+                    <i class="fa-solid fa-plus mr-2"></i>
+
+                    Create Building
+
+                </BaseButton>
+
+            </Link>
+
+        </template>
+
+        <CrudContainer>
+
+            <!-- TOOLBAR -->
+
+            <TableToolbar>
+
+                <template #search>
+
+                    <div class="w-full lg:max-w-sm">
+
+                        <TableSearch v-model="filterForm.search" placeholder="Search buildings..." />
+
+                    </div>
+
+                </template>
+
+                <template #actions>
+
+                    <BaseButton variant="secondary" @click="clearFilters">
+                        <i class="fa-solid fa-rotate-left mr-2"></i>
+
+                        Reset
+
+                    </BaseButton>
+
+                </template>
+
+            </TableToolbar>
+
+            <!-- TABLE -->
+
+            <DataTable v-if="buildings.data.length" :columns="columns" :rows="buildings.data" :filters="filters"
+                sortable>
+                <template #actions="{ row }">
+
+                    <div class="flex items-center justify-center gap-2">
+
+                        <Link :href="route('buildings.show', row.id)">
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                        </Link>
+
+                        <Link :href="route('buildings.edit', row.id)">
+                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                        </Link>
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteBuilding(row)" />
+
+                    </div>
+
+                </template>
+
+            </DataTable>
+
+            <!-- EMPTY STATE -->
+
+            <EmptyState v-else title="No buildings found" description="Create your first building to begin."
+                icon="fa-solid fa-building">
+                <Link :href="route('buildings.create')">
+
+                    <BaseButton variant="primary">
+
+                        <i class="fa-solid fa-plus mr-2"></i>
+
+                        Create Building
+
+                    </BaseButton>
+
+                </Link>
+
+            </EmptyState>
+
+            <!-- PAGINATION -->
+
+            <TablePagination v-if="buildings.data.length" :data="buildings" />
+
+        </CrudContainer>
+
+    </CrudPageLayout>
+</template>

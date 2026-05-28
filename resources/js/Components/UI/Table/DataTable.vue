@@ -68,7 +68,6 @@ const sortBy = (column) => {
         <table class="min-w-full text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/80">
                 <tr>
-
                     <th v-for="column in columns" :key="column.key" @click="sortBy(column)" :class="[
                         'whitespace-nowrap px-4 py-3 text-left font-semibold sm:px-6 sm:py-4',
                         column.sortable

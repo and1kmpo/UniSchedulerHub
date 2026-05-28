@@ -177,7 +177,6 @@ const deleteProgram = async (program) => {
             <!-- TABLE -->
 
             <DataTable v-if="programs.data.length" :columns="columns" :rows="programs.data" :filters="filters" sortable>
-
                 <template #cell-created_at="{ value }">
 
                     <StatusBadge :label="new Date(value).toLocaleDateString()" variant="gray" />

@@ -3,6 +3,13 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import ApplicationMark from "@/Components/ApplicationMark.vue";
 
+defineProps({
+    title: {
+        type: String,
+        default: "",
+    },
+});
+
 // Acceso a la página actual de Inertia
 const page = usePage();
 
