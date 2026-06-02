@@ -38,6 +38,18 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
+    canEnroll: {
+        type: Boolean,
+        default: false,
+    },
+    canUnenroll: {
+        type: Boolean,
+        default: false,
+    },
+    currentPeriod: {
+        type: Object,
+        default: null,
+    },
     systemState: {
         type: String,
         default: "ready",
@@ -76,22 +88,9 @@ const enrolledSubjects = computed(() =>
     props.subjects.filter((subject) => subject.alreadyEnrolled).length
 );
 
-const isEnrollmentOpen = computed(() => {
-    if (!props.enrollmentDeadline) {
-        return true;
-    }
-
-    return new Date() <= endOfDay(props.enrollmentDeadline);
-});
+const isEnrollmentOpen = computed(() => props.canEnroll);
 
 const selectedGroups = computed(() => selectedSubject.value?.groups ?? []);
-
-function endOfDay(date) {
-    const value = new Date(date);
-    value.setHours(23, 59, 59, 999);
-
-    return value;
-}
 
 function formatDate(date) {
     if (!date) {
@@ -209,6 +208,11 @@ async function enrollInGroup(group) {
 }
 
 async function unenrollFromSubject() {
+    if (!props.canUnenroll) {
+        toastError("Unenrollment is closed for the active academic period.");
+        return;
+    }
+
     if (!selectedSubject.value?.enrollmentId) {
         toastError("Invalid enrollment.");
         return;
@@ -251,7 +255,7 @@ async function unenrollFromSubject() {
                                 Enrollment Window
                             </h2>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Enrolled subjects: {{ enrolledSubjects }}. Changes are allowed only while enrollment is open.
+                                {{ currentPeriod?.name ?? "No active academic period" }}. Enrolled subjects: {{ enrolledSubjects }}.
                             </p>
                         </div>
 
@@ -278,6 +282,14 @@ async function unenrollFromSubject() {
                         title="Academic setup pending"
                         description="Your student profile does not have an active curriculum assigned. Please contact academic administration."
                         icon="fa-solid fa-triangle-exclamation"
+                    />
+                </SectionCard>
+
+                <SectionCard v-else-if="systemState === 'no_period'">
+                    <EmptyState
+                        title="No active academic period"
+                        description="Enrollment will be available when academic administration activates a period."
+                        icon="fa-solid fa-calendar-xmark"
                     />
                 </SectionCard>
 
@@ -315,7 +327,7 @@ async function unenrollFromSubject() {
                                 </BaseButton>
 
                                 <BaseButton
-                                    v-else-if="row.enrollmentId && isEnrollmentOpen"
+                                    v-else-if="row.enrollmentId"
                                     size="sm"
                                     variant="secondary"
                                     @click="openGroupModal(row)"
@@ -422,7 +434,7 @@ async function unenrollFromSubject() {
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-200 p-6 dark:border-gray-800 sm:flex-row sm:justify-between">
                     <BaseButton
-                        v-if="selectedSubject.enrollmentId && selectedSubject.currentGroupId && isEnrollmentOpen"
+                        v-if="selectedSubject.enrollmentId && selectedSubject.currentGroupId && canUnenroll"
                         variant="danger"
                         :disabled="submitting"
                         @click="unenrollFromSubject"
