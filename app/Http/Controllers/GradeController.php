@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\ClassGroup;
+use App\Models\Professor;
 use App\Services\GradeService;
 use DomainException;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +16,7 @@ class GradeController extends Controller
     {
         $this->authorize('manageGrades', $group);
 
-        $group->loadMissing(['subject', 'academicPeriod']);
+        $group->loadMissing(['subject', 'academicPeriod.status']);
 
         $enrollments = $group->subjectEnrollments()
             ->whereHas(
@@ -25,6 +26,8 @@ class GradeController extends Controller
             ->with([
                 'student.user',
                 'grade.state',
+                'grade.createdBy',
+                'grade.updatedBy',
                 'status'
             ])
             ->get()
@@ -37,6 +40,8 @@ class GradeController extends Controller
             'academicPeriod' => $group->academicPeriod,
 
             'canEdit' => auth()->user()->can('editGrades', $group),
+            'lockReason' => $this->lockReason($group),
+            'storeRoute' => route('groups.grades.store', $group),
 
             'enrollments' => $enrollments->map(fn($enrollment) => [
                 'id' => $enrollment->id,
@@ -57,10 +62,18 @@ class GradeController extends Controller
                         'code'  => $enrollment->grade->state->code,
                         'label' => $enrollment->grade->state->label,
                     ] : null,
+                    'updated_at' => $enrollment->grade->updated_at?->toDateTimeString(),
+                    'updated_by' => $enrollment->grade->updatedBy?->name,
+                    'created_by' => $enrollment->grade->createdBy?->name,
                 ] : null,
                 'status' => $enrollment->status->code,
             ]),
         ]);
+    }
+
+    public function indexByGroup(ClassGroup $classGroup)
+    {
+        return $this->index($classGroup);
     }
 
     public function store(Request $request, ClassGroup $group, GradeService $gradeService)
@@ -76,7 +89,8 @@ class GradeController extends Controller
             'grades.*.attendance' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $professorId = auth()->user()->professor?->id;
+        $professorId = auth()->user()->professor?->id
+            ?? Professor::where('user_id', $group->professor_id)->value('id');
         $updatedGrades = [];
 
         try {
@@ -87,7 +101,8 @@ class GradeController extends Controller
                     ->findOrFail($enrollmentId);
 
                 $updatedGrades[$enrollmentId] = $gradeService
-                    ->update($enrollment, $gradeData, $professorId);
+                    ->update($enrollment, $gradeData, $professorId)
+                    ->load(['state', 'createdBy', 'updatedBy']);
             }
         } catch (DomainException $exception) {
             throw ValidationException::withMessages([
@@ -99,8 +114,56 @@ class GradeController extends Controller
 
         return response()->json([
             'success' => true,
-            'updated_grades' => $updatedGrades,
+            'updated_grades' => collect($updatedGrades)->map(fn($grade) => $this->gradePayload($grade)),
         ]);
+    }
+
+    public function storeByGroup(Request $request, ClassGroup $classGroup, GradeService $gradeService)
+    {
+        return $this->store($request, $classGroup, $gradeService);
+    }
+
+    private function gradePayload($grade): array
+    {
+        return [
+            'partial_1' => $grade->partial_1,
+            'partial_2' => $grade->partial_2,
+            'partial_3' => $grade->partial_3,
+            'activities' => $grade->activities,
+            'attendance' => $grade->attendance,
+            'final_grade' => $grade->final_grade,
+            'state' => $grade->state ? [
+                'code' => $grade->state->code,
+                'label' => $grade->state->label,
+            ] : null,
+            'updated_at' => $grade->updated_at?->toDateTimeString(),
+            'updated_by' => $grade->updatedBy?->name,
+            'created_by' => $grade->createdBy?->name,
+        ];
+    }
+
+    private function lockReason(ClassGroup $group): ?string
+    {
+        if (! $group->academicPeriod) {
+            return 'This group has no academic period assigned.';
+        }
+
+        if (! $group->academicPeriod->canEditGrades()) {
+            return 'Grades can only be edited while the academic period is in progress.';
+        }
+
+        if (in_array($group->status, [
+            ClassGroup::STATUS_CANCELLED,
+            ClassGroup::STATUS_CLOSED,
+        ], true)) {
+            return 'Grades are locked because this class group is closed or cancelled.';
+        }
+
+        if (! auth()->user()->can('editGrades', $group)) {
+            return 'You do not have permission to edit grades for this group.';
+        }
+
+        return null;
     }
 
     private function domainMessage(string $code): string
@@ -111,6 +174,7 @@ class GradeController extends Controller
             'BLOCK_PERIOD_DOES_NOT_ALLOW_GRADES' => 'This academic period does not allow grade editing.',
             'BLOCK_ENROLLMENT_DOES_NOT_ALLOW_GRADES' => 'One or more enrollments do not allow grade editing.',
             'BLOCK_GROUP_DOES_NOT_ALLOW_GRADES' => 'This class group does not allow grade editing.',
+            'BLOCK_NO_PROFESSOR_ASSIGNED' => 'This class group has no professor record assigned for grade ownership.',
         ][$code] ?? 'The grade change is not allowed.';
     }
 }

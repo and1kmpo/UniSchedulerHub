@@ -1,359 +1,366 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
-import { useAlert } from '@/Components/Composables/useAlert'
-import AppLayout from "@/Layouts/AppLayout.vue";
+import { computed, ref } from "vue";
+import { router } from "@inertiajs/vue3";
+import axios from "axios";
 
-const { toastSuccess, toastError, confirm, error } = useAlert()
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import { useAlert } from "@/Components/Composables/useAlert";
 
-const page = usePage()
+const { confirm, toastSuccess, toastError } = useAlert();
 
-const periods = ref([...page.props.periods?.data ?? []])
-const links = page.props.periods?.links ?? []
+const props = defineProps({
+    periods: {
+        type: Object,
+        required: true,
+    },
+});
 
-const form = ref({
-    name: '',
-    start_date: '',
-    end_date: '',
-    enrollment_deadline: '',
-    unenrollment_deadline: '',
-    is_active: false,
-})
+const form = ref(emptyForm());
+const editingId = ref(null);
+const errors = ref({});
+const isSubmitting = ref(false);
 
-const editingId = ref(null)
+const rows = computed(() => props.periods?.data ?? []);
+const activePeriod = computed(() => rows.value.find((period) => period.is_active) ?? null);
 
-const submit = async () => {
-    // Verificar si ya existe un periodo con el mismo nombre
-    const existingPeriod = periods.value.find(p => p.name === form.value.name && p.id !== editingId.value);
-    if (existingPeriod) {
-        console.log(`Error: Ya existe un periodo con el nombre "${form.value.name}"`);
-        toastError(`Ya existe un periodo con el nombre "${form.value.name}"`);
-        return; // No se envía el formulario
-    }
+const summary = computed(() => ({
+    total: props.periods?.total ?? rows.value.length,
+    active: activePeriod.value?.name ?? "None",
+    inProgress: rows.value.filter((period) => period.status?.code === "in_progress").length,
+}));
 
-    // Validación de solapamiento de fechas
-    const startDate = new Date(form.value.start_date).setHours(0, 0, 0, 0);
-    const endDate = new Date(form.value.end_date).setHours(0, 0, 0, 0);
+const columns = [
+    { key: "name", label: "Name" },
+    { key: "date_range", label: "Dates" },
+    { key: "deadlines", label: "Deadlines" },
+    { key: "status", label: "Lifecycle" },
+    { key: "activity", label: "Activity" },
+];
 
-    // Verificar si hay algún periodo con solapamiento
-    const overlappingPeriod = periods.value.find(p => {
-        const pStart = new Date(p.start_date).setHours(0, 0, 0, 0);
-        const pEnd = new Date(p.end_date).setHours(0, 0, 0, 0);
-
-        // Comprobar si las fechas se solapan
-        return (startDate < pEnd && endDate > pStart && p.id !== editingId.value);
-    });
-
-    if (overlappingPeriod) {
-        console.log("Error: El periodo de fechas se solapa con otro periodo existente.");
-        // Mostrar un mensaje específico con el nombre del periodo con el que se solapa
-        toastError(`El periodo de fechas se solapa con el periodo "${overlappingPeriod.name}", que va de ${overlappingPeriod.start_date} a ${overlappingPeriod.end_date}.`);
-        return; // No se envía el formulario
-    }
-
-    try {
-        // Si no hay solapamientos, se puede proceder con la creación o actualización
-        let response;
-
-        if (editingId.value) {
-            // Enviar petición para actualizar el periodo
-            response = await axios.put(`/academic-periods/${editingId.value}`, form.value);
-        } else {
-            // Enviar petición para crear el periodo
-            response = await axios.post('/academic-periods', form.value);
-        }
-
-        // Si la respuesta es exitosa
-        if (response.data.success) {
-            toastSuccess('Period created/updated successfully');
-            resetForm();
-            reload();
-        } else {
-            toastError('Failed to create/update period');
-        }
-    } catch (error) {
-        // Manejo de error cuando el backend devuelve un error
-        console.log('Error creating/updating period:', error.response?.data || error);
-
-        // Si el error es por solapamiento de fechas, mostrar el mensaje adecuado
-        if (error.response && error.response.data.error) {
-            toastError(error.response.data.error);  // Usar el mensaje de error retornado por el servidor
-        } else if (error.response && error.response.data.errors) {
-            // Si el backend retorna errores de validación (por ejemplo, fechas solapadas)
-            const overlapMessage = error.response.data.errors.start_date || 'Failed to create/update period';
-            toastError(overlapMessage);
-        } else {
-            toastError('Failed to create/update period');
-        }
-    }
-};
-
-const toDateInputFormat = (date) => {
-    return date ? new Date(date).toISOString().slice(0, 10) : ''
+function emptyForm() {
+    return {
+        name: "",
+        start_date: "",
+        end_date: "",
+        enrollment_deadline: "",
+        unenrollment_deadline: "",
+        is_active: false,
+    };
 }
 
-const edit = (period) => {
+function resetForm() {
+    form.value = emptyForm();
+    editingId.value = null;
+    errors.value = {};
+}
+
+function edit(period) {
     form.value = {
         name: period.name,
-        start_date: toDateInputFormat(period.start_date),
-        end_date: toDateInputFormat(period.end_date),
-        is_active: period.is_active,
-        enrollment_deadline: toDateInputFormat(period.enrollment_deadline),
-        unenrollment_deadline: toDateInputFormat(period.unenrollment_deadline),
+        start_date: toDateInput(period.start_date),
+        end_date: toDateInput(period.end_date),
+        enrollment_deadline: toDateInput(period.enrollment_deadline),
+        unenrollment_deadline: toDateInput(period.unenrollment_deadline),
+        is_active: Boolean(period.is_active),
+    };
+    editingId.value = period.id;
+    errors.value = {};
+}
+
+async function submit() {
+    isSubmitting.value = true;
+    errors.value = {};
+
+    try {
+        if (editingId.value) {
+            await axios.put(`/academic-periods/${editingId.value}`, form.value);
+            toastSuccess("Academic period updated successfully");
+        } else {
+            await axios.post("/academic-periods", form.value);
+            toastSuccess("Academic period created successfully");
+        }
+
+        resetForm();
+        reload();
+    } catch (exception) {
+        errors.value = exception.response?.data?.errors ?? {};
+        toastError(
+            exception.response?.data?.error ||
+            exception.response?.data?.message ||
+            "The academic period could not be saved"
+        );
+    } finally {
+        isSubmitting.value = false;
     }
-    editingId.value = period.id
 }
 
-const destroy = async (id) => {
-    const confirmed = await confirm('Esto eliminará permanentemente el periodo académico.', '¿Estás seguro?')
-    if (!confirmed) return
+async function destroy(period) {
+    const confirmed = await confirm(
+        "Only academic periods without groups or enrollments can be deleted.",
+        "Delete academic period?"
+    );
 
-    router.delete(`/academic-periods/${id}`, {
-        onSuccess: () => {
-            toastSuccess('Periodo eliminado correctamente')
-            reload()
-        },
-        onError: () => {
-            toastError('Error al eliminar el periodo')
-        },
-    })
-}
+    if (!confirmed) {
+        return;
+    }
 
-const activate = (id) => {
-    const url = `/academic-periods/${id}/activate`
-
-    router.post(url, { _method: 'patch' }, {
+    router.delete(`/academic-periods/${period.id}`, {
         preserveScroll: true,
-        onSuccess: () => {
-            toastSuccess('Periodo activado correctamente')
+        onSuccess: () => toastSuccess("Academic period deleted successfully"),
+        onError: () => toastError("The academic period could not be deleted"),
+    });
+}
 
-            // ✅ Reactividad inmediata
-            periods.value = periods.value.map(p => ({
-                ...p,
-                is_active: p.id === id
-            }))
+async function runAction(period, action) {
+    const confirmed = await confirm(action.confirm, action.label);
 
-            // 🔁 Sincroniza con backend después de un pequeño delay
-            setTimeout(reload, 500)
+    if (!confirmed) {
+        return;
+    }
+
+    router.post(action.url(period), {}, {
+        preserveScroll: true,
+        onSuccess: () => toastSuccess(action.success),
+        onError: (response) => {
+            toastError(Object.values(response ?? {})[0] || "The lifecycle action could not be completed");
         },
-        onError: () => {
-            error('No se pudo activar el periodo', 'Error de activación')
-        }
-    })
+    });
 }
 
-const resetForm = () => {
-    form.value = {
-        name: '',
-        start_date: '',
-        end_date: '',
-        enrollment_deadline: '',
-        unenrollment_deadline: '',
-        is_active: false,
-    }
-    editingId.value = null
+function activate(period) {
+    router.post(`/academic-periods/${period.id}/activate`, { _method: "patch" }, {
+        preserveScroll: true,
+        onSuccess: () => toastSuccess("Academic period activated successfully"),
+        onError: () => toastError("The academic period could not be activated"),
+    });
 }
 
-
-const reload = () => {
+function reload() {
     router.reload({
-        only: ['periods'],
-        preserveState: true,
-        onSuccess: () => {
-            // 🔄 Reasignamos el array reactivo
-            periods.value = [...page.props.periods?.data ?? []]
-        }
-    })
+        only: ["periods"],
+        preserveScroll: true,
+    });
 }
 
-const goToPage = (url) => {
-    if (url) {
-        router.visit(url, {
-            only: ['periods'],
-            preserveState: true,
-        })
+function actionsFor(period) {
+    const code = period.status?.code;
+
+    return [
+        {
+            key: "open",
+            label: "Open Enrollment",
+            visible: code === "draft",
+            url: (item) => `/academic-periods/${item.id}/open-enrollment`,
+            confirm: "Students will be allowed to enroll during this academic period.",
+            success: "Enrollment opened successfully",
+        },
+        {
+            key: "close-enrollment",
+            label: "Close Enrollment",
+            visible: code === "enrollment_open",
+            url: (item) => `/academic-periods/${item.id}/close-enrollment`,
+            confirm: "Pre-enrollments will become active enrollments.",
+            success: "Enrollment closed successfully",
+        },
+        {
+            key: "start",
+            label: "Start Period",
+            visible: code === "enrollment_closed",
+            url: (item) => `/academic-periods/${item.id}/start`,
+            confirm: "Classes and grade management will move into active academic execution.",
+            success: "Academic period started successfully",
+        },
+        {
+            key: "close",
+            label: "Close Academically",
+            visible: code === "in_progress",
+            url: (item) => `/academic-periods/${item.id}/close`,
+            confirm: "Grades and academic changes will be locked for this period.",
+            success: "Academic period closed successfully",
+        },
+        {
+            key: "archive",
+            label: "Archive",
+            visible: code === "academically_closed",
+            url: (item) => `/academic-periods/${item.id}/archive`,
+            confirm: "This period will be archived for historical reference.",
+            success: "Academic period archived successfully",
+        },
+    ].filter((action) => action.visible);
+}
+
+function statusVariant(period) {
+    return {
+        draft: "gray",
+        enrollment_open: "warning",
+        enrollment_closed: "warning",
+        in_progress: "success",
+        academically_closed: "danger",
+        archived: "gray",
+    }[period.status?.code] || "gray";
+}
+
+function statusLabel(period) {
+    return period.status?.name || period.status?.code || "No status";
+}
+
+function formatDate(value) {
+    if (!value) {
+        return "-";
     }
+
+    return new Date(value).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+    });
 }
 
-const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC'
-    })
+function toDateInput(value) {
+    return value ? String(value).slice(0, 10) : "";
 }
 
-// Computed property para validar si la fecha final es mayor que la de inicio
-const isStartDateBeforeEnd = computed(() => {
-    if (!form.value.start_date || !form.value.end_date) return true
-    return new Date(form.value.start_date) < new Date(form.value.end_date)
-})
+function firstError(field) {
+    return Array.isArray(errors.value[field]) ? errors.value[field][0] : errors.value[field];
+}
 </script>
 
 <template>
-    <AppLayout>
-        <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                Academic Period Management
-            </h1>
-        </template>
-        <div class="max-w-5xl mx-auto py-10 space-y-10">
-            <div v-if="page.props.flash?.success"
-                class="bg-green-100 text-green-800 border border-green-300 px-4 py-3 rounded">
-                {{ page.props.flash.success }}
+    <CrudPageLayout title="Academic Periods"
+        subtitle="Manage enrollment windows, active execution and academic closure">
+        <div class="space-y-6">
+            <div class="grid gap-4 md:grid-cols-3">
+                <SectionCard class="p-5">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Periods</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.total }}</p>
+                </SectionCard>
+
+                <SectionCard class="p-5">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Period</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.active }}</p>
+                </SectionCard>
+
+                <SectionCard class="p-5">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">In Progress</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.inProgress }}</p>
+                </SectionCard>
             </div>
-            <!-- Form -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    {{ editingId ? 'Edit Period' : 'Create New Period' }}
-                </h2>
-                <form @submit.prevent="submit" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                        <input v-model="form.name" type="text" required placeholder="e.g. 2025-I"
-                            class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-                        <input v-model="form.start_date" type="date" required
-                            class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-                        <input v-model="form.end_date" type="date" required
-                            class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
-                        <p v-if="!isStartDateBeforeEnd" class="text-red-600 text-xs mt-1">The end date must be after the
-                            start
-                            date.</p>
-                    </div>
-                    <div>
-                        <label for="unenrollment_deadline"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Enrollment Deadline
-                        </label>
-                        <input type="date" id="unenrollment_deadline" v-model="form.enrollment_deadline"
-                            class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
 
-                    </div>
-                    <div>
-                        <label for="unenrollment_deadline"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Unenrollment Deadline
-                        </label>
-                        <input type="date" id="unenrollment_deadline" v-model="form.unenrollment_deadline"
-                            class="mt-1 block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-gray-900 dark:text-white" />
+            <SectionCard>
+                <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ editingId ? "Edit Period" : "Create Period" }}
+                    </h2>
+                </div>
 
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input v-model="form.is_active" type="checkbox" id="is_active"
+                <form class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3" @submit.prevent="submit">
+                    <BaseInput v-model="form.name" label="Name" placeholder="2026-I" required
+                        :error="firstError('name')" />
+                    <BaseInput v-model="form.start_date" label="Start Date" type="date" required
+                        :error="firstError('start_date')" />
+                    <BaseInput v-model="form.end_date" label="End Date" type="date" required
+                        :error="firstError('end_date')" />
+                    <BaseInput v-model="form.enrollment_deadline" label="Enrollment Deadline" type="date"
+                        :error="firstError('enrollment_deadline')" />
+                    <BaseInput v-model="form.unenrollment_deadline" label="Unenrollment Deadline" type="date"
+                        :error="firstError('unenrollment_deadline')" />
+
+                    <div class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
+                        <input id="is_active" v-model="form.is_active" type="checkbox"
                             class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                        <label for="is_active" class="text-sm text-gray-700 dark:text-gray-300">Mark as active</label>
+                        <label for="is_active" class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Mark as active
+                        </label>
                     </div>
-                    <div class="flex gap-4">
-                        <button type="submit" :disabled="!isStartDateBeforeEnd"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
-                            {{ editingId ? 'Update' : 'Save' }}
-                        </button>
-                        <button type="button" @click="resetForm"
-                            class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded">
-                            Clear Form
-                        </button>
+
+                    <div class="flex flex-wrap gap-3 md:col-span-2 xl:col-span-3">
+                        <BaseButton type="submit" :disabled="isSubmitting">
+                            <i class="fa-solid fa-floppy-disk mr-2" />
+                            {{ editingId ? "Update" : "Create" }}
+                        </BaseButton>
+                        <BaseButton type="button" variant="secondary" @click="resetForm">
+                            Clear
+                        </BaseButton>
                     </div>
                 </form>
-            </div>
+            </SectionCard>
 
-            <!-- Table -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Periods List</h2>
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600 text-center">
-                    <thead class="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Name</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Start</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                End</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Enrollment Deadline</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Unenrollment Deadline</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Status</th>
-                            <th
-                                class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="period in periods" :key="period.id">
-                            <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ period.name }}</td>
-                            <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ formatDate(period.start_date) }}
-                            </td>
-                            <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{ formatDate(period.end_date) }}
-                            </td>
-                            <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{
-                                formatDate(period.enrollment_deadline)
-                                }}
-                            </td>
-                            <td class="px-4 py-2 text-gray-800 dark:text-gray-200">{{
-                                formatDate(period.unenrollment_deadline)
-                                }}
-                            </td>
-                            <td class="px-4 py-2">
-                                <!-- Toggle Switch -->
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" :checked="period.is_active"
-                                        :disabled="period.is_active" @change="() => activate(period.id)" />
-                                    <div class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 
-              peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 
-              peer-checked:after:translate-x-full 
-              rtl:peer-checked:after:-translate-x-full 
-              peer-checked:after:border-white 
-              after:content-[''] after:absolute after:top-0.5 after:start-[2px] 
-              after:bg-white after:border-gray-300 after:border after:rounded-full 
-              after:h-5 after:w-5 after:transition-transform after:duration-300 
-              dark:border-gray-600 peer-checked:bg-indigo-600">
-                                    </div>
-                                    <span class="ms-2 text-sm font-semibold"
-                                        :class="period.is_active ? 'text-green-600' : 'text-gray-500'">
-                                        {{ period.is_active ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </label>
-                            </td>
-                            <td class="px-4 py-2 flex gap-4 justify-center text-center">
-                                <button @click="edit(period)"
-                                    class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button @click="destroy(period.id)"
-                                    class="text-red-600 dark:text-red-400 hover:text-red-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- Pagination -->
-                <div class="mt-4 flex justify-end space-x-2">
-                    <button v-for="link in links" :key="link.label" v-html="link.label" :disabled="!link.url"
-                        @click="goToPage(link.url)" :class="[
-                            'px-3 py-1 rounded',
-                            link.active
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600',
-                            !link.url && 'opacity-50 cursor-not-allowed'
-                        ]" />
+            <SectionCard>
+                <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Lifecycle Board</h2>
                 </div>
-            </div>
+
+                <DataTable v-if="rows.length" :columns="columns" :rows="rows">
+                    <template #cell-date_range="{ row }">
+                        <div class="font-medium text-gray-900 dark:text-white">{{ formatDate(row.start_date) }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(row.end_date) }}</div>
+                    </template>
+
+                    <template #cell-deadlines="{ row }">
+                        <div>Enroll: {{ formatDate(row.enrollment_deadline) }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            Unenroll: {{ formatDate(row.unenrollment_deadline) }}
+                        </div>
+                    </template>
+
+                    <template #cell-status="{ row }">
+                        <div class="flex flex-col gap-2">
+                            <StatusBadge :label="statusLabel(row)" :variant="statusVariant(row)" />
+                            <span class="text-xs font-medium"
+                                :class="row.is_active ? 'text-emerald-600' : 'text-gray-500 dark:text-gray-400'">
+                                {{ row.is_active ? "Active" : "Inactive" }}
+                            </span>
+                        </div>
+                    </template>
+
+                    <template #cell-activity="{ row }">
+                        <div>{{ row.class_groups_count ?? 0 }} groups</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ row.subject_enrollments_count ?? 0 }} enrollments
+                        </div>
+                    </template>
+
+                    <template #actions="{ row }">
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <BaseButton v-if="!row.is_active && !['academically_closed', 'archived'].includes(row.status?.code)"
+                                type="button" size="sm" variant="secondary" @click="activate(row)">
+                                Activate
+                            </BaseButton>
+
+                            <BaseButton v-for="action in actionsFor(row)" :key="action.key" type="button" size="sm"
+                                variant="primary" @click="runAction(row, action)">
+                                {{ action.label }}
+                            </BaseButton>
+
+                            <BaseButton type="button" size="sm" variant="secondary" @click="edit(row)">
+                                Edit
+                            </BaseButton>
+
+                            <BaseButton type="button" size="sm" variant="danger"
+                                :disabled="(row.class_groups_count ?? 0) > 0 || (row.subject_enrollments_count ?? 0) > 0"
+                                @click="destroy(row)">
+                                Delete
+                            </BaseButton>
+                        </div>
+                    </template>
+                </DataTable>
+
+                <div v-else class="p-6">
+                    <EmptyState title="No academic periods"
+                        description="Create the first academic period to start enrollment planning."
+                        icon="fa-solid fa-calendar-days" />
+                </div>
+
+                <TablePagination v-if="rows.length" :data="periods" />
+            </SectionCard>
         </div>
-    </AppLayout>
+    </CrudPageLayout>
 </template>

@@ -3,15 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
+use App\Models\AcademicPeriodStatus;
 use App\Services\AcademicPeriodService;
+use DomainException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class AcademicPeriodController extends Controller
 {
     public function index()
     {
-        $periods = AcademicPeriod::orderByDesc('is_active')
+        $periods = AcademicPeriod::query()
+            ->with('status')
+            ->withCount(['classGroups', 'subjectEnrollments'])
+            ->orderByDesc('is_active')
             ->orderByDesc('start_date')
             ->paginate(10)
             ->withQueryString();
@@ -21,183 +28,190 @@ class AcademicPeriodController extends Controller
         ]);
     }
 
-
     public function store(Request $request)
     {
-        // Validar datos básicos
-        $validated = $request->validate([
-            'name'       => 'required|string|max:255|unique:academic_periods,name',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
-            'enrollment_deadline' => 'nullable|date',
-            'unenrollment_deadline' => 'nullable|date',
-            'is_active'  => 'boolean',
-        ]);
+        $validated = $this->validatedData($request);
 
-        $startDate = $validated['start_date'];
-        $endDate = $validated['end_date'];
-        $enrollmentDeadline = $validated['enrollment_deadline'] ?? null;
-        $unenrollmentDeadline = $validated['unenrollment_deadline'] ?? null;
+        $draftStatusId = AcademicPeriodStatus::where('code', 'draft')->value('id');
 
-        // ✅ Validar que las fecha de inscripción esté dentro del rango permitido
-        if ($enrollmentDeadline && ($enrollmentDeadline < $startDate || $enrollmentDeadline > $endDate)) {
+        if (! $draftStatusId) {
             return response()->json([
-                'error' => 'The enrollment deadline must be between the start and end date of the academic period.',
-                'form' => $request->all(),
+                'error' => 'The draft academic period status is not configured.',
             ], 422);
         }
 
-
-        // ✅ Validar que la fecha de cancelación esté dentro del rango permitido
-        if ($unenrollmentDeadline) {
-            if ($unenrollmentDeadline < $startDate || $unenrollmentDeadline > $endDate) {
-                return response()->json([
-                    'error' => 'The unenrollment deadline must be between the start and end date of the academic period.',
-                    'form' => $request->all(),
-                ], 422);
-            }
-        }
-
-        // ✅ Validación de solapamiento robusta
-        $overlap = AcademicPeriod::where(function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('start_date', [$startDate, $endDate])
-                ->orWhereBetween('end_date', [$startDate, $endDate])
-                ->orWhere(function ($subquery) use ($startDate, $endDate) {
-                    $subquery->where('start_date', '<=', $startDate)
-                        ->where('end_date', '>=', $endDate);
-                });
-        })->exists();
-
-        if ($overlap) {
-            return response()->json([
-                'error' => 'The period dates overlap with an existing period.',
-                'form' => $request->all(),
-            ], 400);
-        }
-
-        // Desactivar periodo activo si se marca uno nuevo como activo
-        if ($validated['is_active']) {
+        if ($validated['is_active'] ?? false) {
             AcademicPeriod::where('is_active', true)->update(['is_active' => false]);
         }
 
-        try {
-            $academicPeriod = AcademicPeriod::create($validated);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to create period: ' . $e->getMessage(),
-                'form' => $request->all(),
-            ], 500);
-        }
+        $period = AcademicPeriod::create([
+            ...$validated,
+            'academic_period_status_id' => $draftStatusId,
+            'status_changed_at' => now(),
+        ]);
 
         return response()->json([
             'success' => 'Academic period created successfully.',
-            'academicPeriod' => $academicPeriod,
+            'academicPeriod' => $period->load('status'),
         ], 201);
     }
 
-
-    public function update(Request $request, $id)
+    public function update(Request $request, AcademicPeriod $academicPeriod)
     {
-        $period = AcademicPeriod::findOrFail($id);
-
-        // Validar campos básicos
-        $validated = $request->validate([
-            'name'       => 'required|string|max:255|unique:academic_periods,name,' . $period->id,
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
-            'enrollment_deadline' => 'nullable|date',
-            'unenrollment_deadline' => 'nullable|date',
-            'is_active'  => 'boolean',
-        ]);
-
-        $startDate = $validated['start_date'];
-        $endDate = $validated['end_date'];
-        $enrollmentDeadline = $validated['enrollment_deadline'] ?? null;
-        $unenrollmentDeadline = $validated['unenrollment_deadline'] ?? null;
-
-        // Validar que las fechas estén dentro del rango
-        if ($enrollmentDeadline && ($enrollmentDeadline < $startDate || $enrollmentDeadline > $endDate)) {
+        if ($academicPeriod->isFinal()) {
             return response()->json([
-                'error' => 'The enrollment deadline must be between the start and end date of the academic period.',
-                'form' => $request->all(),
+                'error' => 'Final academic periods cannot be edited.',
             ], 422);
         }
 
-        // Validar que la fecha de cancelación esté dentro del rango
-        if ($unenrollmentDeadline) {
-            if ($unenrollmentDeadline < $startDate || $unenrollmentDeadline > $endDate) {
-                return response()->json([
-                    'error' => 'The unenrollment deadline must be between the start and end date of the academic period.',
-                    'form' => $request->all(),
-                ], 422);
-            }
-        }
+        $validated = $this->validatedData($request, $academicPeriod);
 
-        // Validar solapamiento con otros periodos (excluyendo este)
-        $overlap = AcademicPeriod::where(function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('start_date', [$startDate, $endDate])
-                ->orWhereBetween('end_date', [$startDate, $endDate])
-                ->orWhere(function ($subquery) use ($startDate, $endDate) {
-                    $subquery->where('start_date', '<=', $startDate)
-                        ->where('end_date', '>=', $endDate);
-                });
-        })
-            ->where('id', '!=', $period->id)
-            ->exists();
-
-        if ($overlap) {
-            return response()->json([
-                'error' => 'The period dates overlap with an existing period.',
-                'form' => $request->all(),
-            ], 400);
-        }
-
-        // Si se activa este periodo, desactivar otros
-        if ($validated['is_active']) {
+        if ($validated['is_active'] ?? false) {
             AcademicPeriod::where('is_active', true)
-                ->where('id', '!=', $period->id)
+                ->where('id', '!=', $academicPeriod->id)
                 ->update(['is_active' => false]);
         }
 
-        // Actualizar el periodo
-        $period->update($validated);
+        $academicPeriod->update($validated);
 
         return response()->json([
             'success' => 'Academic period updated successfully.',
-            'academicPeriod' => $period,
+            'academicPeriod' => $academicPeriod->fresh('status'),
         ]);
     }
 
-
-
-    public function destroy($id)
+    public function destroy(AcademicPeriod $academicPeriod)
     {
-        $period = AcademicPeriod::findOrFail($id);
-        $period->delete();
+        if ($academicPeriod->classGroups()->exists() || $academicPeriod->subjectEnrollments()->exists()) {
+            return back()->withErrors('Academic periods with groups or enrollments cannot be deleted.');
+        }
+
+        $academicPeriod->delete();
 
         return back()->with('success', 'Academic period deleted.');
     }
 
-    public function activate($id)
+    public function activate(AcademicPeriod $academicPeriod)
     {
-        $period = AcademicPeriod::findOrFail($id);
+        if ($academicPeriod->isFinal()) {
+            return back()->withErrors('Final academic periods cannot be activated.');
+        }
 
-        AcademicPeriod::where('is_active', true)->where('id', '!=', $id)->update(['is_active' => false]);
-        $period->update(['is_active' => true]);
+        AcademicPeriod::where('is_active', true)
+            ->where('id', '!=', $academicPeriod->id)
+            ->update(['is_active' => false]);
+
+        $academicPeriod->update(['is_active' => true]);
 
         return back()->with('success', 'Academic period activated.');
     }
 
-    public function close(AcademicPeriod $period, AcademicPeriodService $service)
+    public function openEnrollment(AcademicPeriod $academicPeriod, AcademicPeriodService $service)
     {
-        if (! $period->is_active) {
-            return back()->withErrors('This academic period is already closed.');
+        $this->authorize('openEnrollment', $academicPeriod);
+
+        return $this->runTransition(
+            fn() => $service->openEnrollment($academicPeriod),
+            'Enrollment opened successfully.'
+        );
+    }
+
+    public function closeEnrollment(AcademicPeriod $academicPeriod, AcademicPeriodService $service)
+    {
+        $this->authorize('closeEnrollment', $academicPeriod);
+
+        return $this->runTransition(
+            fn() => $service->closeEnrollment($academicPeriod),
+            'Enrollment closed successfully.'
+        );
+    }
+
+    public function start(AcademicPeriod $academicPeriod, AcademicPeriodService $service)
+    {
+        $this->authorize('startPeriod', $academicPeriod);
+
+        return $this->runTransition(
+            fn() => $service->startPeriod($academicPeriod),
+            'Academic period started successfully.'
+        );
+    }
+
+    public function close(AcademicPeriod $academicPeriod, AcademicPeriodService $service)
+    {
+        $this->authorize('closeAcademically', $academicPeriod);
+
+        return $this->runTransition(
+            fn() => $service->closeAcademicPeriod($academicPeriod),
+            'Academic period closed successfully.'
+        );
+    }
+
+    public function archive(AcademicPeriod $academicPeriod, AcademicPeriodService $service)
+    {
+        $this->authorize('archive', $academicPeriod);
+
+        return $this->runTransition(
+            fn() => $service->archive($academicPeriod),
+            'Academic period archived successfully.'
+        );
+    }
+
+    private function validatedData(Request $request, ?AcademicPeriod $period = null): array
+    {
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('academic_periods', 'name')->ignore($period?->id),
+            ],
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'enrollment_deadline' => 'nullable|date|after_or_equal:start_date|before_or_equal:end_date',
+            'unenrollment_deadline' => 'nullable|date|after_or_equal:start_date|before_or_equal:end_date',
+            'is_active' => 'boolean',
+        ]);
+
+        $overlap = AcademicPeriod::where(function ($query) use ($validated) {
+            $query->whereBetween('start_date', [$validated['start_date'], $validated['end_date']])
+                ->orWhereBetween('end_date', [$validated['start_date'], $validated['end_date']])
+                ->orWhere(function ($subquery) use ($validated) {
+                    $subquery->where('start_date', '<=', $validated['start_date'])
+                        ->where('end_date', '>=', $validated['end_date']);
+                });
+        })
+            ->when($period, fn($query) => $query->where('id', '!=', $period->id))
+            ->exists();
+
+        if ($overlap) {
+            throw ValidationException::withMessages([
+                'start_date' => 'The period dates overlap with an existing period.',
+            ]);
         }
 
-        $service->closePeriod($period);
+        return $validated;
+    }
 
-        return redirect()
-            ->route('academic-periods.index')
-            ->with('success', 'Academic period closed successfully.');
+    private function runTransition(callable $callback, string $message)
+    {
+        try {
+            $callback();
+        } catch (DomainException $exception) {
+            return back()->withErrors($this->domainMessage($exception->getMessage()));
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function domainMessage(string $code): string
+    {
+        if (str_starts_with($code, 'INVALID_TRANSITION')) {
+            return 'This status transition is not allowed from the current academic period state.';
+        }
+
+        return [
+            'BLOCK_PERIOD_ALREADY_FINAL' => 'This academic period is already final.',
+            'BLOCK_PERIOD_HAS_NO_STATUS' => 'This academic period has no lifecycle status assigned.',
+        ][$code] ?? 'The academic period transition is not allowed.';
     }
 }

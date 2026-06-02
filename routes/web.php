@@ -54,6 +54,22 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('class-groups/{classGroup}/enrollments', [GroupEnrollmentController::class, 'show'])->name('admin.class-groups.enrollments');
     });
 
+    Route::middleware(['role:admin|professor'])->group(function () {
+        Route::get('/groups/{group}/grades', [GradeController::class, 'index'])->name('groups.grades.index')->can('manageGrades', 'group');
+        Route::post('/groups/{group}/grades', [GradeController::class, 'store'])->name('groups.grades.store')->can('manageGrades', 'group');
+        Route::get(
+            '/class-groups/{classGroup}/grades',
+            [GradeController::class, 'indexByGroup']
+        )->name('class-groups.grades')
+            ->can('manageGrades', 'classGroup');
+
+        Route::post(
+            '/class-groups/{classGroup}/grades',
+            [GradeController::class, 'storeByGroup']
+        )->name('class-groups.grades.store')
+            ->can('manageGrades', 'classGroup');
+    });
+
     /**
      * ────────────── ADMIN ──────────────
      */
@@ -74,10 +90,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/class-groups/{classGroup}/validate-enrollment', [GroupEnrollmentController::class, 'validateEnrollment'])->name('class-groups.validate-enrollment');
         Route::delete('/class-groups/{classGroup}/unenroll/{student}', [GroupEnrollmentController::class, 'destroy'])->name('class-groups.unenroll');
 
-        Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
-        Route::middleware(['auth', 'role:admin'])->group(function () {
-            Route::post('/academic-periods/{period}/close', [AcademicPeriodController::class, 'close'])->name('academic-periods.close');
-        });
+        Route::patch('academic-periods/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
+        Route::post('/academic-periods/{academicPeriod}/open-enrollment', [AcademicPeriodController::class, 'openEnrollment'])->name('academic-periods.open-enrollment');
+        Route::post('/academic-periods/{academicPeriod}/close-enrollment', [AcademicPeriodController::class, 'closeEnrollment'])->name('academic-periods.close-enrollment');
+        Route::post('/academic-periods/{academicPeriod}/start', [AcademicPeriodController::class, 'start'])->name('academic-periods.start');
+        Route::post('/academic-periods/{academicPeriod}/close', [AcademicPeriodController::class, 'close'])->name('academic-periods.close');
+        Route::post('/academic-periods/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('academic-periods.archive');
 
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
 
@@ -103,19 +121,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::middleware(['role:professor'])->group(function () {
         Route::get('/professor/subjects', [ProfessorController::class, 'mySubjects'])->name('professor.subjects');
         Route::get('/subjects/{subject}/students', [ProfessorController::class, 'viewAllStudents'])->name('subjects.students.view');
-        Route::get('/groups/{group}/grades', [GradeController::class, 'index'])->name('groups.grades.index')->can('manageGrades', 'group');
-        Route::post('/groups/{group}/grades', [GradeController::class, 'store'])->name('groups.grades.store')->can('manageGrades', 'group');
-        Route::get(
-            '/class-groups/{classGroup}/grades',
-            [GradeController::class, 'indexByGroup']
-        )->name('class-groups.grades')
-            ->can('manageGrades', 'classGroup');
-
-        Route::post(
-            '/class-groups/{classGroup}/grades',
-            [GradeController::class, 'storeByGroup']
-        )->name('class-groups.grades.store')
-            ->can('manageGrades', 'classGroup');
     });
 
     /**

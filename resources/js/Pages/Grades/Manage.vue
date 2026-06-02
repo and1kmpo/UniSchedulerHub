@@ -35,6 +35,16 @@ const props = defineProps({
         default: false,
     },
 
+    lockReason: {
+        type: String,
+        default: null,
+    },
+
+    storeRoute: {
+        type: String,
+        default: null,
+    },
+
     enrollments: {
         type: Array,
         default: () => [],
@@ -54,6 +64,9 @@ props.enrollments.forEach((enrollment) => {
         attendance: enrollment.grade?.attendance ?? "",
         final_grade: enrollment.grade?.final_grade ?? "",
         state: enrollment.grade?.state ?? null,
+        updated_at: enrollment.grade?.updated_at ?? null,
+        updated_by: enrollment.grade?.updated_by ?? null,
+        created_by: enrollment.grade?.created_by ?? null,
     };
 
     grades[enrollment.id] = { ...original };
@@ -106,6 +119,29 @@ function stateVariant(state) {
 
 function stateLabel(state) {
     return state?.label || "Pending";
+}
+
+function periodVariant(period) {
+    return {
+        in_progress: "success",
+        enrollment_open: "warning",
+        enrollment_closed: "warning",
+        academically_closed: "danger",
+        archived: "gray",
+        draft: "gray",
+    }[period?.status?.code] || "gray";
+}
+
+function periodLabel(period) {
+    return period?.status?.label || period?.status?.code || "No period";
+}
+
+function formatAudit(grade) {
+    if (!grade?.updated_at && !grade?.updated_by) {
+        return "Not updated yet";
+    }
+
+    return [grade.updated_by, grade.updated_at].filter(Boolean).join(" - ");
 }
 
 function finalGradeClass(value) {
@@ -163,7 +199,7 @@ async function submitGrades() {
     loading("Saving grades...", "Please wait while the grades are updated.");
 
     try {
-        const response = await axios.post(route("groups.grades.store", props.group.id), {
+        const response = await axios.post(props.storeRoute || route("groups.grades.store", props.group.id), {
             grades: payload,
         });
 
@@ -176,6 +212,9 @@ async function submitGrades() {
                 attendance: updatedGrade.attendance ?? "",
                 final_grade: updatedGrade.final_grade ?? "",
                 state: updatedGrade.state ?? null,
+                updated_at: updatedGrade.updated_at ?? null,
+                updated_by: updatedGrade.updated_by ?? null,
+                created_by: updatedGrade.created_by ?? null,
             };
 
             originalGrades[enrollmentId] = { ...grades[enrollmentId] };
@@ -241,18 +280,46 @@ async function submitGrades() {
 
                         <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Completed
+                                Period Status
                             </p>
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
-                                {{ completedGradesCount }}
-                            </p>
+                            <StatusBadge class="mt-1" :label="periodLabel(academicPeriod)"
+                                :variant="periodVariant(academicPeriod)" />
                         </div>
                     </div>
 
                     <div v-if="!canEdit" class="border-t border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
-                        Grade editing is locked for this group or academic period. You can review current grades only.
+                        {{ lockReason || "Grade editing is locked for this group or academic period. You can review current grades only." }}
                     </div>
                 </SectionCard>
+
+                <div class="grid gap-4 md:grid-cols-3">
+                    <SectionCard class="p-5">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Completed Grades
+                        </p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+                            {{ completedGradesCount }}
+                        </p>
+                    </SectionCard>
+
+                    <SectionCard class="p-5">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Editable
+                        </p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+                            {{ canEdit ? "Yes" : "No" }}
+                        </p>
+                    </SectionCard>
+
+                    <SectionCard class="p-5">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Formula
+                        </p>
+                        <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                            P1 25% / P2 25% / P3 30% / Activities 20%
+                        </p>
+                    </SectionCard>
+                </div>
 
                 <SectionCard>
                     <div class="border-b border-gray-200 p-6 dark:border-gray-800">
@@ -293,6 +360,9 @@ async function submitGrades() {
                                     <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
                                         State
                                     </th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                        Last Update
+                                    </th>
                                 </tr>
                             </thead>
 
@@ -332,6 +402,10 @@ async function submitGrades() {
                                     <td class="px-4 py-4 align-middle">
                                         <StatusBadge :label="stateLabel(grades[enrollment.id].state)"
                                             :variant="stateVariant(grades[enrollment.id].state)" />
+                                    </td>
+
+                                    <td class="px-4 py-4 align-middle text-xs text-gray-500 dark:text-gray-400">
+                                        {{ formatAudit(grades[enrollment.id]) }}
                                     </td>
                                 </tr>
                             </tbody>

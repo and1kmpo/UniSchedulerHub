@@ -221,6 +221,107 @@ class AcademicFlowTest extends TestCase
         ], $this->professor->professor?->id);
     }
 
+    public function test_admin_can_open_grade_management_through_class_group_alias(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+        $enrollment->update([
+            'status_id' => SubjectEnrollmentStatus::where('code', 'enrolled')->value('id'),
+        ]);
+        $this->period->update([
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'in_progress')->value('id'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('class-groups.grades', $group))
+            ->assertOk();
+    }
+
+    public function test_admin_can_store_grades_through_class_group_alias(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+        $enrollment->update([
+            'status_id' => SubjectEnrollmentStatus::where('code', 'enrolled')->value('id'),
+        ]);
+        $this->period->update([
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'in_progress')->value('id'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('class-groups.grades.store', $group), [
+                'grades' => [
+                    $enrollment->id => [
+                        'first_exam' => 4.0,
+                        'second_exam' => 4.0,
+                        'third_exam' => 3.5,
+                        'activities' => 4.5,
+                        'attendance' => 90,
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath("updated_grades.{$enrollment->id}.final_grade", 3.95)
+            ->assertJsonPath("updated_grades.{$enrollment->id}.state.code", 'passed');
+
+        $this->assertDatabaseHas('grades', [
+            'subject_enrollment_id' => $enrollment->id,
+            'final_grade' => 3.95,
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
+        ]);
+    }
+
+    public function test_academic_period_can_move_through_full_lifecycle(): void
+    {
+        $period = AcademicPeriod::create([
+            'name' => '2030-I',
+            'start_date' => '2030-01-15',
+            'end_date' => '2030-06-15',
+            'enrollment_deadline' => '2030-01-30',
+            'unenrollment_deadline' => '2030-02-15',
+            'is_active' => true,
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'draft')->value('id'),
+        ]);
+
+        $this->post(route('academic-periods.open-enrollment', $period))->assertSessionHasNoErrors();
+        $this->assertSame('enrollment_open', $period->fresh('status')->status->code);
+
+        $this->post(route('academic-periods.close-enrollment', $period))->assertSessionHasNoErrors();
+        $this->assertSame('enrollment_closed', $period->fresh('status')->status->code);
+
+        $this->post(route('academic-periods.start', $period))->assertSessionHasNoErrors();
+        $this->assertSame('in_progress', $period->fresh('status')->status->code);
+
+        $this->post(route('academic-periods.close', $period))->assertSessionHasNoErrors();
+        $this->assertSame('academically_closed', $period->fresh('status')->status->code);
+        $this->assertFalse($period->fresh()->is_active);
+
+        $this->post(route('academic-periods.archive', $period))->assertSessionHasNoErrors();
+        $this->assertSame('archived', $period->fresh('status')->status->code);
+    }
+
+    public function test_closing_enrollment_promotes_pre_enrollments_to_enrolled(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+
+        $this->assertSame('pre_enrolled', $enrollment->status->code);
+
+        $this->post(route('academic-periods.close-enrollment', $this->period))->assertSessionHasNoErrors();
+
+        $this->assertSame('enrollment_closed', $this->period->fresh('status')->status->code);
+        $this->assertSame('enrolled', $enrollment->fresh('status')->status->code);
+    }
+
+    public function test_invalid_academic_period_transition_is_blocked(): void
+    {
+        $this->post(route('academic-periods.start', $this->period))
+            ->assertSessionHasErrors();
+
+        $this->assertSame('enrollment_open', $this->period->fresh('status')->status->code);
+    }
+
     private function academicFixture(array $groupOverrides = []): array
     {
         $subject = $this->subject();
