@@ -54,7 +54,10 @@ class DegreeAuditService
         $this->enrolledSubjectIds = $activePeriod
             ? SubjectEnrollment::where('student_id', $student->id)
             ->where('academic_period_id', $activePeriod->id)
-            ->whereHas('status', fn($q) => $q->where('code', 'enrolled'))
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->pluck('subject_id')
             : collect();
     }
@@ -122,14 +125,12 @@ class DegreeAuditService
             ->where('academic_period_id', $period->id)
             ->whereHas(
                 'status',
-                fn($q) =>
-                $q->whereIn('code', ['enrolled', 'approved'])
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
             )
             ->with('subject')
             ->get()
             ->sum(
-                fn($enrollment) =>
-                optional($enrollment->subject?->pivot)->credits ?? 0
+                fn($enrollment) => $enrollment->subject?->credits ?? 0
             );
     }
 

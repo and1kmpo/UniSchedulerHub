@@ -35,7 +35,10 @@ class SubjectEnrollmentController extends Controller
             ->where('academic_period_id', $period->id)
             ->get();
 
+        $activeStatusCodes = config('enrollment.active_status_codes');
+
         $currentSchedules = $enrollments
+            ->filter(fn($enrollment) => in_array($enrollment->status?->code, $activeStatusCodes, true))
             ->flatMap(
                 fn($e) => ($e->classGroup?->schedules ?? [])->map(fn($s) => [
                     'day' => $s->day,
@@ -103,6 +106,10 @@ class SubjectEnrollmentController extends Controller
             $existing = SubjectEnrollment::where('student_id', $student->id)
                 ->where('subject_id', $classGroup->subject_id)
                 ->where('academic_period_id', $classGroup->academic_period_id)
+                ->whereHas(
+                    'status',
+                    fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+                )
                 ->first();
 
             if ($existing) {
@@ -194,16 +201,25 @@ class SubjectEnrollmentController extends Controller
 
         $groups = $subject->classGroups()
             ->where('academic_period_id', $period->id)
-            ->whereHas('schedules')
-            ->withCount('subjectEnrollments')
-            ->with(['schedules', 'professor'])
+            ->where('status', ClassGroup::STATUS_PUBLISHED)
+            ->whereHas('schedules', fn($query) => $query->where('status', '!=', 'cancelled'))
+            ->withCount([
+                'subjectEnrollments as active_enrollments_count' => fn($query) => $query->whereHas(
+                    'status',
+                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                ),
+            ])
+            ->with([
+                'schedules' => fn($query) => $query->where('status', '!=', 'cancelled'),
+                'professor',
+            ])
             ->get()
             ->map(fn($group) => [
                 'id' => $group->id,
                 'code' => $group->code,
                 'name' => $group->name,
                 'capacity' => $group->capacity,
-                'enrolled' => $group->subject_enrollments_count,
+                'enrolled' => $group->active_enrollments_count,
                 'professor' => optional($group->professor)->name,
                 'isCurrent' => $group->id === $currentGroupId,
                 'schedules' => $group->schedules->map(fn($s) => [

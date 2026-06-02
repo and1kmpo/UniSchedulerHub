@@ -332,6 +332,10 @@ class EnrollmentService
         )
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->when(
                 $ignoreGroupId,
                 fn($q) =>
@@ -373,6 +377,10 @@ class EnrollmentService
         $currentCredits = SubjectEnrollment::with('subject')
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->get()
             ->sum(fn($e) => $e->subject->credits ?? 0);
 
@@ -400,6 +408,10 @@ class EnrollmentService
         $currentCredits = SubjectEnrollment::with('subject')
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->get()
             ->sum(fn($e) => $e->subject->credits ?? 0);
 

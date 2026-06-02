@@ -152,6 +152,29 @@ class AcademicFlowTest extends TestCase
         $this->assertNotNull($enrollment->cancelled_at);
     }
 
+    public function test_cancelled_enrollment_does_not_block_schedule_conflict_validation(): void
+    {
+        [$student, $firstSubject, $firstGroup] = $this->academicFixture();
+        $secondSubject = $this->subject();
+        $student->curriculum->subjects()->attach($secondSubject->id, [
+            'semester_recommended' => 1,
+            'credits' => $secondSubject->credits,
+            'type' => 'required',
+        ]);
+        $secondGroup = $this->classGroup($secondSubject);
+        $this->schedule($secondGroup, 'monday', '09:30', '11:00');
+
+        $firstEnrollment = app(EnrollmentService::class)->enroll($student, $firstGroup);
+        app(EnrollmentService::class)->unenroll($firstEnrollment);
+
+        $secondEnrollment = app(EnrollmentService::class)->enroll($student, $secondGroup);
+
+        $this->assertSame($secondGroup->id, $secondEnrollment->class_group_id);
+        $this->assertDatabaseHas('subject_enrollments', [
+            'id' => $firstEnrollment->id,
+        ]);
+    }
+
     public function test_grades_can_be_registered_when_period_is_in_progress(): void
     {
         [$student, $subject, $group] = $this->academicFixture();
