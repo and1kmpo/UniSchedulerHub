@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\SubjectEnrollment;
 use App\Models\Student;
@@ -19,36 +20,53 @@ class GroupEnrollmentController extends Controller
     public function index()
     {
         $user = auth()->user();
+        $period = AcademicPeriod::active()->with('status')->first();
 
-        $groups = ClassGroup::query()
-            ->with(['subject', 'professor', 'academicPeriod'])
-            ->when(
-                $user->hasRole('professor') && ! $user->hasRole('admin'),
-                fn($query) => $query->where('professor_id', $user->id)
-            )
-            ->withCount([
-                'subjectEnrollments' => fn($query) => $query->whereHas(
-                    'status',
-                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
-                ),
-            ])
-            ->latest()
-            ->get()
-            ->map(fn($group) => [
-                'id' => $group->id,
-                'code' => $group->code,
-                'name' => $group->name,
-                'subject' => $group->subject?->name,
-                'professor' => $group->professor?->name,
-                'period' => $group->academicPeriod?->name,
-                'capacity' => $group->capacity,
-                'status' => $group->status,
-                'enrolled' => $group->subject_enrollments_count,
-            ]);
+        $groups = collect();
+
+        if ($period) {
+            $groups = ClassGroup::query()
+                ->with(['subject', 'professor', 'academicPeriod'])
+                ->where('academic_period_id', $period->id)
+                ->when(
+                    $user->hasRole('professor') && ! $user->hasRole('admin'),
+                    fn($query) => $query->where('professor_id', $user->id)
+                )
+                ->withCount([
+                    'subjectEnrollments' => fn($query) => $query->whereHas(
+                        'status',
+                        fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                    ),
+                ])
+                ->latest()
+                ->get()
+                ->map(fn($group) => [
+                    'id' => $group->id,
+                    'code' => $group->code,
+                    'name' => $group->name,
+                    'subject' => $group->subject?->name,
+                    'professor' => $group->professor?->name,
+                    'period' => $group->academicPeriod?->name,
+                    'capacity' => $group->capacity,
+                    'status' => $group->status,
+                    'enrolled' => $group->subject_enrollments_count,
+                ]);
+        }
 
         return Inertia::render('Admin/GroupEnrollments/Index', [
             'classGroups' => $groups,
             'canManageEnrollments' => $user->hasAnyRole(['admin', 'registrar']),
+            'period' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'students' => $groups->sum('enrolled'),
+                'capacity' => $groups->sum('capacity'),
+            ],
+            'systemState' => $period ? 'ready' : 'no_period',
         ]);
     }
 
@@ -74,7 +92,7 @@ class GroupEnrollmentController extends Controller
                 'status',
                 fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
             )
-            ->with(['student.user', 'status'])
+            ->with(['student.user', 'status', 'grade.state'])
             ->get()
             ->map(fn($e) => [
                 'id' => $e->id,
@@ -84,6 +102,8 @@ class GroupEnrollmentController extends Controller
                 'email' => $e->student?->user?->email,
                 'status' => $e->status?->code,
                 'statusColor' => $e->status?->color,
+                'final_grade' => $e->grade?->final_grade,
+                'grade_state' => $e->grade?->state?->label,
             ]);
 
         $allStudents = collect();

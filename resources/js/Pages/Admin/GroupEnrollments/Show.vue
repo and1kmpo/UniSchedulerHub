@@ -47,6 +47,8 @@ const columns = [
     { key: "document", label: "Document" },
     { key: "email", label: "Email" },
     { key: "status", label: "Status" },
+    { key: "final_grade", label: "Final Grade" },
+    { key: "grade_state", label: "Grade Status" },
 ];
 
 const rows = computed(() => props.enrollments);
@@ -164,7 +166,7 @@ async function removeEnrollment(row) {
                             </p>
 
                             <p class="mt-1 font-semibold text-gray-900 dark:text-white">
-                                {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity }}
+                                {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity ?? "Unlimited" }}
                             </p>
                         </div>
 
@@ -195,6 +197,14 @@ async function removeEnrollment(row) {
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-status="{ value }">
                                 <StatusBadge :label="formatStatus(value)" :variant="enrollmentStatusVariant(value)" />
+                            </template>
+
+                            <template #cell-final_grade="{ value }">
+                                {{ value ?? "Pending" }}
+                            </template>
+
+                            <template #cell-grade_state="{ value }">
+                                {{ value ?? "Pending" }}
                             </template>
 
                             <template v-if="canManageEnrollments" #actions="{ row }">

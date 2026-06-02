@@ -167,7 +167,20 @@ class ProfessorController extends Controller
 
     public function mySubjects()
     {
-        $period = AcademicPeriod::where('is_active', true)->with('status')->first();
+        $period = AcademicPeriod::active()->with('status')->first();
+
+        if (! $period) {
+            return Inertia::render('Professors/MySubjects', [
+                'groups' => [],
+                'period' => null,
+                'summary' => [
+                    'groups' => 0,
+                    'students' => 0,
+                    'credits' => 0,
+                ],
+                'systemState' => 'no_period',
+            ]);
+        }
 
         $groups = ClassGroup::with([
             'subject',
@@ -179,7 +192,7 @@ class ProfessorController extends Controller
             )->with(['student.user', 'status', 'grade.state']),
         ])
             ->where('professor_id', auth()->id())
-            ->when($period, fn($query) => $query->where('academic_period_id', $period->id))
+            ->where('academic_period_id', $period->id)
             ->withCount([
                 'subjectEnrollments' => fn($query) => $query->whereHas(
                     'status',
@@ -241,6 +254,7 @@ class ProfessorController extends Controller
                 'students' => $groups->sum('subject_enrollments_count'),
                 'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
             ],
+            'systemState' => 'ready',
         ]);
     }
 

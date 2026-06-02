@@ -31,6 +31,11 @@ const props = defineProps({
             credits: 0,
         }),
     },
+
+    systemState: {
+        type: String,
+        default: "ready",
+    },
 });
 
 const selectedGroup = ref(null);
@@ -153,6 +158,13 @@ const closeModal = () => {
                                         Students
                                     </BaseButton>
 
+                                    <Link :href="route('admin.class-groups.enrollments', row.id)">
+                                        <BaseButton size="sm" variant="secondary">
+                                            <i class="fa-solid fa-users mr-2" />
+                                            Enrollments
+                                        </BaseButton>
+                                    </Link>
+
                                     <Link v-if="row.source.can_manage_grades" :href="route('groups.grades.index', row.id)">
                                         <BaseButton size="sm" variant="primary">
                                             <i class="fa-solid fa-clipboard-list mr-2" />
@@ -169,7 +181,9 @@ const closeModal = () => {
                         </DataTable>
 
                         <EmptyState v-else title="No assigned groups"
-                            description="You have no assigned class groups in the active academic period."
+                            :description="systemState === 'no_period'
+                                ? 'There is no active academic period. Assigned groups will appear when a period is activated.'
+                                : 'You have no assigned class groups in the active academic period.'"
                             icon="fa-solid fa-users-rectangle" />
                     </div>
                 </SectionCard>
