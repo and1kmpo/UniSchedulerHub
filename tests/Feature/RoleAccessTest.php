@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Database\Seeders\RolSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class RoleAccessTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolSeeder::class);
+    }
+
+    public function test_admin_can_access_security_and_academic_administration(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)->get(route('users.index'))->assertOk();
+        $this->actingAs($admin)->get(route('students.index'))->assertOk();
+        $this->actingAs($admin)->get(route('academic-periods.index'))->assertOk();
+    }
+
+    public function test_academic_coordinator_can_access_academic_operations_but_not_security_administration(): void
+    {
+        $coordinator = $this->userWithRole('academic_coordinator');
+
+        $this->actingAs($coordinator)->get(route('students.index'))->assertOk();
+        $this->actingAs($coordinator)->get(route('class-groups.index'))->assertOk();
+        $this->actingAs($coordinator)->get(route('academic-periods.index'))->assertOk();
+
+        $this->actingAs($coordinator)->get(route('users.index'))->assertForbidden();
+        $this->actingAs($coordinator)->get(route('roles.index'))->assertForbidden();
+        $this->actingAs($coordinator)->get(route('permissions.index'))->assertForbidden();
+    }
+
+    public function test_professor_is_limited_to_teaching_workspace(): void
+    {
+        $professor = $this->userWithRole('professor');
+
+        $this->actingAs($professor)->get(route('admin.group-enrollments.index'))->assertOk();
+
+        $this->actingAs($professor)->get(route('students.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('class-groups.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('users.index'))->assertForbidden();
+    }
+
+    public function test_student_cannot_access_administrative_or_professor_crud_routes(): void
+    {
+        $student = $this->userWithRole('student');
+
+        $this->actingAs($student)->get(route('students.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('professors.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('subjects.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('users.index'))->assertForbidden();
+    }
+
+    public function test_dashboard_redirects_by_role(): void
+    {
+        $coordinator = $this->userWithRole('academic_coordinator');
+        $student = $this->userWithRole('student');
+
+        $this->actingAs($coordinator)
+            ->get('/dashboard')
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertRedirect(route('student.subjects'));
+    }
+
+    private function userWithRole(string $role): User
+    {
+        Role::findOrCreate($role);
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        return $user;
+    }
+}

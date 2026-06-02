@@ -55,7 +55,7 @@ class GroupEnrollmentController extends Controller
 
         return Inertia::render('Admin/GroupEnrollments/Index', [
             'classGroups' => $groups,
-            'canManageEnrollments' => $user->hasAnyRole(['admin', 'registrar']),
+            'canManageEnrollments' => $user->hasAnyRole(['admin', 'academic_coordinator']),
             'period' => $period ? [
                 'id' => $period->id,
                 'name' => $period->name,
@@ -108,7 +108,7 @@ class GroupEnrollmentController extends Controller
 
         $allStudents = collect();
 
-        if ($user->hasAnyRole(['admin', 'registrar'])) {
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
             $enrolledIds = $enrollments->pluck('student_id')->all();
 
             $allStudents = Student::with('user')
@@ -142,7 +142,7 @@ class GroupEnrollmentController extends Controller
             ],
             'enrollments' => $enrollments,
             'allStudents' => $allStudents,
-            'canManageEnrollments' => $user->hasAnyRole(['admin', 'registrar']),
+            'canManageEnrollments' => $user->hasAnyRole(['admin', 'academic_coordinator']),
         ]);
     }
 

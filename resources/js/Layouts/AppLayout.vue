@@ -157,13 +157,11 @@ onBeforeUnmount(() => {
                 <div class="hidden lg:block w-full lg:w-auto lg:order-1">
                     <ul
                         class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-                        <li v-if="
-                            userRole === 'admin' || userRole === 'professor'
-                        ">
+                        <li v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
                             <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
                         </li>
 
-                        <template v-if="userRole === 'admin'">
+                        <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
                             <li>
                                 <Link :href="route('programs.index')" class="nav-link">Programs</Link>
                             </li>
@@ -179,7 +177,7 @@ onBeforeUnmount(() => {
                             <li>
                                 <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
                             </li>
-                            <li>
+                            <li v-if="userRole === 'admin'">
                                 <Link :href="route('users.index')" class="nav-link">Admin</Link>
                             </li>
                             <li>
@@ -201,9 +199,6 @@ onBeforeUnmount(() => {
                                 <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
                             </li>
                             <li>
-                                <Link :href="route('students.index')" class="nav-link">Students</Link>
-                            </li>
-                            <li>
                                 <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
                                 Enrollments</Link>
                             </li>
@@ -219,9 +214,6 @@ onBeforeUnmount(() => {
                             <li>
                                 <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
                                 Enrollment</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
                             </li>
                             <li>
                                 <Link :href="route('profile.show')" class="nav-link">Profile</Link>
@@ -247,16 +239,13 @@ onBeforeUnmount(() => {
 
 
                         <ul class="space-y-4 mt-10">
-                            <template v-if="
-                                userRole === 'admin' ||
-                                userRole === 'professor'
-                            ">
+                            <template v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
                                 <li>
                                     <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
                                 </li>
                             </template>
 
-                            <template v-if="userRole === 'admin'">
+                            <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
                                 <li>
                                     <Link :href="route('programs.index')" class="nav-link">Programs</Link>
                                 </li>
@@ -272,7 +261,7 @@ onBeforeUnmount(() => {
                                 <li>
                                     <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
                                 </li>
-                                <li>
+                                <li v-if="userRole === 'admin'">
                                     <Link :href="route('users.index')" class="nav-link">Admin</Link>
                                 </li>
                                 <li>
@@ -295,9 +284,6 @@ onBeforeUnmount(() => {
                                     <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
                                 </li>
                                 <li>
-                                    <Link :href="route('students.index')" class="nav-link">Students</Link>
-                                </li>
-                                <li>
                                     <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
                                     Enrollments</Link>
                                 </li>
@@ -313,9 +299,6 @@ onBeforeUnmount(() => {
                                 <li>
                                     <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
                                     Enrollment</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('professors.index')" class="nav-link">Professors</Link>
                                 </li>
                                 <li>
                                     <Link :href="route('profile.show')" class="nav-link">Profile</Link>
