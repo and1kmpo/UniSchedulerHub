@@ -41,7 +41,7 @@ class DemoSubjectGroupsSeeder extends Seeder
 
             $group = ClassGroup::create([
                 'subject_id' => $subject->id,
-                'professor_id' => $professor->id,
+                'professor_id' => $professor->user_id,
                 'academic_period_id' => $period->id,
                 'code' => 'A' . strtoupper(Str::random(3)),
                 'group_code' => 'A',
@@ -78,7 +78,7 @@ class DemoSubjectGroupsSeeder extends Seeder
 
     private function generateSchedules(): array
     {
-        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
         shuffle($days);
         $startHours = range(7, 15); // Entre 7am y 3pm
         shuffle($startHours);

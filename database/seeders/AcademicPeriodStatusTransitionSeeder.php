@@ -22,12 +22,16 @@ class AcademicPeriodStatusTransitionSeeder extends Seeder
         ];
 
         foreach ($transitions as [$from, $to]) {
-            DB::table('academic_period_status_transitions')->insert([
-                'from_status_id' => $map[$from],
-                'to_status_id'   => $map[$to],
-                'created_at'     => now(),
-                'updated_at'     => now(),
-            ]);
+            DB::table('academic_period_status_transitions')->updateOrInsert(
+                [
+                    'from_status_id' => $map[$from],
+                    'to_status_id' => $map[$to],
+                ],
+                [
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
         }
     }
 }
