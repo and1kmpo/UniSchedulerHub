@@ -11,7 +11,7 @@ class ClassGroupPolicy
 
     public function manageGrades(User $user, ClassGroup $group): bool
     {
-        if ($user->hasRole('admin')) {
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
             return true;
         }
 

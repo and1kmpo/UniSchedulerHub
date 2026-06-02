@@ -7,6 +7,7 @@ use App\Http\Requests\ClassGroup\StoreClassGroupRequest;
 use App\Http\Requests\ClassGroup\UpdateClassGroupRequest;
 use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
+use App\Models\Classroom;
 use App\Models\Subject;
 use App\Models\User;
 use App\Models\Student;
@@ -222,6 +223,7 @@ class ClassGroupController extends Controller
             'allStudents' => $allStudents,
             'enrolledIds' => $enrolledIds,
             'studentSchedules' => $studentSchedules,
+            'classrooms' => Classroom::with('building')->where('status', 'active')->orderBy('name')->get(),
 
         ]);
     }

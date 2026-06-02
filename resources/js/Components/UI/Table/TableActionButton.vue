@@ -5,6 +5,11 @@ defineProps({
         required: true,
     },
 
+    label: {
+        type: String,
+        required: true,
+    },
+
     color: {
         type: String,
         default: "gray",
@@ -17,6 +22,14 @@ defineProps({
 });
 
 const colors = {
+    gray: `
+        text-gray-600
+        hover:bg-gray-50
+        hover:text-gray-900
+        dark:text-gray-300
+        dark:hover:bg-gray-500/10
+    `,
+
     sky: `
         text-sky-600
         hover:bg-sky-50
@@ -44,10 +57,11 @@ const colors = {
 </script>
 
 <template>
-    <button :type="type" :class="[
+    <button :type="type" :title="label" :aria-label="label" :class="[
         'inline-flex h-9 w-9 items-center justify-center rounded-lg transition',
         colors[color],
     ]">
-        <i :class="icon"></i>
+        <i :class="icon" aria-hidden="true"></i>
+        <span class="sr-only">{{ label }}</span>
     </button>
 </template>

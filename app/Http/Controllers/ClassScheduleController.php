@@ -5,23 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\ClassGroup;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
+use App\Services\ClassScheduleService;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use App\Services\ClassScheduleService;
-use DomainException;
 
 class ClassScheduleController extends Controller
 {
-    public function index($classGroupId)
+    public function index(ClassGroup $classGroup)
     {
-        $classGroup = ClassGroup::with(['subject', 'professor', 'schedules.classroom'])
-            ->findOrFail($classGroupId);
+        return redirect()->route('class-groups.show', $classGroup);
+    }
 
-        return Inertia::render('ClassSchedules/Index', [
-            'classGroup' => $classGroup,
-            'schedules'  => $classGroup->schedules,
-        ]);
+    public function show(ClassGroup $classGroup, ClassSchedule $schedule)
+    {
+        $this->ensureScheduleBelongsToGroup($classGroup, $schedule);
+
+        return redirect()->route('class-groups.show', $classGroup);
     }
 
     public function create(ClassGroup $classGroup)
@@ -34,6 +35,8 @@ class ClassScheduleController extends Controller
 
     public function edit(ClassGroup $classGroup, ClassSchedule $schedule)
     {
+        $this->ensureScheduleBelongsToGroup($classGroup, $schedule);
+
         return Inertia::render('ClassSchedules/Edit', [
             'classGroup' => $classGroup->load(['subject', 'professor']),
             'schedule' => $schedule->load('classroom'),
@@ -48,39 +51,17 @@ class ClassScheduleController extends Controller
     ) {
         $data = $this->validateSchedule($request);
 
-        if ($conflict = $this->findConflict(
-            ClassSchedule::where('class_group_id', $classGroup->id),
-            $data['day'],
-            $data['start_time'],
-            $data['end_time']
-        )) {
-            return $this->conflictResponse($request, $conflict, 'group');
-        }
-
-        if (
-            !empty($data['classroom_id']) &&
-            ($conflict = $this->findConflict(
-                ClassSchedule::where('classroom_id', $data['classroom_id']),
-                $data['day'],
-                $data['start_time'],
-                $data['end_time']
-            ))
-        ) {
-            return $this->conflictResponse($request, $conflict, 'classroom');
-        }
-
-        if ($conflict = $this->findProfessorConflict($classGroup, $data)) {
-            return $this->conflictResponse($request, $conflict, 'professor');
-        }
-
         try {
-            $service->create($classGroup, $data);
+            $schedule = $service->create($classGroup, $data);
         } catch (DomainException $exception) {
             return $this->domainExceptionResponse($exception);
         }
 
         if ($this->expectsJsonResponse($request)) {
-            return response()->json(['message' => 'Schedule created.'], 201);
+            return response()->json([
+                'message' => 'Schedule created.',
+                'schedule' => $schedule->load(['classroom', 'classGroup.subject', 'classGroup.professor']),
+            ], 201);
         }
 
         return redirect()
@@ -94,43 +75,21 @@ class ClassScheduleController extends Controller
         ClassSchedule $schedule,
         ClassScheduleService $service
     ) {
+        $this->ensureScheduleBelongsToGroup($classGroup, $schedule);
+
         $data = $this->validateSchedule($request);
 
-        if ($conflict = $this->findConflict(
-            $classGroup->schedules(),
-            $data['day'],
-            $data['start_time'],
-            $data['end_time'],
-            $schedule->id
-        )) {
-            return $this->conflictResponse($request, $conflict, 'group');
-        }
-
-        if (
-            !empty($data['classroom_id']) &&
-            ($conflict = $this->findConflict(
-                ClassSchedule::where('classroom_id', $data['classroom_id']),
-                $data['day'],
-                $data['start_time'],
-                $data['end_time'],
-                $schedule->id
-            ))
-        ) {
-            return $this->conflictResponse($request, $conflict, 'classroom');
-        }
-
-        if ($conflict = $this->findProfessorConflict($classGroup, $data, $schedule->id)) {
-            return $this->conflictResponse($request, $conflict, 'professor');
-        }
-
         try {
-            $service->update($schedule, $data);
+            $schedule = $service->update($schedule, $data);
         } catch (DomainException $exception) {
             return $this->domainExceptionResponse($exception);
         }
 
         if ($this->expectsJsonResponse($request)) {
-            return response()->json(['message' => 'Schedule updated.']);
+            return response()->json([
+                'message' => 'Schedule updated.',
+                'schedule' => $schedule,
+            ]);
         }
 
         return redirect()
@@ -143,6 +102,8 @@ class ClassScheduleController extends Controller
         ClassSchedule $schedule,
         ClassScheduleService $service
     ) {
+        $this->ensureScheduleBelongsToGroup($classGroup, $schedule);
+
         try {
             $service->delete($schedule);
         } catch (DomainException $exception) {
@@ -152,114 +113,22 @@ class ClassScheduleController extends Controller
         return back()->with('success', 'Schedule deleted.');
     }
 
-    public function calendar($classGroupId)
+    private function ensureScheduleBelongsToGroup(ClassGroup $classGroup, ClassSchedule $schedule): void
     {
-        $classGroup = ClassGroup::with([
-            'subject',
-            'professor',
-            'schedules.classGroup.subject',
-            'schedules.classGroup.professor',
-            'schedules.classroom',
-        ])->findOrFail($classGroupId);
-
-        $classrooms = Classroom::where('status', 'active')->orderBy('name')->get();
-
-        $editable = auth()->check() && auth()->user()->hasRole('admin');
-
-        /*   // temporal: inspección rápida
-        return response()->json($classGroup->load('schedules.classGroup.professor', 'schedules.classroom')->toArray()); */
-
-
-        return Inertia::render('ClassSchedules/Calendar', [
-            'classGroup' => $classGroup,
-            'schedules'  => $classGroup->schedules,
-            'classrooms' => $classrooms,
-            'editable' => $editable
-        ]);
+        abort_unless($schedule->class_group_id === $classGroup->id, 404);
     }
 
-    public function schedulesJson($classGroupId)
-    {
-        $schedules = ClassSchedule::with(
-            'classroom',
-            'classGroup.subject',
-            'classGroup.professor'
-        )
-            ->where('class_group_id', $classGroupId)
-            ->get();
-
-        return response()->json($schedules);
-    }
-
-    private function validateSchedule(Request $request)
+    private function validateSchedule(Request $request): array
     {
         return $request->validate([
-            'day'          => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
-            'start_time'   => 'required|date_format:H:i',
-            'end_time'     => 'required|date_format:H:i|after:start_time',
+            'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
             'classroom_id' => 'nullable|exists:classrooms,id',
-            'status'       => 'nullable|in:draft,published,cancelled,closed',
+            'status' => 'nullable|in:draft,published,cancelled,closed',
         ]);
     }
 
-    /**
-     * Checks for a scheduling conflict using TIME comparisons.
-     * $query must be a Builder instance (e.g., ClassSchedule::where(...))
-     */
-    private function findConflict($query, string $day, string $start, string $end, $ignoreId = null)
-    {
-        // Use whereTime to avoid format mismatches ('H:i' vs 'H:i:s')
-        return $query
-            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
-            ->where('status', '!=', 'cancelled')
-            ->where('day', $day)
-            ->whereTime('start_time', '<', $end)
-            ->whereTime('end_time', '>', $start)
-            ->with(['classGroup.subject', 'classroom'])
-            ->first();
-    }
-
-    private function findProfessorConflict(ClassGroup $classGroup, array $data, $ignoreId = null)
-    {
-        return ClassSchedule::query()
-            ->whereHas('classGroup', fn($query) => $query->where('professor_id', $classGroup->professor_id))
-            ->when($ignoreId, fn($query) => $query->where('id', '!=', $ignoreId))
-            ->where('status', '!=', 'cancelled')
-            ->where('day', $data['day'])
-            ->whereTime('start_time', '<', $data['end_time'])
-            ->whereTime('end_time', '>', $data['start_time'])
-            ->with(['classGroup.subject', 'classroom'])
-            ->first();
-    }
-
-    /**
-     * Standard response for schedule conflicts.
-     * Returns 422 with validation-style format:
-     * { errors: { start_time: [ "message" ] } }
-     */
-    protected function conflictResponse(Request $request, $conflict, string $type)
-    {
-        $subjectName = $conflict->classGroup->subject->name ?? ($conflict->classGroup->name ?? 'Subject');
-        $startTime = $conflict->start_time;
-        $endTime = $conflict->end_time;
-        $roomName = $conflict->classroom->name ?? 'no classroom';
-
-        if ($type === 'group') {
-            $message = "Conflict: this group already has {$subjectName} from {$startTime} to {$endTime} (room: {$roomName}).";
-        } elseif ($type === 'classroom') {
-            $message = "Conflict: room {$roomName} is already occupied by {$subjectName} from {$startTime} to {$endTime}.";
-        } else {
-            $message = "Conflict: this professor already teaches {$subjectName} from {$startTime} to {$endTime}.";
-        }
-
-        throw ValidationException::withMessages([
-            'schedule' => [$message]
-        ]);
-    }
-
-    /**
-     * Standard OK response (returns JSON or redirects with flash message)
-     */
     protected function expectsJsonResponse(Request $request): bool
     {
         return $request->expectsJson() || $request->wantsJson();
@@ -271,6 +140,9 @@ class ClassScheduleController extends Controller
             'BLOCK_NO_ACADEMIC_PERIOD' => 'This class group has no academic period assigned.',
             'BLOCK_PERIOD_FROZEN' => 'This academic period is closed and schedules can no longer be changed.',
             'BLOCK_GROUP_SCHEDULE_LOCKED' => 'This class group status does not allow schedule changes.',
+            'BLOCK_GROUP_SCHEDULE_CONFLICT' => 'This class group already has a schedule that overlaps this time.',
+            'BLOCK_CLASSROOM_SCHEDULE_CONFLICT' => 'This classroom is already occupied during this time.',
+            'BLOCK_PROFESSOR_SCHEDULE_CONFLICT' => 'This professor already has another class during this time.',
         ];
 
         throw ValidationException::withMessages([

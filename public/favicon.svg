@@ -1,22 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <style>
-    @media (prefers-color-scheme: dark) {
-      .bg { fill: #09090B; }
-      .brand-shape { stroke: #60A5FA; }
-    }
-    @media (prefers-color-scheme: light) {
-      .bg { fill: #FFFFFF; }
-      .brand-shape { stroke: #2563EB; }
-    }
-  </style>
-  <!-- Contenedor base -->
-  <rect width="512" height="512" rx="128" class="bg"/>
-
-  <!-- Símbolo: Dos módulos entrelazados en un solo flujo continuo -->
-  <g transform="translate(116, 116)">
-    <!-- Bloque 1: El aula / La estructura -->
-    <rect x="0" y="0" width="180" height="180" rx="32" class="brand-shape" stroke-width="40" stroke-linejoin="round"/>
-    <!-- Bloque 2: El flujo / El estudiante (Desplazado simétricamente) -->
-    <rect x="100" y="100" width="180" height="180" rx="32" class="brand-shape" stroke-width="40" stroke-linejoin="round"/>
-  </g>
+  <rect width="512" height="512" rx="128" fill="#0F172A"/>
+  <rect x="116" y="116" width="180" height="180" rx="42" stroke="#38BDF8" stroke-width="44" stroke-linejoin="round"/>
+  <rect x="216" y="216" width="180" height="180" rx="42" stroke="#22C55E" stroke-width="44" stroke-linejoin="round"/>
+  <path d="M170 360H360" stroke="#F8FAFC" stroke-width="44" stroke-linecap="round"/>
 </svg>

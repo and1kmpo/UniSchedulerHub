@@ -47,6 +47,16 @@ class AcademicPeriod extends Model
         );
     }
 
+    public function classGroups()
+    {
+        return $this->hasMany(ClassGroup::class);
+    }
+
+    public function subjectEnrollments()
+    {
+        return $this->hasMany(SubjectEnrollment::class);
+    }
+
     /* =========================
      | State
      |=========================*/

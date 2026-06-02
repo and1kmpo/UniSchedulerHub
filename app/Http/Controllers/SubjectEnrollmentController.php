@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
+use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Services\DegreeAuditService;
@@ -24,11 +25,31 @@ class SubjectEnrollmentController extends Controller
                 'enrollmentDeadline' => null,
                 'unenrollmentDeadline' => null,
                 'currentSchedules' => [],
+                'currentCredits' => 0,
+                'maxCredits' => config('enrollment.max_credits', 21),
+                'canEnroll' => false,
+                'canUnenroll' => false,
+                'currentPeriod' => null,
                 'systemState' => 'no_curriculum',
             ]);
         }
 
-        $period = AcademicPeriod::active()->firstOrFail();
+        $period = AcademicPeriod::active()->with('status')->first();
+
+        if (! $period) {
+            return Inertia::render('Students/SubjectEnrollment', [
+                'subjects' => [],
+                'enrollmentDeadline' => null,
+                'unenrollmentDeadline' => null,
+                'currentSchedules' => [],
+                'currentCredits' => 0,
+                'maxCredits' => config('enrollment.max_credits', 21),
+                'canEnroll' => false,
+                'canUnenroll' => false,
+                'currentPeriod' => null,
+                'systemState' => 'no_period',
+            ]);
+        }
 
         $enrollments = SubjectEnrollment::with(['status', 'classGroup.schedules'])
             ->where('student_id', $student->id)
@@ -66,6 +87,9 @@ class SubjectEnrollmentController extends Controller
 
                 $enrollment = $enrollments->firstWhere('subject_id', $subject->id);
                 $currentGroupId = optional($enrollment)->class_group_id;
+                $availableGroups = $subject->classGroups
+                    ->where('status', ClassGroup::STATUS_PUBLISHED)
+                    ->filter(fn($group) => $group->schedules->where('status', '!=', 'cancelled')->isNotEmpty());
 
                 return [
                     ...$evaluation,
@@ -78,6 +102,12 @@ class SubjectEnrollmentController extends Controller
                     'statusColor' => $enrollment?->status?->color,
                     'alreadyEnrolled' => (bool) $enrollment,
                     'currentGroupId' => $currentGroupId,
+                    'availableGroupsCount' => $availableGroups->count(),
+                    'availableProfessors' => $availableGroups
+                        ->map(fn($group) => $group->professor?->name)
+                        ->filter()
+                        ->unique()
+                        ->values(),
                 ];
             });
 
@@ -88,6 +118,16 @@ class SubjectEnrollmentController extends Controller
             'maxCredits' => $audit->maxCreditsPerPeriod,
             'enrollmentDeadline' => $period->enrollment_deadline,
             'unenrollmentDeadline' => $period->unenrollment_deadline,
+            'canEnroll' => $period->canEnroll()
+                && in_array($student->academic_status, Student::ENROLLABLE_STATUSES, true)
+                && filled($student->curriculum_id),
+            'canUnenroll' => $period->canUnenroll(),
+            'currentPeriod' => [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ],
+            'systemState' => 'ready',
         ]);
     }
 

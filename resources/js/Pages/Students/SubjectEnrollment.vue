@@ -38,6 +38,18 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
+    canEnroll: {
+        type: Boolean,
+        default: false,
+    },
+    canUnenroll: {
+        type: Boolean,
+        default: false,
+    },
+    currentPeriod: {
+        type: Object,
+        default: null,
+    },
     systemState: {
         type: String,
         default: "ready",
@@ -55,6 +67,7 @@ const columns = [
     { key: "name", label: "Subject" },
     { key: "credits", label: "Credits" },
     { key: "semester", label: "Semester" },
+    { key: "available_professors", label: "Available Professors" },
     { key: "status_label", label: "Status" },
     { key: "block_reason", label: "Academic Rule" },
 ];
@@ -65,6 +78,7 @@ const rows = computed(() =>
         status_label: formatStatus(subject.status || subject.audit?.status),
         status_variant: statusVariant(subject.status || subject.audit?.status),
         block_reason: blockReason(subject),
+        available_professors: professorSummary(subject.availableProfessors),
     }))
 );
 
@@ -76,22 +90,9 @@ const enrolledSubjects = computed(() =>
     props.subjects.filter((subject) => subject.alreadyEnrolled).length
 );
 
-const isEnrollmentOpen = computed(() => {
-    if (!props.enrollmentDeadline) {
-        return true;
-    }
-
-    return new Date() <= endOfDay(props.enrollmentDeadline);
-});
+const isEnrollmentOpen = computed(() => props.canEnroll);
 
 const selectedGroups = computed(() => selectedSubject.value?.groups ?? []);
-
-function endOfDay(date) {
-    const value = new Date(date);
-    value.setHours(23, 59, 59, 999);
-
-    return value;
-}
 
 function formatDate(date) {
     if (!date) {
@@ -158,6 +159,14 @@ function scheduleSummary(schedules = []) {
         .join("; ");
 }
 
+function professorSummary(professors = []) {
+    if (!professors.length) {
+        return "No published professor yet";
+    }
+
+    return professors.join(", ");
+}
+
 async function openGroupModal(subject) {
     selectedSubject.value = {
         ...subject,
@@ -209,6 +218,11 @@ async function enrollInGroup(group) {
 }
 
 async function unenrollFromSubject() {
+    if (!props.canUnenroll) {
+        toastError("Unenrollment is closed for the active academic period.");
+        return;
+    }
+
     if (!selectedSubject.value?.enrollmentId) {
         toastError("Invalid enrollment.");
         return;
@@ -251,7 +265,7 @@ async function unenrollFromSubject() {
                                 Enrollment Window
                             </h2>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Enrolled subjects: {{ enrolledSubjects }}. Changes are allowed only while enrollment is open.
+                                {{ currentPeriod?.name ?? "No active academic period" }}. Enrolled subjects: {{ enrolledSubjects }}.
                             </p>
                         </div>
 
@@ -281,6 +295,14 @@ async function unenrollFromSubject() {
                     />
                 </SectionCard>
 
+                <SectionCard v-else-if="systemState === 'no_period'">
+                    <EmptyState
+                        title="No active academic period"
+                        description="Enrollment will be available when academic administration activates a period."
+                        icon="fa-solid fa-calendar-xmark"
+                    />
+                </SectionCard>
+
                 <SectionCard v-else>
                     <div class="border-b border-gray-200 p-6 dark:border-gray-800">
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -295,6 +317,12 @@ async function unenrollFromSubject() {
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-status_label="{ row }">
                                 <StatusBadge :label="row.status_label" :variant="row.status_variant" />
+                            </template>
+
+                            <template #cell-available_professors="{ value }">
+                                <span class="block max-w-xs whitespace-normal text-sm text-gray-700 dark:text-gray-300">
+                                    {{ value }}
+                                </span>
                             </template>
 
                             <template #cell-block_reason="{ value }">
@@ -315,7 +343,7 @@ async function unenrollFromSubject() {
                                 </BaseButton>
 
                                 <BaseButton
-                                    v-else-if="row.enrollmentId && isEnrollmentOpen"
+                                    v-else-if="row.enrollmentId"
                                     size="sm"
                                     variant="secondary"
                                     @click="openGroupModal(row)"
@@ -422,7 +450,7 @@ async function unenrollFromSubject() {
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-200 p-6 dark:border-gray-800 sm:flex-row sm:justify-between">
                     <BaseButton
-                        v-if="selectedSubject.enrollmentId && selectedSubject.currentGroupId && isEnrollmentOpen"
+                        v-if="selectedSubject.enrollmentId && selectedSubject.currentGroupId && canUnenroll"
                         variant="danger"
                         :disabled="submitting"
                         @click="unenrollFromSubject"

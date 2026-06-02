@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\ClassGroup;
 use App\Models\Grade;
+use App\Models\AcademicPeriod;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
+use App\Policies\AcademicPeriodPolicy;
 use App\Policies\ClassGroupPolicy;
 use App\Policies\GradePolicy;
 use App\Policies\SubjectEnrollmentPolicy;
@@ -22,6 +24,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Subject::class => SubjectPolicy::class,
+        AcademicPeriod::class => AcademicPeriodPolicy::class,
         ClassGroup::class => ClassGroupPolicy::class,
         Grade::class => GradePolicy::class,
         SubjectEnrollment::class => SubjectEnrollmentPolicy::class,

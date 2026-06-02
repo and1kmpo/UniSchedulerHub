@@ -93,7 +93,10 @@ onBeforeUnmount(() => {
         <nav class="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700 relative z-50">
             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <Link href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
-                <ApplicationMark class="h-8 w-8" />
+                    <ApplicationMark class="h-9 w-9" />
+                    <span class="hidden text-sm font-bold text-slate-900 dark:text-white sm:block">
+                        UniSchedulerHub
+                    </span>
                 </Link>
 
                 <div class="flex items-center md:order-2 space-x-3 rtl:space-x-reverse relative">
@@ -154,75 +157,27 @@ onBeforeUnmount(() => {
                 <div class="hidden lg:block w-full lg:w-auto lg:order-1">
                     <ul
                         class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-                        <li v-if="
-                            userRole === 'admin' || userRole === 'professor'
-                        ">
+                        <li v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
                             <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
                         </li>
 
-                        <template v-if="userRole === 'admin'">
+                        <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
                             <li>
                                 <Link :href="route('programs.index')" class="nav-link">Programs</Link>
                             </li>
 
-                            <li class="relative group">
-                                <button @click="toggleDropdown('professors')"
-                                    class="nav-link dropdown-toggle flex items-center gap-1">
-                                    Professors
-                                    <svg class="w-2.5 h-2.5 ml-2 inline-block transition-transform duration-300"
-                                        :class="{ 'rotate-180': dropdownOpen === 'professors' }"
-                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                            stroke-width="2" d="m1 1 4 4 4-4" />
-                                    </svg>
-                                </button>
-                                <transition name="dropdown-fade">
-                                    <div v-if="dropdownOpen === 'professors'"
-                                        class="absolute left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg z-40">
-                                        <Link :href="route('professors.index')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Index
-                                        </Link>
-                                        <Link :href="route('professors.assignSubjectForm')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Assign Subject
-                                        </Link>
-                                    </div>
-                                </transition>
-
+                            <li>
+                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
                             </li>
 
-                            <li class="relative group">
-                                <button @click="toggleDropdown('students')"
-                                    class="nav-link dropdown-toggle flex items-center gap-1">
-                                    Students
-                                    <svg class="w-2.5 h-2.5 ml-2 inline-block transition-transform duration-300"
-                                        :class="{ 'rotate-180': dropdownOpen === 'students' }"
-                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                            stroke-width="2" d="m1 1 4 4 4-4" />
-                                    </svg>
-                                </button>
-                                <transition name="dropdown-fade">
-                                    <div v-if="dropdownOpen === 'students'"
-                                        class="absolute left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg z-40">
-                                        <Link :href="route('students.index')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Index
-                                        </Link>
-                                        <Link :href="route('students.assignSubjectForm')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Assign Subject
-                                        </Link>
-                                    </div>
-                                </transition>
-
+                            <li>
+                                <Link :href="route('students.index')" class="nav-link">Students</Link>
                             </li>
 
                             <li>
                                 <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
                             </li>
-                            <li>
+                            <li v-if="userRole === 'admin'">
                                 <Link :href="route('users.index')" class="nav-link">Admin</Link>
                             </li>
                             <li>
@@ -232,9 +187,7 @@ onBeforeUnmount(() => {
                                 <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
                             </li>
                             <li>
-                            <li>
                                 <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                            </li>
                             </li>
                             <li>
                                 <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
@@ -244,9 +197,6 @@ onBeforeUnmount(() => {
                         <template v-if="userRole === 'professor'">
                             <li>
                                 <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('students.index')" class="nav-link">Students</Link>
                             </li>
                             <li>
                                 <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
@@ -264,9 +214,6 @@ onBeforeUnmount(() => {
                             <li>
                                 <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
                                 Enrollment</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
                             </li>
                             <li>
                                 <Link :href="route('profile.show')" class="nav-link">Profile</Link>
@@ -292,71 +239,29 @@ onBeforeUnmount(() => {
 
 
                         <ul class="space-y-4 mt-10">
-                            <template v-if="
-                                userRole === 'admin' ||
-                                userRole === 'professor'
-                            ">
+                            <template v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
                                 <li>
                                     <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
                                 </li>
                             </template>
 
-                            <template v-if="userRole === 'admin'">
+                            <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
                                 <li>
                                     <Link :href="route('programs.index')" class="nav-link">Programs</Link>
                                 </li>
 
-                                <li class="relative">
-                                    <button @click="toggleDropdown('professors')" class="nav-link dropdown-toggle">
-                                        Professors
-                                        <svg class="w-2.5 h-2.5 ml-2 inline-block" xmlns="http://www.w3.org/2000/svg"
-                                            fill="none" viewBox="0 0 10 6">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                                stroke-width="2" d="m1 1 4 4 4-4" />
-                                        </svg>
-                                    </button>
-                                    <div :class="{
-                                        show: dropdownOpen === 'professors',
-                                    }" class="dropdown-menu absolute">
-                                        <Link :href="route('professors.index')" class="dropdown-item">Index</Link>
-                                        <Link :href="route(
-                                            'professors.assignSubjectForm'
-                                        )
-                                            " class="dropdown-item">Assign Subject</Link>
-                                    </div>
+                                <li>
+                                    <Link :href="route('professors.index')" class="nav-link">Professors</Link>
                                 </li>
 
-                                <li class="relative">
-                                    <button @click="toggleDropdown('students')" class="nav-link dropdown-toggle">
-                                        Students
-                                        <svg class="w-2.5 h-2.5 ml-2 inline-block" xmlns="http://www.w3.org/2000/svg"
-                                            fill="none" viewBox="0 0 10 6">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                                stroke-width="2" d="m1 1 4 4 4-4" />
-                                        </svg>
-                                    </button>
-                                    <div :class="{
-                                        show: dropdownOpen === 'students',
-                                    }" class="dropdown-menu absolute">
-                                        <Link :href="route('students.index')" class="dropdown-item">Index</Link>
-                                        <Link :href="route(
-                                            'students.assignSubjectForm'
-                                        )
-                                            " class="dropdown-item">Assign Subject</Link>
-                                    </div>
-                                </li>
-
-                                <li class="relative">
-                                    <div :class="{
-                                        show: dropdownOpen === 'students',
-                                    }">
-                                    </div>
+                                <li>
+                                    <Link :href="route('students.index')" class="nav-link">Students</Link>
                                 </li>
 
                                 <li>
                                     <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
                                 </li>
-                                <li>
+                                <li v-if="userRole === 'admin'">
                                     <Link :href="route('users.index')" class="nav-link">Admin</Link>
                                 </li>
                                 <li>
@@ -366,9 +271,7 @@ onBeforeUnmount(() => {
                                     <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
                                 </li>
                                 <li>
-                                <li>
                                     <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                                </li>
                                 </li>
                                 <li>
                                     <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods
@@ -381,9 +284,6 @@ onBeforeUnmount(() => {
                                     <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
                                 </li>
                                 <li>
-                                    <Link :href="route('students.index')" class="nav-link">Students</Link>
-                                </li>
-                                <li>
                                     <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
                                     Enrollments</Link>
                                 </li>
@@ -394,10 +294,11 @@ onBeforeUnmount(() => {
 
                             <template v-if="userRole === 'student'">
                                 <li>
-                                    <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
+                                    <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
                                 </li>
                                 <li>
-                                    <Link :href="route('professors.index')" class="nav-link">Professors</Link>
+                                    <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
+                                    Enrollment</Link>
                                 </li>
                                 <li>
                                     <Link :href="route('profile.show')" class="nav-link">Profile</Link>

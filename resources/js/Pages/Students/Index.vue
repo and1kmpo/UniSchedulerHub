@@ -199,14 +199,14 @@ const deleteStudent = async (student) => {
                 <template #actions="{ row }">
                     <div class="flex items-center justify-center gap-2">
                         <Link :href="route('students.show', row.id)">
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View student" color="sky" />
                         </Link>
 
                         <Link :href="route('students.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit student" color="indigo" />
                         </Link>
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteStudent(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete student" color="red" @click="deleteStudent(row)" />
                     </div>
                 </template>
             </DataTable>

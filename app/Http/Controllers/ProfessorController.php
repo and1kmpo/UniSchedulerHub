@@ -7,7 +7,6 @@ use App\Http\Requests\ProfessorRequest;
 use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\Professor;
-use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -166,69 +165,22 @@ class ProfessorController extends Controller
             ->with('success', 'Professor deleted successfully');
     }
 
-    public function assignSubjectForm()
-    {
-        $professors = Professor::with('user')->orderBy('document')->get();
-
-        return Inertia::render('Professors/AssignSubject', [
-            'professors' => $professors,
-        ]);
-    }
-
-    public function getAssignedSubjects($professorId)
-    {
-        $professor = Professor::with('subjects')->findOrFail($professorId);
-
-        return response()->json($professor->subjects);
-    }
-
-    public function assignSubjects(Request $request)
-    {
-        $validated = $request->validate([
-            'professor_id' => 'required|exists:professors,id',
-            'subject_ids' => 'required|array',
-            'subject_ids.*' => 'exists:subjects,id',
-        ]);
-
-        $professor = Professor::findOrFail($validated['professor_id']);
-        $professor->subjects()->syncWithoutDetaching($validated['subject_ids']);
-
-        return response()->json([
-            'message' => 'Subjects assigned successfully.',
-        ]);
-    }
-
-    public function unassignSubject($professorId, $subjectId)
-    {
-        $professor = Professor::findOrFail($professorId);
-        $professor->subjects()->detach($subjectId);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Subject successfully unassigned.',
-        ]);
-    }
-
-    public function unassignSelectedSubjects(Request $request)
-    {
-        $validated = $request->validate([
-            'professor_id' => 'required|exists:professors,id',
-            'subject_ids' => 'required|array',
-            'subject_ids.*' => 'exists:subjects,id',
-        ]);
-
-        $professor = Professor::findOrFail($validated['professor_id']);
-        $professor->subjects()->detach($validated['subject_ids']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Subjects successfully unassigned.',
-        ]);
-    }
-
     public function mySubjects()
     {
-        $period = AcademicPeriod::where('is_active', true)->with('status')->first();
+        $period = AcademicPeriod::active()->with('status')->first();
+
+        if (! $period) {
+            return Inertia::render('Professors/MySubjects', [
+                'groups' => [],
+                'period' => null,
+                'summary' => [
+                    'groups' => 0,
+                    'students' => 0,
+                    'credits' => 0,
+                ],
+                'systemState' => 'no_period',
+            ]);
+        }
 
         $groups = ClassGroup::with([
             'subject',
@@ -240,7 +192,7 @@ class ProfessorController extends Controller
             )->with(['student.user', 'status', 'grade.state']),
         ])
             ->where('professor_id', auth()->id())
-            ->when($period, fn($query) => $query->where('academic_period_id', $period->id))
+            ->where('academic_period_id', $period->id)
             ->withCount([
                 'subjectEnrollments' => fn($query) => $query->whereHas(
                     'status',
@@ -302,6 +254,7 @@ class ProfessorController extends Controller
                 'students' => $groups->sum('subject_enrollments_count'),
                 'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
             ],
+            'systemState' => 'ready',
         ]);
     }
 

@@ -9,14 +9,9 @@ use App\Services\EnrollmentService;
 
 class SubjectEnrollmentPolicy
 {
-    /**
-     * 🎯 Inscripción
-     * - Estudiante: solo puede intentar (validación real en service)
-     * - Admin/Registrar: override permitido
-     */
     public function enroll(User $user, ClassGroup $group): bool
     {
-        if ($user->hasAnyRole(['admin', 'registrar'])) {
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
             return true;
         }
 
@@ -27,12 +22,9 @@ class SubjectEnrollmentPolicy
         return false;
     }
 
-    /**
-     * 🎯 Retiro
-     */
     public function unenroll(User $user, SubjectEnrollment $enrollment): bool
     {
-        if ($user->hasAnyRole(['admin', 'registrar'])) {
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
             return true;
         }
 
@@ -43,12 +35,9 @@ class SubjectEnrollmentPolicy
         return false;
     }
 
-    /**
-     * 🎯 Ver inscripción
-     */
     public function view(User $user, SubjectEnrollment $enrollment): bool
     {
-        if ($user->hasAnyRole(['admin', 'registrar'])) {
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
             return true;
         }
 
@@ -63,53 +52,38 @@ class SubjectEnrollmentPolicy
         return false;
     }
 
-    /**
-     * 🎯 Calificar
-     */
     public function grade(User $user, SubjectEnrollment $enrollment): bool
     {
         return $user->hasRole('professor')
             && $enrollment->classGroup?->professor_id === $user->id;
     }
 
-    /**
-     * 🎯 Finalizar inscripción (estado académico)
-     */
     public function finalize(User $user, SubjectEnrollment $enrollment): bool
     {
-        return $user->hasAnyRole([
-            'admin',
-            'academic_coordinator',
-        ]);
+        return $user->hasAnyRole(['admin', 'academic_coordinator'])
+            || (
+                $user->hasRole('professor')
+                && $enrollment->classGroup?->professor_id === $user->id
+            );
     }
 
-    /**
-     * 🎯 Cambiar estado
-     */
     public function changeStatus(User $user, SubjectEnrollment $enrollment, string $toStatus): bool
     {
         return match ($toStatus) {
+            'enrolled', 'cancelled', 'withdrawn' =>
+                $user->hasAnyRole(['admin', 'academic_coordinator']),
 
-            // administrativos
-            'enrolled', 'cancelled' =>
-            $user->hasAnyRole(['admin', 'registrar']),
-
-            // académicos (docente)
             'approved', 'failed' =>
-            $user->hasRole('professor')
+                $user->hasRole('professor')
                 && $enrollment->classGroup?->professor_id === $user->id,
 
             default => false,
         };
     }
 
-    /**
-     * 🎯 Pre-check opcional (UI)
-     * ⚠️ No bloquea backend real, solo ayuda al frontend
-     */
     public function canAttemptEnroll(User $user, ClassGroup $group, EnrollmentService $service): bool
     {
-        if (! $user->hasRole('student')) {
+        if (! $user->hasRole('student') || ! $user->student) {
             return false;
         }
 

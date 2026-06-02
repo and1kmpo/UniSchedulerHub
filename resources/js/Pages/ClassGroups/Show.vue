@@ -40,6 +40,11 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    classrooms: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 /*
@@ -227,7 +232,7 @@ watch(
 
                 <GroupOverviewSection :class-group="classGroup" />
 
-                <GroupScheduleSection :class-group="classGroup" />
+                <GroupScheduleSection :class-group="classGroup" :classrooms="classrooms" />
 
                 <EnrollmentWorkspace :class-group="classGroup" :students="allStudents" :enrolled-ids="enrolledIds"
                     :selected-student="selectedStudent" :validation-result="validationResult"

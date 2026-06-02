@@ -233,7 +233,7 @@ const deleteSubject = async (subject) => {
 
                         <Link :href="route('subjects.show', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View subject" color="sky" />
 
                         </Link>
 
@@ -241,13 +241,13 @@ const deleteSubject = async (subject) => {
 
                         <Link :href="route('subjects.edit', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit subject" color="indigo" />
 
                         </Link>
 
                         <!-- DELETE -->
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteSubject(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete subject" color="red" @click="deleteSubject(row)" />
 
                     </div>
 

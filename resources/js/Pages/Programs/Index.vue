@@ -188,14 +188,14 @@ const deleteProgram = async (program) => {
                     <div class="flex items-center justify-center gap-2">
 
                         <Link :href="route('programs.show', row.id)">
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View program" color="sky" />
                         </Link>
 
                         <Link :href="route('programs.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit program" color="indigo" />
                         </Link>
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteProgram(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete program" color="red" @click="deleteProgram(row)" />
 
                     </div>
 

@@ -35,6 +35,10 @@ class GradeService
             throw new DomainException('BLOCK_GROUP_DOES_NOT_ALLOW_GRADES');
         }
 
+        if (! $professorId) {
+            throw new DomainException('BLOCK_NO_PROFESSOR_ASSIGNED');
+        }
+
         $evaluation = GradeEvaluator::evaluate($gradeData);
 
         $state = $evaluation->statusCode

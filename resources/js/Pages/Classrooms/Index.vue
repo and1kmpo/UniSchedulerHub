@@ -213,18 +213,18 @@ const destroy = async (classroom) => {
                 <template #actions="{ row }">
                     <div class="flex items-center justify-center gap-2">
                         <Link :href="route('classrooms.show', row.id)">
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View classroom" color="sky" />
                         </Link>
 
                         <Link :href="route('classrooms.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen-to-square" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit classroom" color="indigo" />
                         </Link>
 
                         <Link :href="route('classrooms.schedule', row.id)">
-                            <TableActionButton icon="fa-solid fa-calendar" color="gray" />
+                            <TableActionButton icon="fa-solid fa-calendar" label="View classroom schedule" color="gray" />
                         </Link>
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="destroy(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete classroom" color="red" @click="destroy(row)" />
                     </div>
                 </template>
             </DataTable>

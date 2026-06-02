@@ -209,17 +209,17 @@ const deleteProfessor = async (professor) => {
 
                         <Link :href="route('professors.show', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View professor" color="sky" />
 
                         </Link>
 
                         <Link :href="route('professors.edit', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-pen" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit professor" color="indigo" />
 
                         </Link>
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="deleteProfessor(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete professor" color="red" @click="deleteProfessor(row)" />
 
                     </div>
 

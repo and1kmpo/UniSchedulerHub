@@ -6,6 +6,7 @@ use App\Enums\AcademicPeriodState;
 use App\Models\AcademicPeriod;
 use App\Models\AcademicPeriodStatus;
 use App\Models\SubjectEnrollment;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class AcademicPeriodService
@@ -28,7 +29,7 @@ class AcademicPeriodService
         );
 
         $enrollments = SubjectEnrollment::where('academic_period_id', $period->id)
-            ->whereHas('status', fn($q) => $q->where('code', 'pre_enrolled'))
+            ->whereHas('status', fn($query) => $query->where('code', 'pre_enrolled'))
             ->get();
 
         foreach ($enrollments as $enrollment) {
@@ -52,6 +53,13 @@ class AcademicPeriodService
             AcademicPeriodState::IN_PROGRESS,
             AcademicPeriodState::ACADEMICALLY_CLOSED
         );
+
+        $period->update(['is_active' => false]);
+    }
+
+    public function closePeriod(AcademicPeriod $period): void
+    {
+        $this->closeEnrollment($period);
     }
 
     public function archive(AcademicPeriod $period): void
@@ -68,19 +76,27 @@ class AcademicPeriodService
         AcademicPeriodState $from,
         AcademicPeriodState $to
     ): void {
+        $period->loadMissing('status');
 
-        if ($period->isFinal()) {
-            throw new \DomainException('BLOCK_PERIOD_ALREADY_FINAL');
+        if ($period->isFinal() && $from !== AcademicPeriodState::ACADEMICALLY_CLOSED) {
+            throw new DomainException('BLOCK_PERIOD_ALREADY_FINAL');
         }
 
-        // ✅ Validar estado actual correctamente (Enum)
+        if (! $period->state()) {
+            throw new DomainException('BLOCK_PERIOD_HAS_NO_STATUS');
+        }
+
         if ($period->state() !== $from) {
-            throw new \DomainException(
+            throw new DomainException(
                 "INVALID_TRANSITION_FROM_{$period->state()->value}_TO_{$to->value}"
             );
         }
 
         $statusId = AcademicPeriodStatus::where('code', $to->value)->value('id');
+
+        if (! $statusId) {
+            throw new DomainException("BLOCK_TARGET_STATUS_NOT_FOUND_{$to->value}");
+        }
 
         DB::transaction(function () use ($period, $statusId) {
             $period->update([
