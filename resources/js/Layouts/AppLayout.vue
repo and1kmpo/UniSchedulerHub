@@ -192,6 +192,9 @@ onBeforeUnmount(() => {
                             <li>
                                 <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
                             </li>
+                            <li>
+                                <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
+                            </li>
                         </template>
 
                         <template v-if="userRole === 'professor'">
@@ -276,6 +279,9 @@ onBeforeUnmount(() => {
                                 <li>
                                     <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods
                                     </Link>
+                                </li>
+                                <li>
+                                    <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
                                 </li>
                             </template>
 

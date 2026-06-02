@@ -103,11 +103,6 @@ class SubjectEnrollmentController extends Controller
                     'alreadyEnrolled' => (bool) $enrollment,
                     'currentGroupId' => $currentGroupId,
                     'availableGroupsCount' => $availableGroups->count(),
-                    'availableProfessors' => $availableGroups
-                        ->map(fn($group) => $group->professor?->name)
-                        ->filter()
-                        ->unique()
-                        ->values(),
                 ];
             });
 
@@ -260,6 +255,9 @@ class SubjectEnrollmentController extends Controller
                 'name' => $group->name,
                 'capacity' => $group->capacity,
                 'enrolled' => $group->active_enrollments_count,
+                'availableSeats' => max($group->capacity - $group->active_enrollments_count, 0),
+                'modality' => $group->modality,
+                'shift' => $group->shift,
                 'professor' => optional($group->professor)->name,
                 'isCurrent' => $group->id === $currentGroupId,
                 'schedules' => $group->schedules->map(fn($s) => [
