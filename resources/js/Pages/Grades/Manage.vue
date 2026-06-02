@@ -54,6 +54,7 @@ const props = defineProps({
 const grades = reactive({});
 const originalGrades = reactive({});
 const isSubmitting = ref(false);
+const gradeFields = ["partial_1", "partial_2", "partial_3", "activities"];
 
 props.enrollments.forEach((enrollment) => {
     const original = {
@@ -81,12 +82,71 @@ const completedGradesCount = computed(() =>
     Object.values(grades).filter((grade) => grade.state?.code).length
 );
 
+const pendingChangesCount = computed(() => Object.keys(getChangedGrades()).length);
+
+const invalidGrades = computed(() => {
+    const invalid = {};
+
+    Object.entries(grades).forEach(([enrollmentId, grade]) => {
+        const invalidFields = [
+            ...gradeFields.filter((field) => !isValidGradeValue(grade[field], 5)),
+            ...(!isValidGradeValue(grade.attendance, 100) ? ["attendance"] : []),
+        ];
+
+        if (invalidFields.length) {
+            invalid[enrollmentId] = invalidFields;
+        }
+    });
+
+    return invalid;
+});
+
+const hasInvalidGrades = computed(() => Object.keys(invalidGrades.value).length > 0);
+
 function isNumeric(value) {
     return value !== "" && value !== null && !Number.isNaN(Number(value));
 }
 
 function formatGrade(value) {
     return isNumeric(value) ? Number(value).toFixed(2) : "-";
+}
+
+function isValidGradeValue(value, max) {
+    if (value === "" || value === null || value === undefined) {
+        return true;
+    }
+
+    const number = Number(value);
+
+    return Number.isFinite(number) && number >= 0 && number <= max;
+}
+
+function isFieldInvalid(enrollmentId, field) {
+    return invalidGrades.value[enrollmentId]?.includes(field) ?? false;
+}
+
+function inputClasses(enrollmentId, field) {
+    return [
+        "w-24 rounded-lg border bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-gray-100 dark:bg-gray-900 dark:text-gray-100",
+        isFieldInvalid(enrollmentId, field)
+            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500"
+            : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-gray-700",
+    ];
+}
+
+function projectedFinal(grade) {
+    const values = [grade.partial_1, grade.partial_2, grade.partial_3, grade.activities];
+
+    if (values.some((value) => !isNumeric(value))) {
+        return grade.final_grade;
+    }
+
+    return (
+        Number(grade.partial_1) * 0.25 +
+        Number(grade.partial_2) * 0.25 +
+        Number(grade.partial_3) * 0.30 +
+        Number(grade.activities) * 0.20
+    ).toFixed(2);
 }
 
 function getChangedGrades() {
@@ -119,6 +179,17 @@ function stateVariant(state) {
 
 function stateLabel(state) {
     return state?.label || "Pending";
+}
+
+function displayState(enrollmentId) {
+    if (isModified(enrollmentId)) {
+        return {
+            code: "pending",
+            label: "Unsaved changes",
+        };
+    }
+
+    return grades[enrollmentId].state;
 }
 
 function periodVariant(period) {
@@ -167,6 +238,14 @@ function normalizeGradeValue(value) {
 }
 
 async function submitGrades() {
+    if (hasInvalidGrades.value) {
+        error(
+            "Grades must be between 0 and 5. Attendance must be between 0 and 100.",
+            "Check grade values"
+        );
+        return;
+    }
+
     const changedGrades = getChangedGrades();
 
     if (!Object.keys(changedGrades).length) {
@@ -239,7 +318,7 @@ async function submitGrades() {
 <template>
     <CrudPageLayout :title="`Grades - ${subject.name}`" :subtitle="`${group.code} · ${academicPeriod?.name ?? 'No period'}`">
         <template #actions>
-            <BaseButton type="button" variant="primary" :disabled="!canEdit || !hasChanges || isSubmitting"
+            <BaseButton type="button" variant="primary" :disabled="!canEdit || !hasChanges || hasInvalidGrades || isSubmitting"
                 @click="submitGrades">
                 <i v-if="isSubmitting" class="fa-solid fa-spinner fa-spin mr-2" />
                 <i v-else class="fa-solid fa-floppy-disk mr-2" />
@@ -304,10 +383,10 @@ async function submitGrades() {
 
                     <SectionCard class="p-5">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Editable
+                            Pending Changes
                         </p>
                         <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
-                            {{ canEdit ? "Yes" : "No" }}
+                            {{ pendingChangesCount }}
                         </p>
                     </SectionCard>
 
@@ -328,8 +407,12 @@ async function submitGrades() {
                         </h2>
 
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Partial grades are weighted 25%, 25%, 30% and 20% for activities.
+                            Values must be 0-5. Attendance must be 0-100. Final grade is previewed before saving.
                         </p>
+                    </div>
+
+                    <div v-if="hasInvalidGrades" class="border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                        Some values are outside the allowed range. Fix highlighted fields before saving.
                     </div>
 
                     <div v-if="activeEnrollments.length" class="overflow-x-auto">
@@ -379,29 +462,31 @@ async function submitGrades() {
                                         </p>
                                     </td>
 
-                                    <td v-for="field in ['partial_1', 'partial_2', 'partial_3', 'activities']"
+                                    <td v-for="field in gradeFields"
                                         :key="field" class="px-4 py-4 align-middle">
                                         <input v-model="grades[enrollment.id][field]" type="number" min="0" max="5"
                                             step="0.1" :disabled="!canEdit || !enrollment.can_edit"
-                                            class="w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
+                                            :aria-invalid="isFieldInvalid(enrollment.id, field)"
+                                            :class="inputClasses(enrollment.id, field)" />
                                     </td>
 
                                     <td class="px-4 py-4 align-middle">
                                         <input v-model="grades[enrollment.id].attendance" type="number" min="0" max="100"
                                             step="1" :disabled="!canEdit || !enrollment.can_edit"
-                                            class="w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
+                                            :aria-invalid="isFieldInvalid(enrollment.id, 'attendance')"
+                                            :class="inputClasses(enrollment.id, 'attendance')" />
                                     </td>
 
                                     <td class="px-4 py-4 align-middle">
                                         <span class="inline-flex min-w-16 justify-center rounded-lg px-3 py-2 text-sm font-semibold"
-                                            :class="finalGradeClass(grades[enrollment.id].final_grade)">
-                                            {{ formatGrade(grades[enrollment.id].final_grade) }}
+                                            :class="finalGradeClass(projectedFinal(grades[enrollment.id]))">
+                                            {{ formatGrade(projectedFinal(grades[enrollment.id])) }}
                                         </span>
                                     </td>
 
                                     <td class="px-4 py-4 align-middle">
-                                        <StatusBadge :label="stateLabel(grades[enrollment.id].state)"
-                                            :variant="stateVariant(grades[enrollment.id].state)" />
+                                        <StatusBadge :label="stateLabel(displayState(enrollment.id))"
+                                            :variant="stateVariant(displayState(enrollment.id))" />
                                     </td>
 
                                     <td class="px-4 py-4 align-middle text-xs text-gray-500 dark:text-gray-400">
