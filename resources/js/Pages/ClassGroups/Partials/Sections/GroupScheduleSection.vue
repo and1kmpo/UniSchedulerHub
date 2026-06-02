@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
+import { ref, watch } from "vue";
 import { route } from "ziggy-js";
 
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
@@ -17,6 +18,30 @@ const props = defineProps({
 });
 
 const canManageSchedules = props.classGroup.can_manage_schedules !== false;
+
+const localSchedules = ref([
+    ...(props.classGroup.schedules || []),
+]);
+
+watch(
+    () => props.classGroup.schedules,
+    (schedules) => {
+        localSchedules.value = [
+            ...(schedules || []),
+        ];
+    },
+    { deep: true }
+);
+
+const replaceSchedule = (updatedSchedule) => {
+    localSchedules.value = localSchedules.value.map((schedule) => {
+        if (schedule.id !== updatedSchedule.id) {
+            return schedule;
+        }
+
+        return updatedSchedule;
+    });
+};
 </script>
 
 <template>
@@ -46,10 +71,10 @@ const canManageSchedules = props.classGroup.can_manage_schedules !== false;
             </div>
         </SectionCard>
 
-        <SmartSchedulerBoard :class-group-id="classGroup.id" :schedules="classGroup.schedules"
-            :can-edit="canManageSchedules" />
+        <SmartSchedulerBoard :class-group-id="classGroup.id" :schedules="localSchedules"
+            :can-edit="canManageSchedules" @schedule-updated="replaceSchedule" />
 
-        <ScheduleTimeline :schedules="classGroup.schedules" />
+        <ScheduleTimeline :schedules="localSchedules" />
 
         <StudentLoadChart :students="classGroup.students" />
     </section>

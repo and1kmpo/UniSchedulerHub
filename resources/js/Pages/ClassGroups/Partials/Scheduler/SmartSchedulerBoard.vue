@@ -24,6 +24,10 @@ const props = defineProps({
     },
 });
 
+const emit = defineEmits([
+    "schedule-updated",
+]);
+
 const localSchedules = ref([
     ...props.schedules,
 ]);
@@ -77,10 +81,10 @@ const score = computed(() => {
 
 const persistSchedule = async (schedule) => {
     if (!schedule.id) {
-        return;
+        return null;
     }
 
-    await axios.put(
+    const response = await axios.put(
         route("class-schedules.update", [
             props.classGroupId,
             schedule.id,
@@ -93,6 +97,8 @@ const persistSchedule = async (schedule) => {
             status: schedule.status ?? "published",
         }
     );
+
+    return response.data.schedule;
 };
 
 const replaceLocalSchedule = (scheduleId, updates) => {
@@ -140,7 +146,12 @@ const moveSchedule = async ({
         saving.value = true;
         saveError.value = "";
 
-        await persistSchedule(nextSchedule);
+        const persistedSchedule = await persistSchedule(nextSchedule);
+
+        if (persistedSchedule) {
+            replaceLocalSchedule(schedule.id, persistedSchedule);
+            emit("schedule-updated", persistedSchedule);
+        }
     } catch (exception) {
         replaceLocalSchedule(schedule.id, previous);
 
@@ -173,10 +184,15 @@ const resizeSchedule = async (schedule) => {
         saving.value = true;
         saveError.value = "";
 
-        await persistSchedule({
+        const persistedSchedule = await persistSchedule({
             ...current,
             ...schedule,
         });
+
+        if (persistedSchedule) {
+            replaceLocalSchedule(schedule.id, persistedSchedule);
+            emit("schedule-updated", persistedSchedule);
+        }
     } catch (exception) {
         if (previous) {
             replaceLocalSchedule(schedule.id, previous);
