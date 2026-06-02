@@ -38,6 +38,18 @@ class EnrollmentService
                 'enrolled_by'        => auth()->id(),
             ]);
 
+            app(AcademicAuditService::class)->record(
+                'enrollment.created',
+                $enrollment,
+                [
+                    'student_id' => $student->id,
+                    'subject_id' => $group->subject_id,
+                    'class_group_id' => $group->id,
+                    'academic_period_id' => $group->academic_period_id,
+                ],
+                'Student enrolled in class group'
+            );
+
             /* event(new EnrollmentCreated($enrollment)); */
 
             return $enrollment->fresh([
@@ -80,10 +92,25 @@ class EnrollmentService
                 ignoreGroupId: $existing->class_group_id
             );
 
+            $fromGroupId = $existing->class_group_id;
+
             $existing->update([
                 'class_group_id' => $group->id,
                 'enrolled_by' => auth()->id(),
             ]);
+
+            app(AcademicAuditService::class)->record(
+                'enrollment.group_changed',
+                $existing,
+                [
+                    'student_id' => $student->id,
+                    'subject_id' => $group->subject_id,
+                    'from_class_group_id' => $fromGroupId,
+                    'to_class_group_id' => $group->id,
+                    'academic_period_id' => $group->academic_period_id,
+                ],
+                'Student changed class group'
+            );
 
             return $existing->fresh([
                 'status',
@@ -132,6 +159,19 @@ class EnrollmentService
                 'cancelled_by' => auth()->id(),
                 'cancelled_at' => now(),
             ])->save();
+
+            app(AcademicAuditService::class)->record(
+                'enrollment.cancelled',
+                $enrollment,
+                [
+                    'student_id' => $enrollment->student_id,
+                    'subject_id' => $enrollment->subject_id,
+                    'class_group_id' => $enrollment->class_group_id,
+                    'academic_period_id' => $enrollment->academic_period_id,
+                    'status' => $targetStatus,
+                ],
+                'Student enrollment cancelled or withdrawn'
+            );
 
             /* event(new EnrollmentWithdrawn($enrollment)); */
         });

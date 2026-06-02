@@ -98,11 +98,21 @@ class AcademicPeriodService
             throw new DomainException("BLOCK_TARGET_STATUS_NOT_FOUND_{$to->value}");
         }
 
-        DB::transaction(function () use ($period, $statusId) {
+        DB::transaction(function () use ($period, $from, $to, $statusId) {
             $period->update([
                 'academic_period_status_id' => $statusId,
                 'status_changed_at' => now(),
             ]);
+
+            app(AcademicAuditService::class)->record(
+                'academic_period.transitioned',
+                $period,
+                [
+                    'from' => $from->value,
+                    'to' => $to->value,
+                ],
+                "Academic period transitioned from {$from->value} to {$to->value}"
+            );
         });
     }
 }

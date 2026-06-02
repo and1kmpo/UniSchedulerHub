@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AcademicPeriod;
 use App\Models\AcademicPeriodStatus;
+use App\Models\AcademicAuditLog;
 use App\Models\ClassGroup;
 use App\Models\ClassSchedule;
 use App\Models\Curriculum;
@@ -81,6 +82,11 @@ class AcademicFlowTest extends TestCase
 
         app(EnrollmentService::class)->enroll($student, $group);
 
+        $this->assertDatabaseHas('academic_audit_logs', [
+            'action' => 'enrollment.created',
+            'auditable_type' => SubjectEnrollment::class,
+        ]);
+
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('BLOCK_ALREADY_ENROLLED');
 
@@ -150,6 +156,11 @@ class AcademicFlowTest extends TestCase
         ]);
         $this->assertSame('cancelled', $enrollment->status->code);
         $this->assertNotNull($enrollment->cancelled_at);
+        $this->assertDatabaseHas('academic_audit_logs', [
+            'auditable_id' => $enrollment->id,
+            'auditable_type' => SubjectEnrollment::class,
+            'action' => 'enrollment.cancelled',
+        ]);
     }
 
     public function test_cancelled_enrollment_does_not_block_schedule_conflict_validation(): void
@@ -199,6 +210,11 @@ class AcademicFlowTest extends TestCase
         $this->assertSame('passed', $grade->state->code);
         $this->assertSame($this->admin->id, $grade->created_by);
         $this->assertSame($this->admin->id, $grade->updated_by);
+        $this->assertDatabaseHas('academic_audit_logs', [
+            'auditable_id' => $grade->id,
+            'auditable_type' => Grade::class,
+            'action' => 'grade.created',
+        ]);
     }
 
     public function test_grades_are_blocked_when_period_is_not_in_progress(): void
@@ -286,6 +302,10 @@ class AcademicFlowTest extends TestCase
 
         $this->post(route('academic-periods.open-enrollment', $period))->assertSessionHasNoErrors();
         $this->assertSame('enrollment_open', $period->fresh('status')->status->code);
+        $this->assertSame(1, AcademicAuditLog::where('auditable_id', $period->id)
+            ->where('auditable_type', AcademicPeriod::class)
+            ->where('action', 'academic_period.transitioned')
+            ->count());
 
         $this->post(route('academic-periods.close-enrollment', $period))->assertSessionHasNoErrors();
         $this->assertSame('enrollment_closed', $period->fresh('status')->status->code);
