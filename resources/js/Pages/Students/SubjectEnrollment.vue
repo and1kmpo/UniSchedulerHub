@@ -67,6 +67,7 @@ const columns = [
     { key: "name", label: "Subject" },
     { key: "credits", label: "Credits" },
     { key: "semester", label: "Semester" },
+    { key: "available_professors", label: "Available Professors" },
     { key: "status_label", label: "Status" },
     { key: "block_reason", label: "Academic Rule" },
 ];
@@ -77,6 +78,7 @@ const rows = computed(() =>
         status_label: formatStatus(subject.status || subject.audit?.status),
         status_variant: statusVariant(subject.status || subject.audit?.status),
         block_reason: blockReason(subject),
+        available_professors: professorSummary(subject.availableProfessors),
     }))
 );
 
@@ -155,6 +157,14 @@ function scheduleSummary(schedules = []) {
     return schedules
         .map((schedule) => `${formatStatus(schedule.day)} ${schedule.start_time}-${schedule.end_time}`)
         .join("; ");
+}
+
+function professorSummary(professors = []) {
+    if (!professors.length) {
+        return "No published professor yet";
+    }
+
+    return professors.join(", ");
 }
 
 async function openGroupModal(subject) {
@@ -307,6 +317,12 @@ async function unenrollFromSubject() {
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-status_label="{ row }">
                                 <StatusBadge :label="row.status_label" :variant="row.status_variant" />
+                            </template>
+
+                            <template #cell-available_professors="{ value }">
+                                <span class="block max-w-xs whitespace-normal text-sm text-gray-700 dark:text-gray-300">
+                                    {{ value }}
+                                </span>
                             </template>
 
                             <template #cell-block_reason="{ value }">

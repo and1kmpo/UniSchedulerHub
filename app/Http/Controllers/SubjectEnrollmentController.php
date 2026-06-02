@@ -87,6 +87,9 @@ class SubjectEnrollmentController extends Controller
 
                 $enrollment = $enrollments->firstWhere('subject_id', $subject->id);
                 $currentGroupId = optional($enrollment)->class_group_id;
+                $availableGroups = $subject->classGroups
+                    ->where('status', ClassGroup::STATUS_PUBLISHED)
+                    ->filter(fn($group) => $group->schedules->where('status', '!=', 'cancelled')->isNotEmpty());
 
                 return [
                     ...$evaluation,
@@ -99,6 +102,12 @@ class SubjectEnrollmentController extends Controller
                     'statusColor' => $enrollment?->status?->color,
                     'alreadyEnrolled' => (bool) $enrollment,
                     'currentGroupId' => $currentGroupId,
+                    'availableGroupsCount' => $availableGroups->count(),
+                    'availableProfessors' => $availableGroups
+                        ->map(fn($group) => $group->professor?->name)
+                        ->filter()
+                        ->unique()
+                        ->values(),
                 ];
             });
 

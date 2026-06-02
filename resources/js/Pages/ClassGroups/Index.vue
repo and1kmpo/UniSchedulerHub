@@ -490,7 +490,7 @@ const totalStudents = computed(() => {
                         )
                             ">
 
-                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                            <TableActionButton icon="fa-solid fa-eye" label="View class group" color="sky" />
 
                         </Link>
 
@@ -502,13 +502,13 @@ const totalStudents = computed(() => {
                         )
                             ">
 
-                            <TableActionButton icon="fa-solid fa-pen-to-square" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit class group" color="indigo" />
 
                         </Link>
 
                         <!-- DELETE -->
 
-                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="destroy(row)" />
+                        <TableActionButton icon="fa-solid fa-trash" label="Delete class group" color="red" @click="destroy(row)" />
 
                     </div>
 

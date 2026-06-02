@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassGroup;
+use App\Models\Subject;
 use App\Models\User;
 use Database\Seeders\RolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,6 +62,34 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('professors.index'))->assertForbidden();
         $this->actingAs($student)->get(route('subjects.index'))->assertForbidden();
         $this->actingAs($student)->get(route('users.index'))->assertForbidden();
+    }
+
+    public function test_student_cannot_jump_to_group_grade_routes_by_typing_url(): void
+    {
+        $student = $this->userWithRole('student');
+        $professor = $this->userWithRole('professor');
+        $subject = Subject::create([
+            'code' => 'SEC101',
+            'name' => 'Security Foundations',
+            'description' => 'Security test subject',
+            'credits' => 3,
+            'knowledge_area' => 'Engineering',
+            'elective' => false,
+        ]);
+
+        $group = ClassGroup::create([
+            'subject_id' => $subject->id,
+            'professor_id' => $professor->id,
+            'semester' => '2026-I',
+            'modality' => 'In-person',
+            'shift' => 'Day',
+            'capacity' => 30,
+            'status' => ClassGroup::STATUS_PUBLISHED,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('groups.grades.index', $group))
+            ->assertForbidden();
     }
 
     public function test_dashboard_redirects_by_role(): void
