@@ -203,6 +203,76 @@ function capacityLabel(group) {
     return `${group.availableSeats} seats left`;
 }
 
+function validationState(group) {
+    if (group.isCurrent) {
+        return {
+            label: "CURRENT",
+            variant: "success",
+        };
+    }
+
+    if (!group.validation?.allowed) {
+        return {
+            label: "BLOCKED",
+            variant: "danger",
+        };
+    }
+
+    if (group.validation?.warnings?.length) {
+        return {
+            label: "REVIEW",
+            variant: "warning",
+        };
+    }
+
+    return {
+        label: "AVAILABLE",
+        variant: "success",
+    };
+}
+
+function selectionButtonLabel(group) {
+    if (group.isCurrent) {
+        return "Selected";
+    }
+
+    if (!group.validation?.allowed) {
+        return "Unavailable";
+    }
+
+    return "Select";
+}
+
+function validationMessages(group) {
+    return [
+        ...(group.validation?.errors ?? []).map((message) => ({
+            type: "error",
+            icon: "fa-solid fa-circle-exclamation",
+            text: message,
+        })),
+        ...(group.validation?.warnings ?? []).map((message) => ({
+            type: "warning",
+            icon: "fa-solid fa-triangle-exclamation",
+            text: message,
+        })),
+        ...(group.validation?.recommendations ?? [])
+            .filter((recommendation) => recommendation.type !== "ready")
+            .map((recommendation) => ({
+                type: recommendation.priority === "high" ? "warning" : "info",
+                icon: "fa-solid fa-lightbulb",
+                text: recommendation.message ?? recommendation,
+            })),
+    ];
+}
+
+function messageClasses(type) {
+    return {
+        error: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
+        warning: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+        info: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
+    }[type] || "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300";
+}
+
 async function openGroupModal(subject) {
     selectedSubject.value = {
         ...subject,
@@ -485,6 +555,7 @@ async function unenrollFromSubject() {
                                             {{ group.code }} - {{ group.name }}
                                         </h3>
                                         <StatusBadge v-if="group.isCurrent" label="CURRENT" variant="success" />
+                                        <StatusBadge v-else :label="validationState(group).label" :variant="validationState(group).variant" />
                                         <StatusBadge :label="capacityLabel(group)" :variant="capacityVariant(group)" />
                                     </div>
 
@@ -514,16 +585,28 @@ async function unenrollFromSubject() {
                                         <span class="font-medium text-gray-500 dark:text-gray-400">Schedule:</span>
                                         {{ scheduleSummary(group.schedules) }}
                                     </div>
+
+                                    <div v-if="validationMessages(group).length" class="mt-4 space-y-2">
+                                        <div
+                                            v-for="message in validationMessages(group)"
+                                            :key="`${message.type}-${message.text}`"
+                                            class="flex gap-2 rounded-lg border px-3 py-2 text-xs"
+                                            :class="messageClasses(message.type)"
+                                        >
+                                            <i :class="[message.icon, 'mt-0.5']" />
+                                            <span>{{ message.text }}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <BaseButton
                                     size="sm"
                                     :variant="group.isCurrent ? 'secondary' : 'primary'"
-                                    :disabled="group.isCurrent || submitting"
+                                    :disabled="group.isCurrent || submitting || !group.canSelect"
                                     @click="enrollInGroup(group)"
                                 >
                                     <i class="fa-solid fa-check mr-2" />
-                                    {{ group.isCurrent ? "Selected" : "Select" }}
+                                    {{ selectionButtonLabel(group) }}
                                 </BaseButton>
                             </div>
                         </div>

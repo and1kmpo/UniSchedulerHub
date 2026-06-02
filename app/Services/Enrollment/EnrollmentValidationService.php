@@ -4,6 +4,7 @@ namespace App\Services\Enrollment;
 
 use App\Models\Student;
 use App\Models\ClassGroup;
+use App\Models\SubjectEnrollment;
 use App\Services\Enrollment\DTOs\EnrollmentValidationResult;
 use App\Services\Enrollment\Validators\CapacityValidator;
 use App\Services\Enrollment\Validators\DuplicateEnrollmentValidator;
@@ -20,7 +21,8 @@ class EnrollmentValidationService
 
     public function validate(
         Student $student,
-        ClassGroup $group
+        ClassGroup $group,
+        ?SubjectEnrollment $ignoreEnrollment = null
     ): EnrollmentValidationResult {
 
         $group->loadMissing([
@@ -37,9 +39,9 @@ class EnrollmentValidationService
 
         $validators = [
             new CapacityValidator(),
-            new DuplicateEnrollmentValidator(),
-            new ScheduleConflictValidator(),
-            new AcademicLoadValidator(),
+            new DuplicateEnrollmentValidator($ignoreEnrollment?->id),
+            new ScheduleConflictValidator($ignoreEnrollment?->class_group_id),
+            new AcademicLoadValidator($ignoreEnrollment?->id),
             new WaitlistValidator(),
         ];
 
