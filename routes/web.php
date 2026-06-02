@@ -67,15 +67,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('/permissions', PermissionController::class);
         Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
 
-        Route::get('/professors-assign-subject', [ProfessorController::class, 'assignSubjectForm'])->name('professors.assignSubjectForm');
-        Route::post('/professors-assign-subject', [ProfessorController::class, 'assignSubjects'])->name('professors.assignSubjects');
-        Route::delete('/unassign-subject-professor/{professorId}/{subjectId}', [ProfessorController::class, 'unassignSubject']);
-        Route::post('/unassign-selected-subjects', [ProfessorController::class, 'unassignSelectedSubjects']);
-
-        Route::get('/students-assign-subject', [StudentController::class, 'assignSubjectForm'])->name('students.assignSubjectForm');
-        Route::post('/students-assign-subject', [StudentController::class, 'assignSubjects'])->name('students.assignSubjects');
-        Route::delete('/unassign-subject-student/{studentId}/{subjectId}', [StudentController::class, 'unassignSubject']);
-
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
         Route::get('/class-groups/{classGroup}/can-enroll/{student}', [ClassGroupController::class, 'canEnroll'])->name('class-groups.can-enroll');
         Route::resource('class-groups.schedules', ClassScheduleController::class)->names('class-schedules');
@@ -179,8 +170,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->name('user.assignments');
     Route::get('/subjects-with-professors', [SubjectController::class, 'getSubjectsWithProfessors']);
-    Route::get('/professor-assigned-subjects/{professorId}', [ProfessorController::class, 'getAssignedSubjects']);
-    Route::get('/student-assigned-subjects/{studentId}', [StudentController::class, 'getAssignedSubjects']);
 
     // ──────── Reports ────────
     Route::get('/assignments-report', [DashboardController::class, 'showAssignmentsReport'])->name('assignments.report');

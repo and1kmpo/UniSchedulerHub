@@ -15,17 +15,13 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
         <template v-if="userRole === 'admin'">
             <NavItem label="Programs" routeName="programs.index" :active="route().current('programs.*')" />
 
-            <NavItem label="Professors" dropdown :dropdownItems="[
-                { label: 'Index', href: 'professors.index' },
-                { label: 'Assign Subjects', href: 'professors.assignSubjectForm' },
-            ]" />
+            <NavItem label="Professors" routeName="professors.index" :active="route().current('professors.*')" />
 
-            <NavItem label="Students" dropdown :dropdownItems="[
-                { label: 'Index', href: 'students.index' },
-                { label: 'Assign Subjects', href: 'students.assignSubjectForm' },
-            ]" />
+            <NavItem label="Students" routeName="students.index" :active="route().current('students.*')" />
 
             <NavItem label="Subjects" routeName="subjects.index" :active="route().current('subjects.*')" />
+
+            <NavItem label="Class Groups" routeName="class-groups.index" :active="route().current('class-groups.*')" />
 
             <NavItem label="Admin Panel" routeName="users.index" :active="route().current('users.*')" />
         </template>
@@ -38,7 +34,7 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
 
         <!-- STUDENT -->
         <template v-else-if="userRole === 'student'">
-            <NavItem label="My Subjects" routeName="professor.subjects" />
+            <NavItem label="My Subjects" routeName="student.subjects" />
             <NavItem label="Professors" routeName="professors.index" />
         </template>
     </nav>

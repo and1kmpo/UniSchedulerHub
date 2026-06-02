@@ -186,50 +186,6 @@ class StudentController extends Controller
             ->with('success', 'Student deleted successfully');
     }
 
-    public function assignSubjectForm()
-    {
-        $students = Student::with(['user', 'program'])->orderBy('document')->get();
-
-        return Inertia::render('Students/AssignSubject', [
-            'students' => $students,
-        ]);
-    }
-
-    public function getAssignedSubjects($studentId)
-    {
-        $student = Student::findOrFail($studentId);
-
-        $subjects = $student
-            ->enrollments()
-            ->with(['subject', 'status', 'classGroup'])
-            ->get()
-            ->map(fn($enrollment) => [
-                'id' => $enrollment->subject?->id,
-                'name' => $enrollment->subject?->name,
-                'credits' => $enrollment->subject?->credits,
-                'status' => $enrollment->status?->code,
-                'group' => $enrollment->classGroup?->code,
-            ])
-            ->filter(fn($subject) => $subject['id'])
-            ->values();
-
-        return response()->json($subjects);
-    }
-
-    public function assignSubjects(Request $request)
-    {
-        return response()->json([
-            'error' => 'Use the subject enrollment workflow to enroll a student into a class group.',
-        ], 422);
-    }
-
-    public function unassignSubject($studentId, $subjectId)
-    {
-        return response()->json([
-            'error' => 'Use the subject enrollment workflow to withdraw a subject enrollment.',
-        ], 422);
-    }
-
     public function mySubjects()
     {
         $student = auth()->user()->student;

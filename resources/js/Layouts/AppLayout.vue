@@ -183,10 +183,6 @@ onBeforeUnmount(() => {
                                             class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
                                         Index
                                         </Link>
-                                        <Link :href="route('professors.assignSubjectForm')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Assign Subject
-                                        </Link>
                                     </div>
                                 </transition>
 
@@ -209,10 +205,6 @@ onBeforeUnmount(() => {
                                         <Link :href="route('students.index')"
                                             class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
                                         Index
-                                        </Link>
-                                        <Link :href="route('students.assignSubjectForm')"
-                                            class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        Assign Subject
                                         </Link>
                                     </div>
                                 </transition>
@@ -319,10 +311,6 @@ onBeforeUnmount(() => {
                                         show: dropdownOpen === 'professors',
                                     }" class="dropdown-menu absolute">
                                         <Link :href="route('professors.index')" class="dropdown-item">Index</Link>
-                                        <Link :href="route(
-                                            'professors.assignSubjectForm'
-                                        )
-                                            " class="dropdown-item">Assign Subject</Link>
                                     </div>
                                 </li>
 
@@ -339,10 +327,6 @@ onBeforeUnmount(() => {
                                         show: dropdownOpen === 'students',
                                     }" class="dropdown-menu absolute">
                                         <Link :href="route('students.index')" class="dropdown-item">Index</Link>
-                                        <Link :href="route(
-                                            'students.assignSubjectForm'
-                                        )
-                                            " class="dropdown-item">Assign Subject</Link>
                                     </div>
                                 </li>
 
