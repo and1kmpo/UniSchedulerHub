@@ -2,30 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\ClassGroupFilter;
+use App\Http\Requests\ClassGroup\StoreClassGroupRequest;
+use App\Http\Requests\ClassGroup\UpdateClassGroupRequest;
 use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\Subject;
-use App\Models\SubjectEnrollment;
 use App\Models\User;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Services\EnrollmentService;
 use App\Services\ClassGroupService;
 
-
 class ClassGroupController extends Controller
 {
-    public function index()
-    {
-        return Inertia::render('ClassGroups/Index', [
-            'classGroups' => ClassGroup::with('subject', 'professor')
-                ->withCount('subjectEnrollments')
-                ->latest()
-                ->paginate(10)
-        ]);
+    public function index(
+        Request $request,
+        ClassGroupFilter $filters
+    ) {
+        $classGroups = $filters
+            ->apply(
+
+                ClassGroup::query()
+                    ->with([
+                        'subject',
+                        'professor',
+                        'academicPeriod',
+                    ])
+                    ->withCount([
+                        'subjectEnrollments' => fn($query) => $query->whereHas(
+                            'status',
+                            fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                        ),
+                    ])
+            )
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render(
+            'ClassGroups/Index',
+            [
+
+                'classGroups' => $classGroups,
+
+                'filters' => $request->only([
+                    'search',
+                    'modality',
+                    'shift',
+                    'academic_period',
+                    'sort',
+                    'direction',
+                    'status',
+                ]),
+            ]
+        );
     }
 
     public function create()
@@ -37,35 +69,33 @@ class ClassGroupController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
-        Log::info('Request all data', $request->all());
-
-        $data = $request->validate([
-            'subject_id' => 'required|exists:subjects,id',
-            'professor_id' => 'required|exists:users,id',
-            'capacity' => 'required|integer|min:1',
-            'modality' => 'required|string',
-            'shift' => 'required|string',
-            'academic_period_id' => 'required|exists:academic_periods,id',
-            'schedules' => 'required|array|min:1',
-            'schedules.*.day' => 'required|string',
-            'schedules.*.start_time' => 'required',
-            'schedules.*.end_time' => 'required|after:schedules.*.start_time',
-
-        ]);
-
-        Log::info('Creating ClassGroup with data:', $data);
+    public function store(
+        StoreClassGroupRequest $request
+    ) {
+        $data = $request->validated();
 
         DB::transaction(function () use ($data) {
+
+            $schedules = $data['schedules'];
+
+            unset($data['schedules']);
+
             $group = ClassGroup::create($data);
-            foreach ($data['schedules'] as $sch) {
-                $group->schedules()->create($sch);
+
+            foreach ($schedules as $schedule) {
+
+                $group
+                    ->schedules()
+                    ->create($schedule);
             }
         });
 
-
-        return redirect()->route('class-groups.index')->with('success', 'Class group created');
+        return redirect()
+            ->route('class-groups.index')
+            ->with(
+                'success',
+                'Class group created successfully.'
+            );
     }
 
 
@@ -76,29 +106,52 @@ class ClassGroupController extends Controller
         $editable = auth()->user()->hasRole('admin');
         $group = ClassGroup::with([
             'subject',
-            'professor',                 // cargar al profesor y su user
+            'professor',
+            'academicPeriod',
+            'schedules.classroom',
+            'schedules.createdBy',
+            'schedules.updatedBy',
+            'schedules.cancelledBy',
             'subjectEnrollments.student',
-            'subjectEnrollments.status' // cargar a cada student.user en los enrollments
+            'subjectEnrollments.student.user',
+            'subjectEnrollments.status'
         ])
-            ->withCount('subjectEnrollments')
+            ->withCount([
+                'subjectEnrollments' => fn($query) => $query->whereHas(
+                    'status',
+                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                ),
+            ])
             ->findOrFail($id);
 
+        $activeEnrollments = $group->subjectEnrollments
+            ->filter(fn($enrollment) => in_array(
+                $enrollment->status?->code,
+                config('enrollment.active_status_codes'),
+                true
+            ));
+
         // Lista de IDs de estudiante ya inscritos
-        $enrolledIds = $group->subjectEnrollments
+        $enrolledIds = $activeEnrollments
             ->pluck('student_id')
             ->all();
 
         // Todos los usuarios con rol 'student' (para el dropdown de inscripción)
         $allStudents = User::role('student')
-            ->with('student') // trae su Student
+            ->with('student')
             ->get()
+            ->filter(fn($u) => $u->student)
             ->map(fn($u) => [
                 'id'   => $u->student->id,
                 'document' => $u->student->document,
-                'name' => $u->name,               // $u ya es User
-            ]);
+                'name' => $u->name,
+            ])
+            ->values();
 
         $studentSchedules = [];
+        $canManageSchedules = $group->canManageSchedules()
+            && $group->academicPeriod
+            && ! $group->academicPeriod->isAcademicallyClosed();
 
         if ($editable) {
             $studentSchedules = \App\Models\SubjectEnrollment::with('classGroup.schedules')
@@ -115,8 +168,6 @@ class ClassGroupController extends Controller
                 ->values();
         }
 
-        $period = AcademicPeriod::find($group->academic_period_id);
-
         return Inertia::render('ClassGroups/Show', [
             'classGroup' => [
                 'id'                        => $group->id,
@@ -131,9 +182,11 @@ class ClassGroupController extends Controller
                 ],
                 'modality'                  => $group->modality,
                 'shift'                     => $group->shift,
+                'status'                    => $group->status,
                 'capacity'                  => $group->capacity,
                 'subject_enrollments_count' => $group->subject_enrollments_count,
-                'students'                  => $group->subjectEnrollments->map(fn($e) => [
+                'can_manage_schedules'       => $canManageSchedules,
+                'students'                  => $activeEnrollments->map(fn($e) => [
                     'id'   => $e->student->id,
                     'document' => $e->student->document,
                     'name' => $e->student->user->name,
@@ -144,14 +197,25 @@ class ClassGroupController extends Controller
                     ],
                 ]),
                 'schedules' => $group->schedules->map(fn($s) => [
+                    'id' => $s->id,
+                    'subject' => $group->subject->name,
+                    'professor' => $group->professor?->name,
+                    'classroom' => $s->classroom?->name,
+                    'classroom_id' => $s->classroom_id,
                     'day' => $s->day,
                     'start_time' => $s->start_time,
                     'end_time' => $s->end_time,
+                    'status' => $s->status,
+                    'created_by' => $s->createdBy?->name,
+                    'updated_by' => $s->updatedBy?->name,
+                    'cancelled_by' => $s->cancelledBy?->name,
+                    'cancelled_at' => $s->cancelled_at,
                 ]),
                 'academicPeriod' => [
-                    'id' => $period->id,
-                    'name' => $period->name,
-                    'is_active' => $period->is_active,
+                    'id' => $group->academicPeriod?->id,
+                    'name' => $group->academicPeriod?->name,
+                    'is_active' => $group->academicPeriod?->is_active,
+                    'state' => $group->academicPeriod?->state()?->value,
                 ],
 
             ],
@@ -164,7 +228,7 @@ class ClassGroupController extends Controller
 
     public function edit($id)
     {
-        $classGroup = ClassGroup::findOrFail($id);
+        $classGroup = ClassGroup::with('schedules')->findOrFail($id);
 
 
         return Inertia::render('ClassGroups/Edit', [
@@ -174,42 +238,37 @@ class ClassGroupController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
-    {
+    public function update(
+        UpdateClassGroupRequest $request,
+        $id
+    ) {
         $classGroup = ClassGroup::findOrFail($id);
 
-        $data = $request->validate([
-            'subject_id'         => 'required|exists:subjects,id',
-            'professor_id'       => 'required|exists:users,id',
-            'capacity'           => 'required|integer|min:1',
-            'modality'           => 'required|string',
-            'shift'              => 'required|string',
-        ]);
-
-        DB::transaction(function () use ($classGroup, $data) {
-            // 1) Actualiza datos del grupo
-            $classGroup->update([
-                'subject_id'         => $data['subject_id'],
-                'professor_id'       => $data['professor_id'],
-                'capacity'           => $data['capacity'],
-                'modality'           => $data['modality'],
-                'shift'              => $data['shift'],
-            ]);
-        });
+        $classGroup->update(
+            $request->validated()
+        );
 
         return redirect()
             ->route('class-groups.index')
-            ->with('success', 'Class group updated with schedule');
+            ->with(
+                'success',
+                'Class group updated successfully.'
+            );
     }
 
     public function destroy($id, ClassGroupService $service)
     {
         $classGroup = ClassGroup::findOrFail($id);
 
-        $service->delete($classGroup);
+        $result = $service->delete($classGroup);
 
         return redirect()->route('class-groups.index')
-            ->with('success', 'Class group deleted');
+            ->with(
+                'success',
+                $result === 'cancelled'
+                    ? 'Class group has academic history and was cancelled.'
+                    : 'Class group deleted'
+            );
     }
 
     public function canEnroll(
@@ -221,4 +280,5 @@ class ClassGroupController extends Controller
             $service->canEnroll($student, $classGroup)
         );
     }
+
 }

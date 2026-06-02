@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Services\ClassScheduleService;
+use DomainException;
 
 class ClassScheduleController extends Controller
 {
@@ -20,6 +21,23 @@ class ClassScheduleController extends Controller
         return Inertia::render('ClassSchedules/Index', [
             'classGroup' => $classGroup,
             'schedules'  => $classGroup->schedules,
+        ]);
+    }
+
+    public function create(ClassGroup $classGroup)
+    {
+        return Inertia::render('ClassSchedules/Create', [
+            'classGroup' => $classGroup->load(['subject', 'professor']),
+            'classrooms' => Classroom::with('building')->where('status', 'active')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function edit(ClassGroup $classGroup, ClassSchedule $schedule)
+    {
+        return Inertia::render('ClassSchedules/Edit', [
+            'classGroup' => $classGroup->load(['subject', 'professor']),
+            'schedule' => $schedule->load('classroom'),
+            'classrooms' => Classroom::with('building')->where('status', 'active')->orderBy('name')->get(),
         ]);
     }
 
@@ -51,9 +69,23 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'classroom');
         }
 
-        $service->create($classGroup, $data);
+        if ($conflict = $this->findProfessorConflict($classGroup, $data)) {
+            return $this->conflictResponse($request, $conflict, 'professor');
+        }
 
-        return $this->successResponse($request, 'Schedule created.', 201);
+        try {
+            $service->create($classGroup, $data);
+        } catch (DomainException $exception) {
+            return $this->domainExceptionResponse($exception);
+        }
+
+        if ($this->expectsJsonResponse($request)) {
+            return response()->json(['message' => 'Schedule created.'], 201);
+        }
+
+        return redirect()
+            ->route('class-groups.show', $classGroup)
+            ->with('success', 'Schedule created.');
     }
 
     public function update(
@@ -87,9 +119,23 @@ class ClassScheduleController extends Controller
             return $this->conflictResponse($request, $conflict, 'classroom');
         }
 
-        $service->update($schedule, $data);
+        if ($conflict = $this->findProfessorConflict($classGroup, $data, $schedule->id)) {
+            return $this->conflictResponse($request, $conflict, 'professor');
+        }
 
-        return $this->successResponse($request, 'Schedule updated.');
+        try {
+            $service->update($schedule, $data);
+        } catch (DomainException $exception) {
+            return $this->domainExceptionResponse($exception);
+        }
+
+        if ($this->expectsJsonResponse($request)) {
+            return response()->json(['message' => 'Schedule updated.']);
+        }
+
+        return redirect()
+            ->route('class-groups.show', $classGroup)
+            ->with('success', 'Schedule updated.');
     }
 
     public function destroy(
@@ -97,7 +143,11 @@ class ClassScheduleController extends Controller
         ClassSchedule $schedule,
         ClassScheduleService $service
     ) {
-        $service->delete($schedule);
+        try {
+            $service->delete($schedule);
+        } catch (DomainException $exception) {
+            return $this->domainExceptionResponse($exception);
+        }
 
         return back()->with('success', 'Schedule deleted.');
     }
@@ -148,6 +198,7 @@ class ClassScheduleController extends Controller
             'start_time'   => 'required|date_format:H:i',
             'end_time'     => 'required|date_format:H:i|after:start_time',
             'classroom_id' => 'nullable|exists:classrooms,id',
+            'status'       => 'nullable|in:draft,published,cancelled,closed',
         ]);
     }
 
@@ -160,9 +211,23 @@ class ClassScheduleController extends Controller
         // Use whereTime to avoid format mismatches ('H:i' vs 'H:i:s')
         return $query
             ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->where('status', '!=', 'cancelled')
             ->where('day', $day)
             ->whereTime('start_time', '<', $end)
             ->whereTime('end_time', '>', $start)
+            ->with(['classGroup.subject', 'classroom'])
+            ->first();
+    }
+
+    private function findProfessorConflict(ClassGroup $classGroup, array $data, $ignoreId = null)
+    {
+        return ClassSchedule::query()
+            ->whereHas('classGroup', fn($query) => $query->where('professor_id', $classGroup->professor_id))
+            ->when($ignoreId, fn($query) => $query->where('id', '!=', $ignoreId))
+            ->where('status', '!=', 'cancelled')
+            ->where('day', $data['day'])
+            ->whereTime('start_time', '<', $data['end_time'])
+            ->whereTime('end_time', '>', $data['start_time'])
             ->with(['classGroup.subject', 'classroom'])
             ->first();
     }
@@ -181,8 +246,10 @@ class ClassScheduleController extends Controller
 
         if ($type === 'group') {
             $message = "Conflict: this group already has {$subjectName} from {$startTime} to {$endTime} (room: {$roomName}).";
-        } else {
+        } elseif ($type === 'classroom') {
             $message = "Conflict: room {$roomName} is already occupied by {$subjectName} from {$startTime} to {$endTime}.";
+        } else {
+            $message = "Conflict: this professor already teaches {$subjectName} from {$startTime} to {$endTime}.";
         }
 
         throw ValidationException::withMessages([
@@ -193,11 +260,23 @@ class ClassScheduleController extends Controller
     /**
      * Standard OK response (returns JSON or redirects with flash message)
      */
-    protected function successResponse(Request $request, string $message, int $status = 200)
+    protected function expectsJsonResponse(Request $request): bool
     {
-        if ($request->expectsJson() || $request->wantsJson() || $request->header('X-Inertia')) {
-            return response()->json(['message' => $message], $status);
-        }
-        return back()->with('success', $message);
+        return $request->expectsJson() || $request->wantsJson();
+    }
+
+    protected function domainExceptionResponse(DomainException $exception)
+    {
+        $messages = [
+            'BLOCK_NO_ACADEMIC_PERIOD' => 'This class group has no academic period assigned.',
+            'BLOCK_PERIOD_FROZEN' => 'This academic period is closed and schedules can no longer be changed.',
+            'BLOCK_GROUP_SCHEDULE_LOCKED' => 'This class group status does not allow schedule changes.',
+        ];
+
+        throw ValidationException::withMessages([
+            'schedule' => [
+                $messages[$exception->getMessage()] ?? 'The schedule change is not allowed.',
+            ],
+        ]);
     }
 }

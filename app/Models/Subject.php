@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subject extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -42,7 +44,7 @@ class Subject extends Model
 
     public function programs()
     {
-        return $this->belongsToMany(Program::class)->withPivot('semester')->withTimestamps();
+        return $this->belongsToMany(Program::class)->withTrashed()->withPivot('semester')->withTimestamps();
     }
 
     public function grades()
@@ -100,6 +102,7 @@ class Subject extends Model
             Curriculum::class,
             'curriculum_subjects'
         )
+            ->withTrashed()
             ->withPivot([
                 'semester_recommended',
                 'credits',

@@ -12,10 +12,10 @@ class GradeStatusSeeder extends Seeder
      */
     public function run(): void
     {
-        GradeStatus::insert([
+        GradeStatus::upsert([
             ['code' => 'passed', 'label' => 'Passed all course requirements'],
             ['code' => 'failed', 'label' => 'Did not achieve the minimum grade'],
             ['code' => 'failed_attendance', 'label' => 'Did not meet minimum attendance'],
-        ]);
+        ], ['code'], ['label']);
     }
 }

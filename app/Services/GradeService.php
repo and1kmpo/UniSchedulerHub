@@ -2,53 +2,66 @@
 
 namespace App\Services;
 
-use App\Models\SubjectEnrollment;
+use App\Domain\Academic\AcademicPeriodGuard;
+use App\Domain\Grades\GradeEvaluator;
+use App\Models\ClassGroup;
 use App\Models\Grade;
 use App\Models\GradeStatus;
-use App\Domain\Grades\GradeEvaluator;
-use App\Domain\Academic\AcademicPeriodGuard;
+use App\Models\SubjectEnrollment;
 use DomainException;
-
 
 class GradeService
 {
     public function update(
         SubjectEnrollment $enrollment,
         array $gradeData,
-        int $professorId
+        ?int $professorId
     ): Grade {
-
-        $enrollment->loadMissing(['academicPeriod', 'grade']);
+        $enrollment->loadMissing(['academicPeriod', 'grade', 'classGroup']);
 
         $period = $enrollment->academicPeriod;
 
-        //Bloqueo calificaciones desde el guard
-        // 1️⃣ Freeze check (PRIMERO)
         AcademicPeriodGuard::ensurePeriodNotFrozen($period);
-
-        // 2️⃣ Regla académica
         AcademicPeriodGuard::ensureGradesEditable($period);
 
-        // Evaluación académica
+        if (! $enrollment->canEditGrades()) {
+            throw new DomainException('BLOCK_ENROLLMENT_DOES_NOT_ALLOW_GRADES');
+        }
+
+        if (in_array($enrollment->classGroup?->status, [
+            ClassGroup::STATUS_CANCELLED,
+            ClassGroup::STATUS_CLOSED,
+        ], true)) {
+            throw new DomainException('BLOCK_GROUP_DOES_NOT_ALLOW_GRADES');
+        }
+
         $evaluation = GradeEvaluator::evaluate($gradeData);
 
         $state = $evaluation->statusCode
             ? GradeStatus::where('code', $evaluation->statusCode)->first()
             : null;
 
-        $grade = Grade::updateOrCreate(
-            ['subject_enrollment_id' => $enrollment->id],
-            [
-                'professor_id' => $professorId,
-                'partial_1' => $gradeData['first_exam'] ?? null,
-                'partial_2' => $gradeData['second_exam'] ?? null,
-                'partial_3' => $gradeData['third_exam'] ?? null,
-                'activities' => $gradeData['activities'] ?? null,
-                'attendance' => $gradeData['attendance'] ?? null,
-                'final_grade' => $evaluation->finalGrade,
-                'grade_status_id' => optional($state)->id,
-            ]
-        );
+        $grade = Grade::firstOrNew([
+            'subject_enrollment_id' => $enrollment->id,
+        ]);
+
+        if (! $grade->exists) {
+            $grade->created_by = auth()->id();
+        }
+
+        $grade->fill([
+            'professor_id' => $professorId,
+            'partial_1' => $gradeData['first_exam'] ?? null,
+            'partial_2' => $gradeData['second_exam'] ?? null,
+            'partial_3' => $gradeData['third_exam'] ?? null,
+            'activities' => $gradeData['activities'] ?? null,
+            'attendance' => $gradeData['attendance'] ?? null,
+            'final_grade' => $evaluation->finalGrade,
+            'grade_status_id' => optional($state)->id,
+            'updated_by' => auth()->id(),
+        ]);
+
+        $grade->save();
 
         return $grade->load('state');
     }
@@ -59,10 +72,7 @@ class GradeService
 
         $period = $enrollment->academicPeriod;
 
-        // 1️⃣ Freeze
         AcademicPeriodGuard::ensurePeriodNotFrozen($period);
-
-        // 2️⃣ Regla académica
         AcademicPeriodGuard::ensureGradesEditable($period);
 
         if (! $enrollment->grade) {

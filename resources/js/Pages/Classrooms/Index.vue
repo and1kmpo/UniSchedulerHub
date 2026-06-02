@@ -1,102 +1,245 @@
-<template>
-    <AppLayout>
-        <template #header>
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Classrooms</h1>
-                <Link :href="route('classrooms.create')"
-                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow transition">
-                <i class="fa-solid fa-plus"></i>
-                New Classroom
-                </Link>
-            </div>
-        </template>
-
-        <div class="mt-6 px-4 sm:px-6 lg:px-8">
-            <div v-if="classrooms.data.length === 0"
-                class="rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900 p-6 text-center text-gray-500 dark:text-gray-300">
-                No classrooms have been registered yet.
-            </div>
-            <div v-else
-                class="rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900 overflow-x-auto mb-8">
-                <table class="min-w-full text-sm text-center">
-                    <thead>
-                        <tr
-                            class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider">
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Building</th>
-                            <th class="px-4 py-3">Floor</th>
-                            <th class="px-4 py-3">Capacity</th>
-                            <th class="px-4 py-3">Description</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="classroom in classrooms.data" :key="classroom.id"
-                            class="even:bg-gray-50 dark:even:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">
-                                {{ classroom.name }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ classroom.building?.name || '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ classroom.floor ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ classroom.capacity ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ classroom.description ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-300">
-                                {{ classroom.status ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <EditButton v-if="classroom.status === 'active'" class="mr-2"
-                                    :href="route('classrooms.edit', { classroom: classroom.id })" />
-
-                                <Link :href="route('classrooms.schedule', classroom.id)"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2">
-                                View Schedule
-                                </Link>
-
-                                <DeleteButton :onClick="() => deleteClassroom(classroom.id)" />
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <Pagination :links="classrooms.links" />
-        </div>
-    </AppLayout>
-</template>
-
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue'
-import { Link } from '@inertiajs/vue3'
-import { useAlert } from '@/Components/Composables/useAlert'
-import EditButton from '@/Components/EditButton.vue'
-import DeleteButton from '@/Components/DeleteButton.vue'
-import Pagination from '@/Components/Pagination.vue'
+import { computed, reactive, watch } from "vue";
+import { Link, router } from "@inertiajs/vue3";
+import axios from "axios";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error, confirm } = useAlert();
 
 const props = defineProps({
-    classrooms: Object
-})
+    classrooms: {
+        type: Object,
+        required: true,
+    },
 
-const { toastSuccess, toastError, confirm } = useAlert()
+    buildings: {
+        type: Array,
+        default: () => [],
+    },
 
-const deleteClassroom = async (id) => {
-    const confirmed = await confirm('Are you sure you want to delete this classroom?', 'Confirm Deletion')
-    if (!confirmed) return
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+});
+
+const columns = [
+    { key: "name", label: "Classroom", sortable: true },
+    { key: "building", label: "Building" },
+    { key: "floor", label: "Floor", sortable: true },
+    { key: "capacity", label: "Capacity", sortable: true },
+    { key: "status", label: "Status", sortable: true },
+    { key: "schedules_count", label: "Schedules" },
+];
+
+const filterForm = reactive({
+    search: props.filters.search || "",
+    building: props.filters.building || "",
+    status: props.filters.status || "",
+});
+
+const buildingOptions = computed(() =>
+    props.buildings.map((building) => ({
+        label: `${building.code} - ${building.name}`,
+        value: building.id,
+    }))
+);
+
+const activeCount = computed(() =>
+    props.classrooms.data.filter((classroom) => classroom.status === "active").length
+);
+
+const totalCapacity = computed(() =>
+    props.classrooms.data.reduce((total, classroom) => total + Number(classroom.capacity || 0), 0)
+);
+
+watch(
+    () => ({ ...filterForm }),
+    () => {
+        router.get(
+            route("classrooms.index"),
+            {
+                ...filterForm,
+                sort: props.filters.sort,
+                direction: props.filters.direction,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+    {
+        deep: true,
+    }
+);
+
+const clearFilters = () => {
+    filterForm.search = "";
+    filterForm.building = "";
+    filterForm.status = "";
+};
+
+const destroy = async (classroom) => {
+    const confirmed = await confirm(
+        `Delete "${classroom.name}"?`,
+        "Delete Classroom"
+    );
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
-        await axios.post(route('classrooms.destroy', id), { _method: 'DELETE' })
-        toastSuccess('Classroom deleted successfully')
-        location.reload()
-    } catch (error) {
-        console.error(error)
-        toastError('Could not delete the classroom')
+        await axios.delete(route("classrooms.destroy", classroom.id));
+
+        success("Classroom deleted successfully");
+
+        router.reload();
+    } catch (exception) {
+        error(exception.response?.data?.message || "Could not delete classroom");
     }
-}
+};
 </script>
+
+<template>
+    <CrudPageLayout title="Classrooms" subtitle="Manage rooms, capacity and schedule availability">
+        <template #actions>
+            <Link :href="route('classrooms.create')">
+                <BaseButton variant="primary">
+                    <i class="fa-solid fa-plus mr-2" />
+                    Create Classroom
+                </BaseButton>
+            </Link>
+        </template>
+
+        <CrudContainer>
+            <div class="mb-6 grid gap-4 md:grid-cols-3">
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Total Classrooms
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        {{ classrooms.total }}
+                    </h3>
+                </SectionCard>
+
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Active On Page
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        {{ activeCount }}
+                    </h3>
+                </SectionCard>
+
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Capacity On Page
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                        {{ totalCapacity }}
+                    </h3>
+                </SectionCard>
+            </div>
+
+            <TableToolbar>
+                <template #search>
+                    <div class="w-full lg:max-w-sm">
+                        <TableSearch v-model="filterForm.search" placeholder="Search classrooms..." />
+                    </div>
+                </template>
+
+                <template #filters>
+                    <div class="w-full sm:max-w-xs">
+                        <BaseSelect v-model="filterForm.building" placeholder="Building" :options="buildingOptions" />
+                    </div>
+
+                    <div class="w-full sm:max-w-xs">
+                        <BaseSelect v-model="filterForm.status" placeholder="Status" :options="[
+                            { label: 'Active', value: 'active' },
+                            { label: 'Inactive', value: 'inactive' },
+                        ]" />
+                    </div>
+                </template>
+
+                <template #actions>
+                    <BaseButton variant="secondary" @click="clearFilters">
+                        <i class="fa-solid fa-rotate-left mr-2" />
+                        Reset
+                    </BaseButton>
+                </template>
+            </TableToolbar>
+
+            <DataTable v-if="classrooms.data.length" :columns="columns" :rows="classrooms.data" :filters="filters"
+                sortable>
+                <template #cell-building="{ row }">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">
+                            {{ row.building?.name || "Unassigned" }}
+                        </p>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ row.building?.code || "No code" }}
+                        </p>
+                    </div>
+                </template>
+
+                <template #cell-status="{ row }">
+                    <StatusBadge :label="row.status" :variant="row.status === 'active' ? 'success' : 'gray'" />
+                </template>
+
+                <template #actions="{ row }">
+                    <div class="flex items-center justify-center gap-2">
+                        <Link :href="route('classrooms.show', row.id)">
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+                        </Link>
+
+                        <Link :href="route('classrooms.edit', row.id)">
+                            <TableActionButton icon="fa-solid fa-pen-to-square" color="indigo" />
+                        </Link>
+
+                        <Link :href="route('classrooms.schedule', row.id)">
+                            <TableActionButton icon="fa-solid fa-calendar" color="gray" />
+                        </Link>
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="destroy(row)" />
+                    </div>
+                </template>
+            </DataTable>
+
+            <EmptyState v-else title="No classrooms found" description="Create the first classroom to start scheduling."
+                icon="fa-solid fa-door-open">
+                <Link :href="route('classrooms.create')">
+                    <BaseButton variant="primary">
+                        <i class="fa-solid fa-plus mr-2" />
+                        Create Classroom
+                    </BaseButton>
+                </Link>
+            </EmptyState>
+
+            <TablePagination v-if="classrooms.data.length" :data="classrooms" />
+        </CrudContainer>
+    </CrudPageLayout>
+</template>

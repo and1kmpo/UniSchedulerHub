@@ -2,162 +2,158 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Classroom;
+use App\Filters\ClassroomFilter;
+use App\Http\Requests\ClassroomRequest;
 use App\Models\Building;
-use App\Models\ClassGroup;
+use App\Models\Classroom;
 use App\Services\ClassroomService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ClassroomController extends Controller
 {
-    public function index()
+    public function index(Request $request, ClassroomFilter $filters)
     {
-        $classrooms = Classroom::with('building')
-            ->orderBy('name')
+        $classrooms = $filters
+            ->apply(
+                Classroom::query()
+                    ->with('building')
+                    ->withCount('schedules')
+            )
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Classrooms/Index', [
-            'classrooms' => $classrooms
+            'classrooms' => $classrooms,
+            'buildings' => Building::orderBy('name')->get(['id', 'name', 'code']),
+            'filters' => $request->only([
+                'search',
+                'building',
+                'floor',
+                'status',
+                'sort',
+                'direction',
+            ]),
         ]);
     }
 
     public function create()
     {
-        $buildings = Building::orderBy('name')->get();
-
         return Inertia::render('Classrooms/Create', [
-            'buildings' => $buildings
+            'buildings' => Building::orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 
-    public function store(Request $request, ClassroomService $service)
+    public function store(ClassroomRequest $request, ClassroomService $service)
     {
-        $validated = $request->validate([
-            'building_id' => 'required|exists:buildings,id',
-            'floor'       => 'required|integer|min:0',
-            'capacity'    => 'nullable|integer|min:1',
-            'description' => 'nullable|string',
-        ]);
+        $service->create($request->validated());
 
-        $service->create($validated);
-
-        return redirect()->route('classrooms.index')
+        return redirect()
+            ->route('classrooms.index')
             ->with('success', 'Classroom created successfully.');
     }
 
     public function preview(Request $request)
     {
         $validated = $request->validate([
-            'building_id' => 'required|exists:buildings,id',
-            'floor'       => 'required|integer|min:0',
+            'building_id' => ['required', 'exists:buildings,id'],
+            'floor' => ['required', 'integer', 'min:0'],
         ]);
 
         $building = Building::findOrFail($validated['building_id']);
-        $floor    = $validated['floor'];
+        $floor = $validated['floor'];
 
         $count = Classroom::where('building_id', $building->id)
             ->where('floor', $floor)
+            ->withTrashed()
             ->count() + 1;
 
         $consecutive = str_pad($count, 2, '0', STR_PAD_LEFT);
-        $name = "{$building->code}-F{$floor}-{$consecutive}";
 
         return response()->json([
-            'name'        => $name,
+            'name' => "{$building->code}-F{$floor}-{$consecutive}",
             'consecutive' => $count,
         ]);
     }
+
     public function show(Classroom $classroom)
     {
-        return inertia('Classrooms/Show', [
-            'classroom' => $classroom
+        $classroom->load([
+            'building',
+            'schedules.classGroup.subject',
+            'schedules.classGroup.professor',
+        ])->loadCount('schedules');
+
+        return Inertia::render('Classrooms/Show', [
+            'classroom' => $classroom,
         ]);
     }
-
 
     public function edit(Classroom $classroom)
     {
-
-        if ($classroom->status !== 'active') {
-            return redirect()
-                ->route('classrooms.index')
-                ->with('error', 'This classroom is inactive and cannot be edited.');
-        }
-
-
-        $buildings = Building::orderBy('name')->get();
-
         return Inertia::render('Classrooms/Edit', [
             'classroom' => $classroom,
-            'buildings' => $buildings
+            'buildings' => Building::orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 
-    public function update(Request $request, Classroom $classroom, ClassroomService $service)
+    public function update(ClassroomRequest $request, Classroom $classroom, ClassroomService $service)
     {
-        $validated = $request->validate([
-            'building_id' => 'required|exists:buildings,id',
-            'floor'       => 'required|integer|min:0',
-            'capacity'    => 'nullable|integer|min:1',
-            'description' => 'nullable|string',
-        ]);
+        $service->update($classroom, $request->validated());
 
-        $service->update($classroom, $validated);
-
-        return redirect()->route('classrooms.index')
+        return redirect()
+            ->route('classrooms.index')
             ->with('success', 'Classroom updated successfully.');
     }
-
 
     public function destroy(Classroom $classroom, ClassroomService $service)
     {
         try {
             $service->delete($classroom);
 
-            return redirect()->route('classrooms.index')
-                ->with('success', 'Classroom deleted successfully');
-        } catch (\DomainException $e) {
-
+            return redirect()
+                ->route('classrooms.index')
+                ->with('success', 'Classroom deleted successfully.');
+        } catch (\DomainException) {
             return back()->withErrors([
-                'error' => 'This classroom is currently in use.'
+                'error' => 'This classroom is currently in use.',
             ]);
         }
     }
 
-    public function schedule($id)
+    public function restore(int $id)
     {
-        $classroom = Classroom::with([
+        Classroom::withTrashed()->findOrFail($id)->restore();
+
+        return redirect()
+            ->route('classrooms.index')
+            ->with('success', 'Classroom restored successfully.');
+    }
+
+    public function schedule(Classroom $classroom)
+    {
+        $classroom->load([
             'schedules.classGroup.subject',
             'schedules.classGroup.professor',
-        ])->findOrFail($id);
+        ]);
 
-        // Ordenar los schedules manualmente
-        $sortedSchedules = $classroom->schedules->sort(function ($a, $b) {
-            $days = [
-                'monday' => 1,
-                'tuesday' => 2,
-                'wednesday' => 3,
-                'thursday' => 4,
-                'friday' => 5,
-                'saturday' => 6,
-                'sunday' => 7,
-            ];
+        $days = [
+            'monday' => 1,
+            'tuesday' => 2,
+            'wednesday' => 3,
+            'thursday' => 4,
+            'friday' => 5,
+            'saturday' => 6,
+            'sunday' => 7,
+        ];
 
-            $dayA = $days[strtolower($a->day)] ?? 8;
-            $dayB = $days[strtolower($b->day)] ?? 8;
-
-            if ($dayA === $dayB) {
-                return strcmp($a->start_time, $b->start_time);
-            }
-
-            return $dayA <=> $dayB;
-        });
-
-
-        $classroom->setRelation('schedules', $sortedSchedules->values());
+        $classroom->setRelation(
+            'schedules',
+            $classroom->schedules
+                ->sort(fn($a, $b) => ($days[strtolower($a->day)] ?? 8) <=> ($days[strtolower($b->day)] ?? 8)
+                    ?: strcmp($a->start_time, $b->start_time))
+                ->values()
+        );
 
         return Inertia::render('Classrooms/Schedule', [
             'classroom' => $classroom,

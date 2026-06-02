@@ -42,6 +42,7 @@ class ClassroomService
             $classroom->update([
                 'capacity'    => $data['capacity'],
                 'description' => $data['description'],
+                'status'      => $data['status'] ?? $classroom->status,
             ]);
 
             return $classroom;
@@ -61,6 +62,7 @@ class ClassroomService
     {
         $count = Classroom::where('building_id', $buildingId)
             ->where('floor', $floor)
+            ->withTrashed()
             ->count() + 1;
 
         $consecutive = str_pad($count, 2, '0', STR_PAD_LEFT);

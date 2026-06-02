@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Professor;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ProfessorFactory extends Factory
 {
+    protected $model = Professor::class;
+
     /**
      * Define the model's default state.
      *
@@ -18,6 +21,7 @@ class ProfessorFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory(),
             'document' => $this->faker->unique()->numberBetween(1000000, 9999999),
             'phone' => $this->faker->numberBetween(1000000000, 9999999999),
             'address' => $this->faker->address,

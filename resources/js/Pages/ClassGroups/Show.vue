@@ -1,279 +1,245 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useAlert } from '@/Components/Composables/useAlert'
-import axios from 'axios'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import { computed, ref, watch } from "vue";
+import axios from "axios";
+import { router } from "@inertiajs/vue3";
 
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 
-const { toastSuccess, toastError, confirm } = useAlert()
+import EnrollmentWorkspace from "./Partials/Sections/EnrollmentWorkspace.vue";
+import GroupOverviewSection from "./Partials/Sections/GroupOverviewSection.vue";
+import GroupScheduleSection from "./Partials/Sections/GroupScheduleSection.vue";
+import StudentRosterSection from "./Partials/Sections/StudentRosterSection.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const {
+    success,
+    error,
+    confirm,
+} = useAlert();
+
+/*
+|--------------------------------------------------------------------------
+| PROPS
+|--------------------------------------------------------------------------
+*/
 
 const props = defineProps({
-    classGroup: Object,
-    allStudents: Array,
-    enrolledIds: Array,
-})
+    classGroup: {
+        type: Object,
+        required: true,
+    },
 
-const enrolling = ref(false)
-const selectedStudentId = ref('')
-const canEnrollResult = ref(null)
-const checking = ref(false)
-const academicPeriod = computed(() => props.classGroup.academicPeriod)
+    allStudents: {
+        type: Array,
+        default: () => [],
+    },
 
-const enrollmentClosed = computed(
-    () => !academicPeriod.value?.is_active
-)
+    enrolledIds: {
+        type: Array,
+        default: () => [],
+    },
+});
 
+/*
+|--------------------------------------------------------------------------
+| LIVE ENROLLMENT STATE
+|--------------------------------------------------------------------------
+*/
 
+const selectedStudent = ref(null);
 
-// reactivo de inscritos
-const enrolled = ref([...props.classGroup.students])
-const enrolledIds = ref([...props.enrolledIds])
+const validationLoading = ref(false);
 
-// lista de disponibles = todos menos los ya inscritos
-const available = computed(() =>
-    props.allStudents.filter(s =>
-        !enrolled.value.find(e => e.id === s.id)
-    )
-)
+const validationResult = ref({
+    allowed: true,
+    valid: true,
+    errors: [],
 
-// Inscribir un estudiante
-const enrollStudent = async () => {
-    if (!selectedStudentId.value) return
-    enrolling.value = true
-    try {
-        const { data } = await axios.post(
-            route('class-groups.enroll', props.classGroup.id),
-            { student_id: selectedStudentId.value }
-        )
-        // actualizar lista local
-        const stu = props.allStudents.find(s => s.id === selectedStudentId.value)
-        enrolled.value.push({
-            ...stu,
-            status: {
-                code: 'pre_enrolled',
-                description: 'Pre-enrolled',
-                color: 'yellow',
-            }
-        })
-        enrolledIds.value.push(stu.id)
-        toastSuccess(data.message || 'Student enrolled')
-        selectedStudentId.value = null
-    } catch (e) {
-        toastError(e.response?.data?.message || 'Enrollment failed')
-    } finally {
-        enrolling.value = false
+    conflicts: [],
+
+    warnings: [],
+
+    recommendations: [],
+
+    load: {
+        credits: 0,
+        groups: 0,
+        weekly_hours: 0,
+    },
+
+    waitlist: false,
+
+    available_slots: 0,
+});
+
+/*
+|--------------------------------------------------------------------------
+| VALIDATION ENGINE
+|--------------------------------------------------------------------------
+*/
+
+const validateEnrollment = async () => {
+
+    if (!selectedStudent.value) {
+
+        validationResult.value = {
+            valid: true,
+            allowed: true,
+            errors: [],
+            conflicts: [],
+            warnings: [],
+            recommendations: [],
+            load: {
+                credits: 0,
+                groups: 0,
+                weekly_hours: 0,
+            },
+            waitlist: false,
+            available_slots: 0,
+        };
+
+        return;
     }
-}
 
-// Eliminar inscripción
-const removeEnrollment = async (studentId) => {
-    const ok = await confirm(
-        'Are you sure you want to remove this student?',
-        'Confirm removal'
-    )
-    if (!ok) return
+    validationLoading.value = true;
+
+    try {
+
+        const response = await axios.post(
+            route(
+                "class-groups.validate-enrollment",
+                props.classGroup.id
+            ),
+            {
+                student_id: selectedStudent.value.id,
+            }
+        );
+
+        validationResult.value = response.data;
+
+    } catch (exception) {
+        const message =
+            exception.response?.data?.message ||
+            exception.response?.data?.error ||
+            "Enrollment validation failed. Please review the selected student and group.";
+
+        validationResult.value = {
+            allowed: false,
+            valid: false,
+            errors: [message],
+            conflicts: [],
+            warnings: [],
+            recommendations: [],
+            load: {
+                credits: 0,
+                groups: 0,
+                weekly_hours: 0,
+            },
+            waitlist: false,
+            available_slots: 0,
+        };
+
+        error(message);
+
+    } finally {
+
+        validationLoading.value = false;
+    }
+};
+
+const canConfirmEnrollment = computed(() => {
+    return selectedStudent.value && validationResult.value.allowed && !validationLoading.value;
+});
+
+const enrollStudent = async () => {
+    if (!canConfirmEnrollment.value) {
+        return;
+    }
+
+    try {
+        await axios.post(route("class-groups.enroll", props.classGroup.id), {
+            student_id: selectedStudent.value.id,
+        });
+
+        success("Student enrolled successfully");
+
+        router.reload({
+            preserveScroll: true,
+        });
+    } catch (exception) {
+        error(exception.response?.data?.code || "Could not enroll student");
+    }
+};
+
+const unenrollStudent = async (student) => {
+    const confirmed = await confirm(
+        `Remove ${student.name} from this group?`,
+        "Remove enrollment"
+    );
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
         await axios.delete(
-            route('class-groups.unenroll', [props.classGroup.id, studentId])
-        )
-        enrolled.value = enrolled.value.filter(s => s.id !== studentId)
-        enrolledIds.value = enrolledIds.value.filter(id => id !== studentId)
-        toastSuccess('Student removed')
-    } catch (e) {
-        toastError(e.response?.data?.error || 'Could not remove')
-    }
-}
-
-watch(selectedStudentId, async (studentId) => {
-    canEnrollResult.value = null
-    if (!studentId) return
-    if (!studentId) return
-
-    checking.value = true
-    try {
-        const { data } = await axios.get(
-            route('class-groups.can-enroll', [
+            route("class-groups.unenroll", [
                 props.classGroup.id,
-                studentId
+                student.id,
             ])
-        )
-        canEnrollResult.value = data
-    } catch (e) {
-        toastError('Could not validate enrollment')
-    } finally {
-        checking.value = false
+        );
+
+        success("Enrollment removed successfully");
+
+        router.reload({
+            preserveScroll: true,
+        });
+    } catch (exception) {
+        error(exception.response?.data?.code || "Could not remove enrollment");
     }
-})
+};
 
-watch(enrollmentClosed, (closed) => {
-    if (closed) {
-        selectedStudentId.value = ''
+/*
+|--------------------------------------------------------------------------
+| WATCHERS
+|--------------------------------------------------------------------------
+*/
+
+watch(
+    selectedStudent,
+    () => {
+
+        validateEnrollment();
+
     }
-})
-
-
-const severityConfig = computed(() => {
-    if (!canEnrollResult.value) return null
-
-    switch (canEnrollResult.value.severity) {
-        case 'error':
-            return {
-                icon: 'fa-circle-xmark',
-                classes: 'bg-red-100 text-red-700 border-red-300'
-            }
-        case 'warning':
-            return {
-                icon: 'fa-triangle-exclamation',
-                classes: 'bg-yellow-100 text-yellow-800 border-yellow-300'
-            }
-        case 'info':
-            return {
-                icon: 'fa-circle-info',
-                classes: 'bg-blue-100 text-blue-700 border-blue-300'
-            }
-        case 'success':
-            return {
-                icon: 'fa-circle-check',
-                classes: 'bg-green-100 text-green-700 border-green-300'
-            }
-        default:
-            return null
-    }
-})
-
-
+);
 </script>
 
 <template>
-    <AppLayout :title="`Manage Enrollments — ${classGroup.code}`">
-        <template #header>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-                Manage Enrollments
-            </h1>
-            <div class="flex items-center gap-2 mt-2">
-                <span class="w-3 h-3 rounded-full" :class="academicPeriod.is_active ? 'bg-green-500' : 'bg-red-500'" />
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    {{ academicPeriod.is_active ? 'Enrollment period open' : 'Enrollment period closed' }}
-                </span>
+
+    <CrudPageLayout :title="classGroup.code" :subtitle="classGroup.subject.name">
+
+        <CrudContainer>
+
+            <div class="space-y-8">
+
+                <GroupOverviewSection :class-group="classGroup" />
+
+                <GroupScheduleSection :class-group="classGroup" />
+
+                <EnrollmentWorkspace :class-group="classGroup" :students="allStudents" :enrolled-ids="enrolledIds"
+                    :selected-student="selectedStudent" :validation-result="validationResult"
+                    :validation-loading="validationLoading" @select-student="selectedStudent = $event"
+                    @enroll="enrollStudent" />
+
+                <StudentRosterSection :students="classGroup.students" @unenroll="unenrollStudent" />
+
             </div>
 
-        </template>
+        </CrudContainer>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 m-6">
-            <!-- ─── GROUP INFO ─── -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Group Info</h2>
-                <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                    <p><strong>Code:</strong> {{ classGroup.code }}</p>
-                    <p><strong>Subject:</strong> {{ classGroup.subject.name }}</p>
-                    <p><strong>Professor:</strong> {{ classGroup.professor.name }}</p>
-                    <p><strong>Modality:</strong> {{ classGroup.modality }}</p>
-                    <p><strong>Shift:</strong> {{ classGroup.shift }}</p>
-                    <p><strong>Capacity:</strong> {{ enrolled.length }} / {{ classGroup.capacity }}
-                    </p>
-                </div>
-            </div>
+    </CrudPageLayout>
 
-            <!-- ─── STUDENTS TABLE ─── -->
-            <div
-                class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Enrolled Students</h2>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
-                        Total: {{ enrolled.length }}
-                    </span>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                            <tr>
-                                <th class="px-4 py-2">Name</th>
-                                <th class="px-4 py-2 hidden md:table-cell">Document</th>
-                                <th class="px-4 py-2 text-center">Status</th>
-                                <th class="px-4 py-2 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr v-for="stu in enrolled" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td class="px-4 py-2">{{ stu.name }}</td>
-                                <td class="px-4 py-2 hidden md:table-cell">{{ stu.document }}</td>
-                                <td class="px-4 py-2 text-center">
-                                    <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="{
-                                        'bg-yellow-100 text-yellow-800': stu.status?.code === 'pre_enrolled',
-                                        'bg-green-100 text-green-800': stu.status?.code === 'enrolled'
-                                    }">
-                                        {{ stu.status?.description ?? '—' }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-2 text-center">
-                                    <button @click="removeEnrollment(stu.id)"
-                                        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                                        title="Remove">
-                                        <i class="fa-solid fa-user-minus"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr v-if="enrolled.length === 0">
-                                <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
-                                    No students enrolled yet.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ─── ENROLL FORM ─── -->
-            <div
-                class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Enroll a New Student</h2>
-                <div class="flex flex-col md:flex-row gap-4">
-                    <select v-model="selectedStudentId" class="input" :disabled="enrollmentClosed"
-                        :title="enrollmentClosed ? 'The enrollment period is currently closed' : ''">
-                        <!-- Period closed message -->
-                        <option v-if="enrollmentClosed" disabled value="">
-                            ⚠ Enrollment period is closed
-                        </option>
-
-                        <!-- Normal flow -->
-                        <option v-else disabled value="">
-                            Select a student…
-                        </option>
-
-                        <option v-for="stu in available" :key="stu.id" :value="stu.id" v-if="!enrollmentClosed">
-                            {{ stu.name }} ({{ stu.document }})
-                        </option>
-                    </select>
-
-                    <div v-if="!enrollmentClosed && canEnrollResult && severityConfig"
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm"
-                        :class="severityConfig.classes">
-                        <i class="fa-solid" :class="severityConfig.icon"></i>
-                        <span>{{ canEnrollResult.message }}</span>
-                    </div>
-
-
-                    <button :disabled="enrollmentClosed || enrolling || !canEnrollResult?.allowed"
-                        @click="enrollStudent" class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span v-if="checking">Checking…</span>
-                        <span v-else-if="enrolling">Enrolling…</span>
-                        <span v-else>Enroll</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
 </template>
-
-
-<style scoped>
-.input {
-    @apply w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500;
-}
-
-.btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition;
-}
-</style>

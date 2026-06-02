@@ -12,46 +12,117 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Services\EnrollmentService;
 use App\Services\EnrollmentStatusService;
+use App\Services\Enrollment\EnrollmentValidationService;
 
 class GroupEnrollmentController extends Controller
 {
     public function index()
     {
-        /* return Inertia::render('Admin/GroupEnrollments/Index', [
-            'classGroups' => ClassGroup::with('subject', 'professor')->withCount('subjectEnrollments')->latest()->paginate(15),
-        ]); */
+        $user = auth()->user();
+
+        $groups = ClassGroup::query()
+            ->with(['subject', 'professor', 'academicPeriod'])
+            ->when(
+                $user->hasRole('professor') && ! $user->hasRole('admin'),
+                fn($query) => $query->where('professor_id', $user->id)
+            )
+            ->withCount([
+                'subjectEnrollments' => fn($query) => $query->whereHas(
+                    'status',
+                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                ),
+            ])
+            ->latest()
+            ->get()
+            ->map(fn($group) => [
+                'id' => $group->id,
+                'code' => $group->code,
+                'name' => $group->name,
+                'subject' => $group->subject?->name,
+                'professor' => $group->professor?->name,
+                'period' => $group->academicPeriod?->name,
+                'capacity' => $group->capacity,
+                'status' => $group->status,
+                'enrolled' => $group->subject_enrollments_count,
+            ]);
+
+        return Inertia::render('Admin/GroupEnrollments/Index', [
+            'classGroups' => $groups,
+            'canManageEnrollments' => $user->hasAnyRole(['admin', 'registrar']),
+        ]);
     }
 
     public function show(ClassGroup $classGroup)
     {
-        $group = $classGroup->load(['subject', 'schedules', 'professor'])->loadCount('subjectEnrollments');
+        $user = auth()->user();
+
+        if ($user->hasRole('professor') && ! $user->hasRole('admin') && $classGroup->professor_id !== $user->id) {
+            abort(403);
+        }
+
+        $group = $classGroup
+            ->load(['subject', 'schedules.classroom', 'professor', 'academicPeriod'])
+            ->loadCount([
+                'subjectEnrollments' => fn($query) => $query->whereHas(
+                    'status',
+                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                ),
+            ]);
 
         $enrollments = $classGroup->subjectEnrollments()
-            ->with(['student', 'status'])
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
+            )
+            ->with(['student.user', 'status'])
             ->get()
             ->map(fn($e) => [
                 'id' => $e->id,
-                'student_name' => $e->student->user->name,
-                'code' => $e->student->code,
-                'status' => $e->status->code,
-                'statusColor' => $e->status->color,
+                'student_id' => $e->student_id,
+                'student_name' => $e->student?->user?->name,
+                'document' => $e->student?->document,
+                'email' => $e->student?->user?->email,
+                'status' => $e->status?->code,
+                'statusColor' => $e->status?->color,
             ]);
 
+        $allStudents = collect();
+
+        if ($user->hasAnyRole(['admin', 'registrar'])) {
+            $enrolledIds = $enrollments->pluck('student_id')->all();
+
+            $allStudents = Student::with('user')
+                ->whereNotIn('id', $enrolledIds)
+                ->orderBy('document')
+                ->get()
+                ->map(fn($student) => [
+                    'id' => $student->id,
+                    'name' => $student->user?->name,
+                    'document' => $student->document,
+                ]);
+        }
+
         return Inertia::render('Admin/GroupEnrollments/Show', [
-            'group' => [
+            'classGroup' => [
                 'id' => $group->id,
                 'code' => $group->code,
                 'name' => $group->name,
-                'subject' => $group->subject->name,
-                'professor' => optional($group->professor->user)->name,
+                'subject' => $group->subject?->name,
+                'professor' => $group->professor?->name,
+                'period' => $group->academicPeriod?->name,
+                'capacity' => $group->capacity,
+                'status' => $group->status,
                 'schedules' => $group->schedules->map(fn($s) => [
                     'day' => $s->day,
                     'start_time' => $s->start_time,
                     'end_time' => $s->end_time,
+                    'classroom' => $s->classroom?->name,
                 ]),
                 'subject_enrollments_count' => $group->subject_enrollments_count
             ],
-            'enrollments' => $enrollments
+            'enrollments' => $enrollments,
+            'allStudents' => $allStudents,
+            'canManageEnrollments' => $user->hasAnyRole(['admin', 'registrar']),
         ]);
     }
 
@@ -61,7 +132,7 @@ class GroupEnrollmentController extends Controller
         EnrollmentService $service
     ) {
 
-        $this->authorize('enroll', SubjectEnrollment::class);
+        $this->authorize('enroll', [SubjectEnrollment::class, $classGroup]);
 
         $request->validate([
             'student_id' => ['required', 'exists:students,id']
@@ -97,6 +168,22 @@ class GroupEnrollmentController extends Controller
         }
     }
 
+    public function validateEnrollment(
+        Request $request,
+        ClassGroup $classGroup,
+        EnrollmentValidationService $service
+    ) {
+        $request->validate([
+            'student_id' => ['required', 'exists:students,id'],
+        ]);
+
+        $student = Student::findOrFail($request->student_id);
+
+        $result = $service->validate($student, $classGroup);
+
+        return response()->json($result->toArray());
+    }
+
     /* Remove a student's enrollment from a group  */
     public function destroy(
         $classGroupId,
@@ -105,6 +192,10 @@ class GroupEnrollmentController extends Controller
         try {
             $enrollment = SubjectEnrollment::where('class_group_id', $classGroupId)
                 ->where('student_id', $studentId)
+                ->whereHas(
+                    'status',
+                    fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
+                )
                 ->firstOrFail();
 
             $this->authorize('unenroll', $enrollment);

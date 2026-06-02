@@ -1,45 +1,53 @@
-<template>
-    <AppLayout>
-        <template #header>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">New Classroom</h1>
-        </template>
-
-        <div class="max-w-xl mx-auto mt-6">
-            <div class="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <Form :buildings="buildings" :submitText="'Create'" :submitTextLoading="'Creating...'"
-                    @submit="handleSubmit" @cancel="cancel" />
-            </div>
-        </div>
-    </AppLayout>
-</template>
-
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue'
-import Form from './Form.vue'
-import { useAlert } from '@/Components/Composables/useAlert'
-import { router } from '@inertiajs/vue3'
+import { router, useForm } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
 
-defineProps({ buildings: Array })
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 
-const { toastSuccess } = useAlert()
+import ClassroomForm from "./Form.vue";
 
-function handleSubmit(classroomForm) {
-    if (typeof classroomForm.post !== 'function') {
-        console.error('classroomForm no tiene .post()')
-        console.log(classroomForm)
-        return
-    }
+import { useAlert } from "@/Components/Composables/useAlert";
 
-    classroomForm.post(route('classrooms.store'), {
-        onSuccess: () => {
-            toastSuccess('Classroom created successfully')
-            router.visit(route('classrooms.index'))
-        }
-    })
-}
+const { success, error } = useAlert();
 
+defineProps({
+    buildings: {
+        type: Array,
+        default: () => [],
+    },
+});
 
-function cancel() {
-    router.visit(route('classrooms.index'))
-}
+const form = useForm({
+    building_id: "",
+    floor: "",
+    capacity: "",
+    description: "",
+    status: "active",
+});
+
+const submit = () => {
+    form.post(route("classrooms.store"), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            success(page.props.flash?.success || "Classroom created successfully");
+        },
+        onError: () => {
+            error("Failed to create classroom");
+        },
+    });
+};
+
+const handleCancel = () => {
+    router.visit(route("classrooms.index"));
+};
 </script>
+
+<template>
+    <CrudPageLayout title="Create Classroom" subtitle="Create a room for academic scheduling">
+        <CrudContainer>
+            <ClassroomForm :form="form" :buildings="buildings" :processing="form.processing"
+                :handle-cancel="handleCancel" @submit="submit" />
+        </CrudContainer>
+    </CrudPageLayout>
+</template>

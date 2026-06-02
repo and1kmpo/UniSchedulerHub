@@ -13,7 +13,7 @@ class GradePolicy
             return false;
         }
 
-        $group = $grade->subjectEnrollment?->classGroup;
+        $group = $grade->enrollment?->classGroup;
 
         if (! $group) {
             return false;

@@ -7,7 +7,7 @@ use App\Models\ClassGroup;
 
 class ClassGroupService
 {
-    public function delete(ClassGroup $group): void
+    public function delete(ClassGroup $group): string
     {
         $group->loadMissing('academicPeriod');
 
@@ -15,6 +15,16 @@ class ClassGroupService
 
         AcademicPeriodGuard::ensurePeriodNotFrozen($period);
 
+        if ($group->subjectEnrollments()->exists() || $group->schedules()->exists()) {
+            $group->update([
+                'status' => ClassGroup::STATUS_CANCELLED,
+            ]);
+
+            return 'cancelled';
+        }
+
         $group->delete();
+
+        return 'deleted';
     }
 }

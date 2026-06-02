@@ -1,150 +1,241 @@
-<template>
-    <AppLayout :title="`Manage Enrollments — ${group.code}`">
-        <template #header>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Manage Enrollments
-            </h1>
-        </template>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- ─── INFO DEL GRUPO ─── -->
-            <div class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4">Group Info</h2>
-                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
-                    <li><strong>Code:</strong> {{ group.code }}</li>
-                    <li><strong>Subject:</strong> {{ group.subject }}</li>
-                    <li><strong>Professor:</strong> {{ group.professor }}</li>
-                    <li><strong>Modality:</strong> {{ group.modality }}</li>
-                    <li><strong>Shift:</strong> {{ group.shift }}</li>
-                    <li>
-                        <strong>Capacity:</strong>
-                        {{ group.subject_enrollments_count }} / {{ group.capacity }}
-                    </li>
-                </ul>
-            </div>
-
-            <!-- ─── LISTA DE INSCRIPTOS ─── -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4">Enrolled Students</h2>
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                        <tr>
-                            <th class="px-4 py-2">Name</th>
-                            <th class="px-4 py-2 hidden md:table-cell">Document</th>
-                            <th class="px-4 py-2 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="stu in enrollments" :key="stu.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-4 py-2">{{ stu.student_name }}</td>
-                            <td class="px-4 py-2 hidden md:table-cell">{{ stu.document }}</td>
-                            <td class="px-4 py-2 text-center">
-                                <button @click="removeEnrollment(stu.id)"
-                                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                                    title="Remove">
-                                    <i class="fa-solid fa-user-minus"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr v-if="enrollments.length === 0">
-                            <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
-                                No students enrolled yet.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ─── FORM INSCRIPCIÓN ─── -->
-            <div class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4">Enroll New Student 1</h2>
-                <div class="flex flex-col md:flex-row gap-4">
-                    <select v-model="selectedStudentId" class="input">
-                        <option disabled value="">Select a student…</option>
-                        <option v-for="s in available" :key="s.id" :value="s.id">
-                            {{ s.name }} ({{ s.document }})
-                        </option>
-                    </select>
-                    <button :disabled="!selectedStudentId || enrolling" @click="enrollStudent" class="btn-primary">
-                        <span v-if="!enrolling">Enroll</span>
-                        <span v-else>…</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
-</template>
-
 <script setup>
-import { computed, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
-import axios from 'axios'
-import AppLayout from '@/Layouts/AppLayout.vue'
-import { useAlert } from '@/Components/Composables/useAlert'
+import { computed, ref } from "vue";
+import { router } from "@inertiajs/vue3";
+import axios from "axios";
 
-const { toastSuccess, toastError, confirm } = useAlert()
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 
-// Props enviado por el servidor en show()
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { toastSuccess, toastError, confirm } = useAlert();
+
 const props = defineProps({
-    classGroup: Object,
-    allStudents: Array,
-    enrollments: Array,
-})
+    classGroup: {
+        type: Object,
+        required: true,
+    },
 
-// Refs locales
-const group = ref({ ...props.classGroup })
-const enrollments = ref([...props.enrollments])
-const selectedStudentId = ref(null)
-const enrolling = ref(false)
+    allStudents: {
+        type: Array,
+        default: () => [],
+    },
 
-console.log('🚀 initial enrollments prop:', props.enrollments)
+    enrollments: {
+        type: Array,
+        default: () => [],
+    },
 
-// Lista de estudiantes disponibles (no inscritos aún)
-const available = computed(() =>
-    props.allStudents.filter(s =>
-        !enrollments.value.some(e => e.id === s.id)
-    )
-)
+    canManageEnrollments: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const selectedStudentId = ref("");
+const processing = ref(false);
+
+const columns = [
+    { key: "student_name", label: "Student" },
+    { key: "document", label: "Document" },
+    { key: "email", label: "Email" },
+    { key: "status", label: "Status" },
+];
+
+const rows = computed(() => props.enrollments);
+
+const studentOptions = computed(() =>
+    props.allStudents.map((student) => ({
+        label: `${student.name} (${student.document})`,
+        value: student.id,
+    }))
+);
+
+const scheduleSummary = computed(() => {
+    if (!props.classGroup.schedules?.length) {
+        return "Pending";
+    }
+
+    return props.classGroup.schedules
+        .map((schedule) => {
+            const day = schedule.day.charAt(0).toUpperCase() + schedule.day.slice(1);
+            const room = schedule.classroom ? ` - ${schedule.classroom}` : "";
+
+            return `${day} ${schedule.start_time}-${schedule.end_time}${room}`;
+        })
+        .join("; ");
+});
+
+const enrollmentStatusVariant = (status) => ({
+    pre_enrolled: "warning",
+    enrolled: "success",
+    withdrawn: "gray",
+    cancelled: "gray",
+}[status] || "gray");
+
+function formatStatus(status) {
+    return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
+}
 
 async function enrollStudent() {
-    if (!selectedStudentId.value) return
-    enrolling.value = true
+    if (!selectedStudentId.value) {
+        return;
+    }
+
+    processing.value = true;
 
     try {
-        await axios.post(route('class-groups.enroll', group.value.id), {
-            student_id: selectedStudentId.value
-        })
-        toastSuccess('Student enrolled successfully')
-        // Recargar la página Inertia para obtener nuevas props
-        Inertia.reload({ preserveState: true, preserveScroll: true })
-    } catch (e) {
-        toastError(e.response?.data?.message || 'Enrollment failed')
+        await axios.post(route("class-groups.enroll", props.classGroup.id), {
+            student_id: selectedStudentId.value,
+        });
+
+        toastSuccess("Student enrolled successfully");
+        router.reload({ preserveScroll: true });
+    } catch (exception) {
+        toastError(exception.response?.data?.code || exception.response?.data?.message || "Enrollment failed");
     } finally {
-        enrolling.value = false
-        selectedStudentId.value = null
+        processing.value = false;
+        selectedStudentId.value = "";
     }
 }
 
-async function removeEnrollment(studentId) {
-    const ok = await confirm('Are you sure you want to remove this student?', 'Confirm removal')
-    if (!ok) return
+async function removeEnrollment(row) {
+    const ok = await confirm("Are you sure you want to remove this student?", "Confirm removal");
+
+    if (!ok) {
+        return;
+    }
+
+    processing.value = true;
 
     try {
-        await axios.delete(route('class-groups.unenroll', [group.value.id, studentId]))
-        toastSuccess('Student removed successfully')
-        Inertia.reload({ preserveState: true, preserveScroll: true })
-    } catch (e) {
-        toastError(e.response?.data?.error || 'Could not remove enrollment')
+        await axios.delete(route("class-groups.unenroll", [
+            props.classGroup.id,
+            row.student_id,
+        ]));
+
+        toastSuccess("Enrollment removed successfully");
+        router.reload({ preserveScroll: true });
+    } catch (exception) {
+        toastError(exception.response?.data?.code || exception.response?.data?.message || "Could not remove enrollment");
+    } finally {
+        processing.value = false;
     }
 }
 </script>
 
-<style scoped>
-.input {
-    @apply w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white;
-}
+<template>
+    <CrudPageLayout :title="`Enrollments - ${classGroup.code}`"
+        subtitle="Review and manage active enrollments for this group">
+        <CrudContainer>
+            <div class="space-y-6">
+                <SectionCard>
+                    <div class="grid gap-4 p-6 md:grid-cols-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Subject
+                            </p>
 
-.btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded;
-}
-</style>
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                                {{ classGroup.subject }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Professor
+                            </p>
+
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                                {{ classGroup.professor ?? "Unassigned" }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Capacity
+                            </p>
+
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                                {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity }}
+                            </p>
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Schedule
+                            </p>
+
+                            <p class="mt-1 text-gray-900 dark:text-white">
+                                {{ scheduleSummary }}
+                            </p>
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Enrolled Students
+                        </h2>
+
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Active enrollment records for this class group.
+                        </p>
+                    </div>
+
+                    <div class="p-6">
+                        <DataTable v-if="rows.length" :columns="columns" :rows="rows">
+                            <template #cell-status="{ value }">
+                                <StatusBadge :label="formatStatus(value)" :variant="enrollmentStatusVariant(value)" />
+                            </template>
+
+                            <template v-if="canManageEnrollments" #actions="{ row }">
+                                <BaseButton size="sm" variant="danger" :disabled="processing"
+                                    @click="removeEnrollment(row)">
+                                    <i class="fa-solid fa-user-minus mr-2" />
+                                    Remove
+                                </BaseButton>
+                            </template>
+                        </DataTable>
+
+                        <EmptyState v-else title="No active enrollments"
+                            description="This class group does not have active enrolled students yet."
+                            icon="fa-solid fa-user-graduate" />
+                    </div>
+                </SectionCard>
+
+                <SectionCard v-if="canManageEnrollments">
+                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Enroll Student
+                        </h2>
+
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Administrative enrollment for exceptional or assisted cases.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-4 p-6 md:grid-cols-[1fr_auto] md:items-end">
+                        <BaseSelect v-model="selectedStudentId" label="Student" placeholder="Select a student"
+                            :options="studentOptions" />
+
+                        <BaseButton type="button" variant="primary" :disabled="!selectedStudentId || processing"
+                            @click="enrollStudent">
+                            <i v-if="processing" class="fa-solid fa-spinner fa-spin mr-2" />
+                            <i v-else class="fa-solid fa-user-plus mr-2" />
+                            Enroll
+                        </BaseButton>
+                    </div>
+                </SectionCard>
+            </div>
+        </CrudContainer>
+    </CrudPageLayout>
+</template>

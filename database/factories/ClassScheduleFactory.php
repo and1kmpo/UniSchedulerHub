@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\ClassSchedule;
 use App\Models\ClassGroup;
+use App\Models\Classroom;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ClassScheduleFactory extends Factory
@@ -20,7 +21,8 @@ class ClassScheduleFactory extends Factory
             'day' => $this->faker->randomElement(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']),
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
-            'classroom' => $this->faker->bothify('Aula-###'),
+            'classroom_id' => Classroom::inRandomOrder()->first()?->id,
+            'status' => ClassSchedule::STATUS_PUBLISHED,
         ];
     }
 }

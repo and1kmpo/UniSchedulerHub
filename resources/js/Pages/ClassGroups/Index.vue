@@ -1,171 +1,561 @@
-<template>
-    <AppLayout title="Class Groups">
-        <template #header>
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Class Groups</h1>
-                <Link :href="route('class-groups.create')"
-                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                New Group
-                </Link>
-            </div>
-        </template>
-
-
-        <!-- Table -->
-        <div class="overflow-x-auto">
-            <!-- Table -->
-            <div class="mt-6 px-4 sm:px-6 lg:px-8">
-                <div
-                    class="rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900 overflow-x-auto mb-8">
-                    <table class="min-w-full text-sm text-left">
-                        <thead>
-                            <tr
-                                class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider text-center">
-                                <th class="px-4 py-3">Code</th>
-                                <th class="px-4 py-3">Subject</th>
-                                <th class="px-4 py-3">Professor</th>
-                                <th class="px-4 py-3 hidden md:table-cell">Shift</th>
-                                <th class="px-4 py-3 hidden md:table-cell">Modality</th>
-                                <th class="px-4 py-3">Capacity</th>
-                                <th class="px-4 py-3">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr v-for="group in classGroups.data" :key="group.id"
-                                class="even:bg-gray-50 dark:even:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                <td class="px-4 py-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                                    {{ group.code }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ group.subject.name }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ group.name }}
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
-                                    {{ group.professor?.name ?? 'Not assigned' }}
-                                </td>
-
-                                <td class="px-4 py-3 hidden md:table-cell">
-                                    <span class="badge" :class="shiftClass(group.shift)">
-                                        {{ group.shift }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 hidden md:table-cell">
-                                    <span
-                                        class="badge bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-white">
-                                        {{ group.modality }}
-                                    </span>
-
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        {{ group.subject_enrollments_count }} / {{ group.capacity }} students
-                                    </span>
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <div class="flex gap-2 justify-center">
-                                        <!-- Edit -->
-                                        <Link :href="route('class-groups.edit', group.id)"
-                                            class="action-icon text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
-                                            title="Edit">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                        <span class="sr-only">Edit</span>
-                                        </Link>
-
-                                        <!-- Manage Enrollments -->
-                                        <Link :href="route('class-groups.show', group.id)"
-                                            class="action-icon text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
-                                            title="Manage Enrollments">
-                                        <i class="fa-solid fa-users"></i>
-                                        <span class="sr-only">Manage Enrollments</span>
-                                        </Link>
-
-                                        <!-- View Calendar -->
-                                        <Link :href="route('class-schedules.calendar', group.id)"
-                                            class="action-icon text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
-                                            title="View Calendar">
-                                        <i class="fa-solid fa-calendar"></i>
-                                        <span class="sr-only">View Calendar</span>
-                                        </Link>
-
-                                        <!-- Delete -->
-                                        <button @click="destroy(group.id)"
-                                            class="action-icon text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                                            title="Delete">
-                                            <i class="fa-solid fa-trash"></i>
-                                            <span class="sr-only">Delete</span>
-                                        </button>
-                                    </div>
-                                </td>
-
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Pagination -->
-                <div class="m-4">
-                    <Pagination :links="classGroups.links" />
-                </div>
-            </div>
-        </div>
-
-    </AppLayout>
-</template>
-
 <script setup>
-import { Link, router } from "@inertiajs/vue3";
-import AppLayout from "@/Layouts/AppLayout.vue";
-import Pagination from "@/Components/Pagination.vue";
+import { computed, reactive, watch } from "vue";
+
+import {
+    Link,
+    router,
+} from "@inertiajs/vue3";
+
+import { route } from "ziggy-js";
+
+import axios from "axios";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
+
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+
 import { useAlert } from "@/Components/Composables/useAlert";
 
-const { toastSuccess, toastError, confirm } = useAlert();
+const {
+    success,
+    error,
+    confirm,
+} = useAlert();
 
-defineProps({
-    classGroups: Object,
+const props = defineProps({
+    classGroups: {
+        type: Object,
+        required: true,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
-const destroy = async (id) => {
-    const confirmed = await confirm('Are you sure you want to delete this group?', 'Confirm Deletion');
+const columns = [
+
+    {
+        key: "code",
+        label: "Code",
+        sortable: true,
+    },
+
+    {
+        key: "subject",
+        label: "Subject",
+    },
+
+    {
+        key: "professor",
+        label: "Professor",
+    },
+
+    {
+        key: "shift",
+        label: "Shift",
+        sortable: true,
+    },
+
+    {
+        key: "modality",
+        label: "Modality",
+        sortable: true,
+    },
+
+    {
+        key: "status",
+        label: "Status",
+        sortable: true,
+    },
+
+    {
+        key: "occupancy",
+        label: "Occupancy",
+    },
+];
+
+const filterForm = reactive({
+
+    search:
+        props.filters.search || "",
+
+    modality:
+        props.filters.modality || "",
+
+    shift:
+        props.filters.shift || "",
+
+    status:
+        props.filters.status || "",
+});
+
+watch(
+    () => ({
+        ...filterForm,
+    }),
+
+    () => {
+
+        router.get(
+            route("class-groups.index"),
+
+            {
+                ...filterForm,
+
+                sort:
+                    props.filters?.sort,
+
+                direction:
+                    props.filters?.direction,
+
+                page: 1,
+            },
+
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    },
+
+    {
+        deep: true,
+    }
+);
+
+const clearFilters = () => {
+
+    filterForm.search = "";
+
+    filterForm.modality = "";
+
+    filterForm.shift = "";
+
+    filterForm.status = "";
+};
+
+const destroy = async (group) => {
+
+    const confirmed = await confirm(
+        `Delete "${group.code}"?`,
+        "Delete Class Group"
+    );
 
     if (!confirmed) return;
 
     try {
-        await axios.post(route('class-groups.destroy', id), {
-            _method: 'DELETE'
-        });
-        toastSuccess('Group deleted successfully');
+
+        await axios.delete(
+            route(
+                "class-groups.destroy",
+                group.id
+            )
+        );
+
+        success(
+            "Class group deleted successfully"
+        );
+
         router.reload();
-    } catch (error) {
-        console.error(error);
-        toastError('Could not delete the group');
+
+    } catch (e) {
+
+        error(
+            "Could not delete class group"
+        );
     }
 };
 
+const occupancyPercentage = (group) => {
 
-function shiftClass(shift) {
-    const map = {
-        Day: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-white",
-        Night: "bg-purple-100 text-purple-800 dark:bg-purple-700 dark:text-white",
-        Intensive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-white",
-    };
-    return `badge ${map[shift] || "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"}`;
-}
+    return Math.round(
+        (
+            group.subject_enrollments_count /
+            group.capacity
+        ) * 100
+    );
+};
+
+const totalStudents = computed(() => {
+
+    return props.classGroups.data.reduce(
+        (total, group) =>
+            total +
+            group.subject_enrollments_count,
+        0
+    );
+});
 </script>
 
-<style scoped>
-.badge {
-    @apply inline-block px-2 py-1 rounded-full text-xs font-medium;
-}
+<template>
 
-.action-icon {
-    @apply p-2 rounded transition hover:bg-gray-100 dark:hover:bg-gray-800;
-}
-</style>
+    <CrudPageLayout title="Class Groups" subtitle="Manage academic groups, schedules and enrollments">
+
+        <template #actions>
+
+            <Link :href="route('class-groups.create')">
+
+                <BaseButton variant="primary">
+
+                    <i class="fa-solid fa-plus mr-2"></i>
+
+                    Create Group
+
+                </BaseButton>
+
+            </Link>
+
+        </template>
+
+        <CrudContainer>
+
+            <!-- ANALYTICS -->
+
+            <div class="mb-6 grid gap-4 md:grid-cols-3">
+
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500">
+                        Total Groups
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold">
+                        {{ classGroups.total }}
+                    </h3>
+                </SectionCard>
+
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500">
+                        Total Students
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold">
+                        {{ totalStudents }}
+                    </h3>
+                </SectionCard>
+
+                <SectionCard class="p-6">
+                    <p class="text-sm text-gray-500">
+                        Average Occupancy
+                    </p>
+
+                    <h3 class="mt-2 text-3xl font-bold">
+                        {{
+                            Math.round(
+                                totalStudents /
+                                classGroups.data.reduce(
+                                    (sum, g) =>
+                                        sum + g.capacity,
+                                    0
+                                ) * 100
+                            ) || 0
+                        }}%
+                    </h3>
+                </SectionCard>
+
+            </div>
+
+            <!-- TOOLBAR -->
+
+            <TableToolbar>
+
+                <template #search>
+
+                    <div class="w-full lg:max-w-sm">
+
+                        <TableSearch v-model="filterForm.search" placeholder="Search groups..." />
+
+                    </div>
+
+                </template>
+
+                <template #filters>
+
+                    <div class="w-full sm:max-w-xs">
+
+                        <BaseSelect v-model="filterForm.shift" placeholder="Shift" :options="[
+                            {
+                                label: 'Day',
+                                value: 'Day',
+                            },
+                            {
+                                label: 'Night',
+                                value: 'Night',
+                            },
+                            {
+                                label: 'Intensive',
+                                value: 'Intensive',
+                            },
+                        ]" />
+
+                    </div>
+
+                    <div class="w-full sm:max-w-xs">
+
+                        <BaseSelect v-model="filterForm.modality" placeholder="Modality" :options="[
+                            {
+                                label: 'Virtual',
+                                value: 'Virtual',
+                            },
+                            {
+                                label: 'In-person',
+                                value: 'In-person',
+                            },
+                            {
+                                label: 'Hybrid',
+                                value: 'Hybrid',
+                            },
+                        ]" />
+
+                    </div>
+
+                    <div class="w-full sm:max-w-xs">
+
+                        <BaseSelect v-model="filterForm.status" placeholder="Status" :options="[
+                            {
+                                label: 'Draft',
+                                value: 'draft',
+                            },
+                            {
+                                label: 'Published',
+                                value: 'published',
+                            },
+                            {
+                                label: 'Cancelled',
+                                value: 'cancelled',
+                            },
+                            {
+                                label: 'Closed',
+                                value: 'closed',
+                            },
+                        ]" />
+
+                    </div>
+
+                </template>
+
+                <template #actions>
+
+                    <BaseButton variant="secondary" @click="clearFilters">
+
+                        <i class="fa-solid fa-rotate-left mr-2" />
+
+                        Reset
+
+                    </BaseButton>
+
+                </template>
+
+            </TableToolbar>
+
+            <!-- TABLE -->
+
+            <DataTable v-if="classGroups.data.length" :columns="columns" :rows="classGroups.data" :filters="filters"
+                sortable>
+
+                <!-- SUBJECT -->
+
+                <template #cell-subject="{ row }">
+
+                    <div>
+
+                        <p class="font-medium">
+                            {{
+                                row.subject.name
+                            }}
+                        </p>
+
+                        <p class="text-xs text-gray-500">
+                            {{
+                                row.subject.code
+                            }}
+                        </p>
+
+                    </div>
+
+                </template>
+
+                <!-- PROFESSOR -->
+
+                <template #cell-professor="{ row }">
+
+                    <span>
+
+                        {{
+                            row.professor?.name ||
+                            "Not assigned"
+                        }}
+
+                    </span>
+
+                </template>
+
+                <!-- SHIFT -->
+
+                <template #cell-shift="{ row }">
+
+                    <StatusBadge :label="row.shift" :variant="row.shift === 'Day'
+                            ? 'success'
+                            : row.shift === 'Night'
+                                ? 'warning'
+                                : 'gray'
+                        " />
+
+                </template>
+
+                <!-- MODALITY -->
+
+                <template #cell-modality="{ row }">
+
+                    <StatusBadge :label="row.modality" variant="gray" />
+
+                </template>
+
+                <template #cell-status="{ row }">
+
+                    <StatusBadge :label="row.status" :variant="row.status === 'published'
+                            ? 'success'
+                            : row.status === 'draft'
+                                ? 'warning'
+                                : 'gray'
+                        " />
+
+                </template>
+
+                <!-- OCCUPANCY -->
+
+                <template #cell-occupancy="{ row }">
+
+                    <div class="w-44">
+
+                        <div class="mb-1 flex items-center justify-between text-xs">
+
+                            <span>
+                                {{
+                                    row.subject_enrollments_count
+                                }}
+                                /
+                                {{
+                                    row.capacity
+                                }}
+                            </span>
+
+                            <span>
+                                {{
+                                    occupancyPercentage(row)
+                                }}%
+                            </span>
+
+                        </div>
+
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+
+                            <div class="h-full rounded-full bg-indigo-600" :style="{
+                                width:
+                                    occupancyPercentage(row) + '%'
+                            }" />
+
+                        </div>
+
+                    </div>
+
+                </template>
+
+                <!-- ACTIONS -->
+
+                <template #actions="{ row }">
+
+                    <div class="flex items-center justify-center gap-2">
+
+                        <!-- SHOW -->
+
+                        <Link :href="route(
+                            'class-groups.show',
+                            row.id
+                        )
+                            ">
+
+                            <TableActionButton icon="fa-solid fa-eye" color="sky" />
+
+                        </Link>
+
+                        <!-- EDIT -->
+
+                        <Link :href="route(
+                            'class-groups.edit',
+                            row.id
+                        )
+                            ">
+
+                            <TableActionButton icon="fa-solid fa-pen-to-square" color="indigo" />
+
+                        </Link>
+
+                        <!-- CALENDAR -->
+
+                        <Link :href="route(
+                            'class-schedules.calendar',
+                            row.id
+                        )
+                            ">
+
+                            <TableActionButton icon="fa-solid fa-calendar" color="gray" />
+
+                        </Link>
+
+                        <!-- DELETE -->
+
+                        <TableActionButton icon="fa-solid fa-trash" color="red" @click="destroy(row)" />
+
+                    </div>
+
+                </template>
+
+            </DataTable>
+
+            <!-- EMPTY STATE -->
+
+            <EmptyState v-else title="No class groups found" description="Create your first academic group to begin."
+                icon="fa-solid fa-users">
+
+                <Link :href="route(
+                    'class-groups.create'
+                )
+                    ">
+
+                    <BaseButton variant="primary">
+
+                        <i class="fa-solid fa-plus mr-2" />
+
+                        Create Group
+
+                    </BaseButton>
+
+                </Link>
+
+            </EmptyState>
+
+            <!-- PAGINATION -->
+
+            <TablePagination v-if="classGroups.data.length" :data="classGroups" />
+
+        </CrudContainer>
+
+    </CrudPageLayout>
+
+</template>

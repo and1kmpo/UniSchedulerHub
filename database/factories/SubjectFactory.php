@@ -3,10 +3,12 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\Program;
+use App\Models\Subject;
 
 class SubjectFactory extends Factory
 {
+    protected $model = Subject::class;
+
     public function definition(): array
     {
         $knowledgeAreas = [
@@ -19,6 +21,7 @@ class SubjectFactory extends Factory
         ];
 
         return [
+            'code' => $this->faker->unique()->bothify('SUB###'),
             'name' => $this->faker->sentence(3, true),
             'description' => $this->faker->sentence(10),
             'credits' => $this->faker->numberBetween(2, 6),

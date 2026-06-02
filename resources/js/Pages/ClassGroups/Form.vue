@@ -1,166 +1,223 @@
 <script setup>
-import { ref, computed } from "vue";
-import axios from "axios";
-import { route } from "ziggy-js";
-import { useAlert } from "@/Components/Composables/useAlert";
+import { computed } from "vue";
 
-const { toastSuccess, toastError } = useAlert();
+import FormSection from "@/Components/UI/Forms/FormSection.vue";
+import FormGrid from "@/Components/UI/Forms/FormGrid.vue";
+import FormActions from "@/Components/UI/Forms/FormActions.vue";
+
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 
 const props = defineProps({
-    classGroup: Object,
-    subjects: Array,
-    professors: Array,
-    currentPeriodId: Number
+    form: {
+        type: Object,
+        required: true,
+    },
+
+    subjects: {
+        type: Array,
+        default: () => [],
+    },
+
+    professors: {
+        type: Array,
+        default: () => [],
+    },
+
+    updating: {
+        type: Boolean,
+        default: false,
+    },
+
+    processing: {
+        type: Boolean,
+        default: false,
+    },
+
+    handleCancel: {
+        type: Function,
+        required: true,
+    },
 });
 
-const form = ref({
-    subject_id: props.classGroup?.subject_id || "",
-    professor_id: props.classGroup?.professor_id || "",
-    capacity: props.classGroup?.capacity || 30,
-    modality: props.classGroup?.modality || "Presential",
-    shift: props.classGroup?.shift || "Day",
-    academic_period_id: props.currentPeriodId,
-});
+defineEmits(["submit"]);
 
-const errors = ref({});
+const subjectOptions = computed(() =>
+    props.subjects.map((subject) => ({
+        label: `${subject.code} - ${subject.name}`,
+        value: subject.id,
+    }))
+);
 
-const submit = async () => {
-    try {
-        errors.value = {};
+const professorOptions = computed(() =>
+    props.professors.map((professor) => ({
+        label: professor.name,
+        value: professor.id,
+    }))
+);
 
-        if (props.classGroup) {
-            await axios.post(route('class-groups.update', props.classGroup.id), {
-                ...form.value,
-                _method: 'PUT'
-            });
-            toastSuccess("Group updated successfully");
-        } else {
-            await axios.post(route('class-groups.store'), form.value);
-            toastSuccess("Group created successfully");
-        }
+const modalityOptions = [
+    { label: "In-person", value: "In-person" },
+    { label: "Virtual", value: "Virtual" },
+    { label: "Hybrid", value: "Hybrid" },
+];
 
-        window.location.href = route('class-groups.index');
-    } catch (err) {
-        if (err.response?.status === 422) {
-            errors.value = err.response.data.errors;
-        } else {
-            toastError("Something went wrong. Please try again.");
-            console.error("Error submitting form:", err);
-        }
-    }
-};
+const shiftOptions = [
+    { label: "Day", value: "Day" },
+    { label: "Night", value: "Night" },
+    { label: "Intensive", value: "Intensive" },
+];
 
-const cancel = () => {
-    window.location.href = route('class-groups.index');
-};
+const statusOptions = [
+    { label: "Draft", value: "draft" },
+    { label: "Published", value: "published" },
+    { label: "Cancelled", value: "cancelled" },
+    { label: "Closed", value: "closed" },
+];
 
-const selectedSubject = computed(() => props.subjects.find(s => s.id === form.value.subject_id));
-const subjectCode = computed(() => selectedSubject.value?.code || "SUBJ");
-const subjectName = computed(() => selectedSubject.value?.name || "Subject");
+const dayOptions = [
+    { label: "Monday", value: "monday" },
+    { label: "Tuesday", value: "tuesday" },
+    { label: "Wednesday", value: "wednesday" },
+    { label: "Thursday", value: "thursday" },
+    { label: "Friday", value: "friday" },
+    { label: "Saturday", value: "saturday" },
+];
+
+const selectedSubject = computed(() =>
+    props.subjects.find((subject) => Number(subject.id) === Number(props.form.subject_id))
+);
+
 const generatedSemester = computed(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${now.getMonth() < 6 ? 'I' : 'II'}`;
+
+    return `${now.getFullYear()}-${now.getMonth() < 6 ? "I" : "II"}`;
 });
-const generatedName = computed(() =>
-    `${subjectName.value} - ${form.value.modality} - ${form.value.shift}`
-);
-const generatedCodePreview = computed(() =>
-    `${subjectCode.value}-${generatedSemester.value}-G?`
-);
+
+const generatedCodePreview = computed(() => {
+    const subjectCode = selectedSubject.value?.code || "SUBJ";
+
+    return `${subjectCode}-${generatedSemester.value}-G?`;
+});
+
+const addSchedule = () => {
+    props.form.schedules.push({
+        day: "monday",
+        start_time: "08:00",
+        end_time: "10:00",
+    });
+};
+
+const removeSchedule = (index) => {
+    props.form.schedules.splice(index, 1);
+};
 </script>
 
 <template>
-    <form @submit.prevent="submit" class="space-y-6 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+        <FormSection :title="updating ? 'Update Class Group' : 'Create Class Group'" :description="updating
+            ? 'Update academic group information.'
+            : 'Create a group with its initial schedule block.'
+            ">
+            <FormGrid :cols="2">
+                <BaseSelect v-model="form.subject_id" label="Subject" placeholder="Select subject"
+                    :options="subjectOptions" :error="form.errors.subject_id" required />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <BaseSelect v-model="form.professor_id" label="Professor" placeholder="Select professor"
+                    :options="professorOptions" :error="form.errors.professor_id" required />
 
-            <!-- Subject -->
-            <div>
-                <label class="label">Subject</label>
-                <select v-model="form.subject_id" class="input">
-                    <option value="">Select subject</option>
-                    <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-                </select>
-                <p v-if="errors.subject_id" class="error">{{ errors.subject_id[0] }}</p>
+                <BaseSelect v-model="form.modality" label="Modality" :options="modalityOptions"
+                    :error="form.errors.modality" required />
+
+                <BaseSelect v-model="form.shift" label="Shift" :options="shiftOptions" :error="form.errors.shift"
+                    required />
+
+                <BaseInput v-model="form.capacity" type="number" label="Capacity" placeholder="30"
+                    :error="form.errors.capacity" required />
+
+                <BaseSelect v-model="form.status" label="Status" :options="statusOptions" :error="form.errors.status"
+                    required />
+            </FormGrid>
+
+            <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <div>
+                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                            Code preview
+                        </p>
+
+                        <p class="mt-1 font-mono font-semibold text-indigo-700 dark:text-indigo-300">
+                            {{ generatedCodePreview }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                            Semester
+                        </p>
+
+                        <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            {{ generatedSemester }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                            Group code
+                        </p>
+
+                        <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            Assigned automatically
+                        </p>
+                    </div>
+                </div>
             </div>
+        </FormSection>
 
-            <!-- Professor -->
-            <div>
-                <label class="label">Professor</label>
-                <select v-model="form.professor_id" class="input">
-                    <option value="">Select professor</option>
-                    <option v-for="p in professors" :key="p.id" :value="p.id">{{ p.name }}</option>
-                </select>
-                <p v-if="errors.professor_id" class="error">{{ errors.professor_id[0] }}</p>
+        <FormSection v-if="!updating" title="Initial Schedule"
+            description="Add the first schedule blocks for this group. More detailed scheduling can be handled later from the scheduler.">
+            <div class="space-y-4">
+                <div v-for="(schedule, index) in form.schedules" :key="index"
+                    class="grid gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700 md:grid-cols-[1fr_1fr_1fr_auto]">
+                    <BaseSelect v-model="schedule.day" label="Day" :options="dayOptions"
+                        :error="form.errors[`schedules.${index}.day`]" required />
+
+                    <BaseInput v-model="schedule.start_time" type="time" label="Start time"
+                        :error="form.errors[`schedules.${index}.start_time`]" required />
+
+                    <BaseInput v-model="schedule.end_time" type="time" label="End time"
+                        :error="form.errors[`schedules.${index}.end_time`]" required />
+
+                    <div class="flex items-end">
+                        <BaseButton type="button" variant="danger" :disabled="form.schedules.length === 1"
+                            @click="removeSchedule(index)">
+                            <i class="fa-solid fa-trash" />
+                        </BaseButton>
+                    </div>
+                </div>
+
+                <p v-if="form.errors.schedules" class="text-sm text-red-500">
+                    {{ form.errors.schedules }}
+                </p>
+
+                <BaseButton type="button" variant="secondary" @click="addSchedule">
+                    <i class="fa-solid fa-plus mr-2" />
+                    Add Schedule Block
+                </BaseButton>
             </div>
+        </FormSection>
 
-            <!-- Modality -->
-            <div>
-                <label class="label">Modality</label>
-                <select v-model="form.modality" class="input">
-                    <option value="Presential">Presential</option>
-                    <option value="Virtual">Virtual</option>
-                    <option value="Hybrid">Hybrid</option>
-                </select>
-                <p v-if="errors.modality" class="error">{{ errors.modality[0] }}</p>
-            </div>
+        <FormActions>
+            <BaseButton type="button" variant="secondary" @click="handleCancel">
+                Cancel
+            </BaseButton>
 
-            <!-- Shift -->
-            <div>
-                <label class="label">Shift</label>
-                <select v-model="form.shift" class="input">
-                    <option value="Day">Day</option>
-                    <option value="Night">Night</option>
-                    <option value="Intensive">Intensive</option>
-                </select>
-                <p v-if="errors.shift" class="error">{{ errors.shift[0] }}</p>
-            </div>
+            <BaseButton type="submit" variant="primary" :disabled="processing">
+                <i v-if="processing" class="fa-solid fa-spinner fa-spin mr-2" />
 
-            <!-- Capacity -->
-            <div>
-                <label class="label">Capacity</label>
-                <input type="number" min="1" v-model="form.capacity" class="input" />
-                <p v-if="errors.capacity" class="error">{{ errors.capacity[0] }}</p>
-            </div>
-        </div>
-
-        <!-- Vista previa -->
-        <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded mt-4 text-sm space-y-1">
-            <p><strong>Code:</strong> <span class="font-mono text-indigo-600 dark:text-indigo-400">{{
-                generatedCodePreview }}</span></p>
-            <p><strong>Semester:</strong> {{ generatedSemester }}</p>
-            <p><strong>Group Code:</strong> Will be assigned (e.g., G1, G2...)</p>
-            <p><strong>Name:</strong> {{ generatedName }}</p>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex justify-between mt-6">
-            <button type="button" class="btn-secondary" @click="cancel">Cancel</button>
-            <button type="submit" class="btn-primary">
-                {{ props.classGroup ? "Update Group" : "Create Group" }}
-            </button>
-        </div>
+                {{ updating ? "Update Group" : "Create Group" }}
+            </BaseButton>
+        </FormActions>
     </form>
 </template>
-
-<style scoped>
-.input {
-    @apply w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500;
-}
-
-.label {
-    @apply block text-sm font-medium text-gray-800 dark:text-gray-100 mb-1;
-}
-
-.error {
-    @apply text-sm text-red-500 mt-1;
-}
-
-.btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow transition;
-}
-
-.btn-secondary {
-    @apply bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold py-2 px-4 rounded shadow transition;
-}
-</style>

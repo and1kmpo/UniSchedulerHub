@@ -35,6 +35,7 @@ class EnrollmentService
                 'academic_period_id' => $group->academic_period_id,
                 'status_id'          => $statusId,
                 'enrolled_at'        => now(),
+                'enrolled_by'        => auth()->id(),
             ]);
 
             /* event(new EnrollmentCreated($enrollment)); */
@@ -81,6 +82,7 @@ class EnrollmentService
 
             $existing->update([
                 'class_group_id' => $group->id,
+                'enrolled_by' => auth()->id(),
             ]);
 
             return $existing->fresh([
@@ -120,7 +122,16 @@ class EnrollmentService
             }
             */
 
-            $enrollment->delete();
+            $targetStatus = $enrollment->status?->code === 'pre_enrolled'
+                ? 'cancelled'
+                : 'withdrawn';
+
+            $enrollment->transitionTo($targetStatus);
+
+            $enrollment->forceFill([
+                'cancelled_by' => auth()->id(),
+                'cancelled_at' => now(),
+            ])->save();
 
             /* event(new EnrollmentWithdrawn($enrollment)); */
         });
@@ -171,6 +182,8 @@ class EnrollmentService
 
         AcademicPeriodGuard::ensurePeriodNotFrozen($period);
         AcademicPeriodGuard::ensureEnrollmentAllowed($period);
+
+        $this->ensureGroupAllowsEnrollment($group);
 
         $this->ensureCurriculumAllows($student, $group);
 
@@ -258,8 +271,15 @@ class EnrollmentService
 
     private function ensureGroupHasSchedules(ClassGroup $group): void
     {
-        if ($group->schedules->isEmpty()) {
+        if ($group->schedules->where('status', '!=', 'cancelled')->isEmpty()) {
             throw new DomainException('BLOCK_GROUP_WITHOUT_SCHEDULE');
+        }
+    }
+
+    private function ensureGroupAllowsEnrollment(ClassGroup $group): void
+    {
+        if (! $group->isPublished()) {
+            throw new DomainException('BLOCK_GROUP_NOT_PUBLISHED');
         }
     }
 
@@ -312,6 +332,10 @@ class EnrollmentService
         )
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->when(
                 $ignoreGroupId,
                 fn($q) =>
@@ -324,6 +348,7 @@ class EnrollmentService
             foreach ($group->schedules as $incoming) {
 
                 $conflict = $enrollment->classGroup->schedules
+                    ->where('status', '!=', 'cancelled')
                     ->contains(
                         fn($existing) =>
 
@@ -352,6 +377,10 @@ class EnrollmentService
         $currentCredits = SubjectEnrollment::with('subject')
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->get()
             ->sum(fn($e) => $e->subject->credits ?? 0);
 
@@ -379,6 +408,10 @@ class EnrollmentService
         $currentCredits = SubjectEnrollment::with('subject')
             ->where('student_id', $student->id)
             ->where('academic_period_id', $group->academic_period_id)
+            ->whereHas(
+                'status',
+                fn($q) => $q->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->get()
             ->sum(fn($e) => $e->subject->credits ?? 0);
 

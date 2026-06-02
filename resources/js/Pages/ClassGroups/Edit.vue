@@ -1,19 +1,65 @@
 <script setup>
-import AppLayout from "@/Layouts/AppLayout.vue";
+import { router, useForm } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
 import Form from "./Form.vue";
 
-defineProps({
-    classGroup: Object,
-    subjects: Array,
-    professors: Array,
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
+
+const props = defineProps({
+    classGroup: {
+        type: Object,
+        required: true,
+    },
+
+    subjects: {
+        type: Array,
+        default: () => [],
+    },
+
+    professors: {
+        type: Array,
+        default: () => [],
+    },
 });
+
+const form = useForm({
+    subject_id: props.classGroup.subject_id ?? "",
+    professor_id: props.classGroup.professor_id ?? "",
+    capacity: props.classGroup.capacity ?? 30,
+    modality: props.classGroup.modality ?? "In-person",
+    shift: props.classGroup.shift ?? "Day",
+    status: props.classGroup.status ?? "published",
+    schedules: props.classGroup.schedules ?? [],
+});
+
+const submit = () => {
+    form.put(route("class-groups.update", props.classGroup.id), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            success(page.props.flash?.success || "Class group updated successfully");
+        },
+        onError: () => {
+            error("Failed to update class group");
+        },
+    });
+};
+
+const handleCancel = () => {
+    router.visit(route("class-groups.index"));
+};
 </script>
 
 <template>
-    <AppLayout title="Edit Class Group">
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">Edit Class Group</h1>
-            <Form :classGroup="classGroup" :subjects="subjects" :professors="professors" />
-        </div>
-    </AppLayout>
+    <CrudPageLayout title="Edit Class Group" subtitle="Update academic group information">
+        <CrudContainer>
+            <Form :form="form" :subjects="subjects" :professors="professors" :processing="form.processing"
+                :updating="true" :handle-cancel="handleCancel" @submit="submit" />
+        </CrudContainer>
+    </CrudPageLayout>
 </template>

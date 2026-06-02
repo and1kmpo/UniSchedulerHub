@@ -11,9 +11,9 @@ class RolSeeder extends Seeder
     public function run()
     {
         // Roles
-        $roleAdmin = Role::create(['name' => 'admin']);
-        $roleStudent = Role::create(['name' => 'student']);
-        $roleProfessor = Role::create(['name' => 'professor']);
+        $roleAdmin = Role::firstOrCreate(['name' => 'admin']);
+        $roleStudent = Role::firstOrCreate(['name' => 'student']);
+        $roleProfessor = Role::firstOrCreate(['name' => 'professor']);
 
         // Permisos
         $permissions = [
@@ -36,7 +36,7 @@ class RolSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Asignar permisos a roles

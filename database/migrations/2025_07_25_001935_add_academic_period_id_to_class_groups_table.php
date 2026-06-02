@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasColumn('class_groups', 'academic_period_id')) {
+            return;
+        }
+
         Schema::table('class_groups', function (Blueprint $table) {
             $table->unsignedBigInteger('academic_period_id')->after('professor_id')->nullable();
 
@@ -25,6 +29,10 @@ return new class extends Migration
      */
     public function down()
     {
+        if (! Schema::hasColumn('class_groups', 'academic_period_id')) {
+            return;
+        }
+
         Schema::table('class_groups', function (Blueprint $table) {
             $table->dropForeign(['academic_period_id']);
             $table->dropColumn('academic_period_id');

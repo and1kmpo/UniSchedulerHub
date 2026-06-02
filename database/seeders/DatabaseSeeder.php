@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use AcademicPeriodStatusSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -11,18 +10,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolSeeder::class,
+            AdminUserSeeder::class,
             GradeStatusSeeder::class,
             SubjectEnrollmentStatusSeeder::class,
-            AcademicPeriodSeeder::class,
             AcademicPeriodStatusSeeder::class,
-            ProgramSeeder::class,
-            SubjectSeeder::class,
-            AdminUserSeeder::class,
-            ProfessorSeeder::class,
-            StudentSeeder::class,
-            SubjectAssignmentSeeder::class,
-            ClassGroupSeeder::class,
-            ClassScheduleSeeder::class,
+            AcademicPeriodStatusTransitionSeeder::class,
+            SubjectEnrollmentStatusTransitionSeeder::class,
+            DemoAcademicSeeder::class,
         ]);
     }
 }
