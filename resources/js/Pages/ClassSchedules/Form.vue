@@ -39,6 +39,11 @@ const props = defineProps({
         type: Function,
         required: true,
     },
+
+    framed: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 defineEmits(["submit"]);
@@ -77,7 +82,10 @@ const groupLabel = computed(() => {
 </script>
 
 <template>
-    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+    <form @submit.prevent="$emit('submit')" :class="[
+        'overflow-hidden bg-white dark:bg-gray-900',
+        framed ? 'rounded-2xl shadow' : 'rounded-lg',
+    ]">
         <FormSection :title="updating ? 'Update Schedule' : 'Create Schedule'" :description="updating
             ? 'Adjust this official schedule block.'
             : 'Add an official schedule block before using visual layout adjustments.'
