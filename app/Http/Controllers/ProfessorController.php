@@ -228,20 +228,80 @@ class ProfessorController extends Controller
 
     public function mySubjects()
     {
-        $period = AcademicPeriod::where('is_active', true)->first();
+        $period = AcademicPeriod::where('is_active', true)->with('status')->first();
 
         $groups = ClassGroup::with([
             'subject',
-            'subjectEnrollments.student.user',
+            'academicPeriod',
+            'schedules.classroom',
+            'subjectEnrollments' => fn($query) => $query->whereHas(
+                'status',
+                fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+            )->with(['student.user', 'status', 'grade.state']),
         ])
             ->where('professor_id', auth()->id())
             ->when($period, fn($query) => $query->where('academic_period_id', $period->id))
-            ->withCount('subjectEnrollments')
-            ->get();
+            ->withCount([
+                'subjectEnrollments' => fn($query) => $query->whereHas(
+                    'status',
+                    fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                ),
+            ])
+            ->get()
+            ->map(fn($group) => [
+                'id' => $group->id,
+                'code' => $group->code,
+                'name' => $group->name,
+                'status' => $group->status,
+                'capacity' => $group->capacity,
+                'modality' => $group->modality,
+                'shift' => $group->shift,
+                'subject_enrollments_count' => $group->subject_enrollments_count,
+                'can_manage_grades' => $period?->canEditGrades() && $group->status !== ClassGroup::STATUS_CANCELLED,
+                'subject' => [
+                    'id' => $group->subject?->id,
+                    'name' => $group->subject?->name,
+                    'code' => $group->subject?->code,
+                    'knowledge_area' => $group->subject?->knowledge_area,
+                    'credits' => $group->subject?->credits,
+                ],
+                'schedules' => $group->schedules->map(fn($schedule) => [
+                    'id' => $schedule->id,
+                    'day' => $schedule->day,
+                    'start_time' => $schedule->start_time,
+                    'end_time' => $schedule->end_time,
+                    'classroom' => $schedule->classroom?->name,
+                    'status' => $schedule->status,
+                ])->values(),
+                'subject_enrollments' => $group->subjectEnrollments->map(fn($enrollment) => [
+                    'id' => $enrollment->id,
+                    'status' => $enrollment->status?->code,
+                    'student' => [
+                        'id' => $enrollment->student?->id,
+                        'name' => $enrollment->student?->user?->name,
+                        'document' => $enrollment->student?->document,
+                        'email' => $enrollment->student?->user?->email,
+                    ],
+                    'grade' => $enrollment->grade ? [
+                        'final_grade' => $enrollment->grade->final_grade,
+                        'state' => $enrollment->grade->state?->label,
+                    ] : null,
+                ])->values(),
+            ]);
 
         return Inertia::render('Professors/MySubjects', [
             'groups' => $groups,
-            'period' => $period,
+            'period' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+                'can_edit_grades' => $period->canEditGrades(),
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'students' => $groups->sum('subject_enrollments_count'),
+                'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
+            ],
         ]);
     }
 

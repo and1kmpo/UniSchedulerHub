@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Filters\StudentFilter;
 use App\Http\Requests\StudentRequest;
 use App\Models\Curriculum;
+use App\Models\AcademicPeriod;
 use App\Models\Grade;
 use App\Models\Program;
 use App\Models\Student;
@@ -232,6 +233,7 @@ class StudentController extends Controller
     public function mySubjects()
     {
         $student = auth()->user()->student;
+        $period = AcademicPeriod::active()->with('status')->first();
 
         $subjects = $student
             ->enrollments()
@@ -239,12 +241,15 @@ class StudentController extends Controller
                 'subject',
                 'status',
                 'classGroup.professor',
-                'classGroup.schedules',
+                'classGroup.schedules.classroom',
                 'grade.state',
+                'academicPeriod',
             ])
+            ->when($period, fn($query) => $query->where('academic_period_id', $period->id))
             ->latest()
             ->get()
             ->map(fn($enrollment) => [
+                'enrollment_id' => $enrollment->id,
                 'id' => $enrollment->subject?->id,
                 'name' => $enrollment->subject?->name,
                 'credits' => $enrollment->subject?->credits,
@@ -252,14 +257,41 @@ class StudentController extends Controller
                 'status_label' => $enrollment->status?->label,
                 'professor_name' => $enrollment->classGroup?->professor?->name ?? 'Unassigned',
                 'group' => $enrollment->classGroup?->code,
-                'schedules' => $enrollment->classGroup?->schedules ?? [],
+                'period' => $enrollment->academicPeriod?->name,
+                'schedules' => $enrollment->classGroup?->schedules
+                    ? $enrollment->classGroup->schedules->map(fn($schedule) => [
+                        'id' => $schedule->id,
+                        'day' => $schedule->day,
+                        'start_time' => $schedule->start_time,
+                        'end_time' => $schedule->end_time,
+                        'classroom' => $schedule->classroom?->name,
+                    ])->values()
+                    : [],
                 'grade' => $enrollment->grade,
             ])
             ->filter(fn($subject) => $subject['id'])
             ->values();
 
+        $activeStatusCodes = config('enrollment.active_status_codes');
+        $activeSubjects = $subjects->filter(fn($subject) => in_array($subject['status'], $activeStatusCodes, true));
+
         return Inertia::render('Students/MySubjects', [
             'subjects' => $subjects,
+            'summary' => [
+                'current_credits' => $activeSubjects->sum('credits'),
+                'active_subjects' => $activeSubjects->count(),
+                'graded_subjects' => $subjects->filter(fn($subject) => filled($subject['grade']?->final_grade))->count(),
+            ],
+            'currentPeriod' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+                'enrollment_deadline' => $period->enrollment_deadline,
+                'unenrollment_deadline' => $period->unenrollment_deadline,
+                'can_enroll' => $period->canEnroll()
+                    && in_array($student->academic_status, Student::ENROLLABLE_STATUSES, true)
+                    && filled($student->curriculum_id),
+            ] : null,
         ]);
     }
 

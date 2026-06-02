@@ -1,116 +1,134 @@
-<template>
-    <form @submit.prevent="onSubmit">
-        <!-- Preview o Nombre en edición -->
-        <div class="mb-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-
-            <!-- Creación: preview dinámico -->
-            <div v-if="!classroom" class="input bg-gray-100 dark:bg-gray-600">
-                {{ previewName || '— Select building and floor —' }}
-            </div>
-
-            <!-- Edición: nombre actual fijo -->
-            <div v-else class="input bg-gray-100 dark:bg-gray-600">
-                {{ form.name }}
-            </div>
-        </div>
-
-        <!-- Building -->
-        <div class="mb-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Building</label>
-            <select v-model="form.building_id" class="input w-full">
-                <option value="">— None —</option>
-                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
-            <div v-if="form.errors.building_id" class="text-red-600 text-sm mt-1">{{ form.errors.building_id }}</div>
-        </div>
-
-        <!-- Floor -->
-        <div class="mb-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Floor</label>
-            <input v-model="form.floor" type="number" min="0" class="input w-full" />
-            <div v-if="form.errors.floor" class="text-red-600 text-sm mt-1">{{ form.errors.floor }}</div>
-        </div>
-
-        <!-- Capacity -->
-        <div class="mb-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Capacity</label>
-            <input v-model="form.capacity" type="number" min="1" class="input w-full" />
-            <div v-if="form.errors.capacity" class="text-red-600 text-sm mt-1">{{ form.errors.capacity }}</div>
-        </div>
-
-        <!-- Description -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-            <textarea v-model="form.description" class="input w-full"></textarea>
-            <div v-if="form.errors.description" class="text-red-600 text-sm mt-1">{{ form.errors.description }}</div>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex justify-end">
-            <PrimaryButton type="submit" class="mr-2" :disabled="form.processing">
-                <template v-if="form.processing">{{ submitTextLoading }}</template>
-                <template v-else>{{ submitText }}</template>
-            </PrimaryButton>
-            <SecondaryButton @click="$emit('cancel')">Cancel</SecondaryButton>
-        </div>
-    </form>
-</template>
-
 <script setup>
-import { useForm } from '@inertiajs/vue3'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import SecondaryButton from '@/Components/SecondaryButton.vue'
-import axios from 'axios'
-import { route } from 'ziggy-js'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from "vue";
+import axios from "axios";
+import { route } from "ziggy-js";
+
+import FormSection from "@/Components/UI/Forms/FormSection.vue";
+import FormGrid from "@/Components/UI/Forms/FormGrid.vue";
+import FormActions from "@/Components/UI/Forms/FormActions.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import BaseTextarea from "@/Components/UI/Base/BaseTextarea.vue";
 
 const props = defineProps({
-    classroom: Object,
-    buildings: Array,
-    submitText: { type: String, default: 'Save' },
-    submitTextLoading: { type: String, default: 'Saving...' }
-})
+    form: {
+        type: Object,
+        required: true,
+    },
 
-const form = useForm({
-    name: props.classroom?.name || '',
-    building_id: props.classroom?.building_id || '',
-    floor: props.classroom?.floor || '',
-    capacity: props.classroom?.capacity || '',
-    description: props.classroom?.description || '',
-})
+    buildings: {
+        type: Array,
+        default: () => [],
+    },
 
-const { classroom, buildings, submitText, submitTextLoading } = props
+    updating: {
+        type: Boolean,
+        default: false,
+    },
 
-const previewName = ref(null)
+    processing: {
+        type: Boolean,
+        default: false,
+    },
+
+    handleCancel: {
+        type: Function,
+        required: true,
+    },
+});
+
+defineEmits(["submit"]);
+
+const previewName = ref("");
+
+const buildingOptions = computed(() =>
+    props.buildings.map((building) => ({
+        label: `${building.code} - ${building.name}`,
+        value: building.id,
+    }))
+);
+
+const statusOptions = [
+    { label: "Active", value: "active" },
+    { label: "Inactive", value: "inactive" },
+];
 
 watch(
-    () => [form.building_id, form.floor],
+    () => [props.form.building_id, props.form.floor],
     async ([buildingId, floor]) => {
-        if (!props.classroom && buildingId && floor !== '') {
-            try {
-                const { data } = await axios.get(route('classrooms.preview'), {
-                    params: { building_id: buildingId, floor }
-                })
-                previewName.value = data.name
-            } catch {
-                previewName.value = null
-            }
+        if (props.updating || !buildingId || floor === "") {
+            previewName.value = "";
+
+            return;
         }
+
+        try {
+            const response = await axios.get(route("classrooms.preview"), {
+                params: {
+                    building_id: buildingId,
+                    floor,
+                },
+            });
+
+            previewName.value = response.data.name;
+        } catch {
+            previewName.value = "";
+        }
+    },
+    {
+        immediate: true,
     }
-)
-
-defineExpose({ form })
-const emit = defineEmits(['submit', 'cancel'])
-
-function onSubmit(event) {
-    event.preventDefault()
-    emit('submit', form)
-}
+);
 </script>
 
-<style scoped>
-.input {
-    @apply w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white;
-}
-</style>
+<template>
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+        <FormSection :title="updating ? 'Update Classroom' : 'Create Classroom'" :description="updating
+            ? 'Update classroom capacity, status and metadata.'
+            : 'Create a classroom using the building and floor naming convention.'
+            ">
+            <FormGrid :cols="2">
+                <BaseSelect v-model="form.building_id" label="Building" placeholder="Select building"
+                    :options="buildingOptions" :error="form.errors.building_id" required />
+
+                <BaseInput v-model="form.floor" type="number" label="Floor" placeholder="2"
+                    :error="form.errors.floor" required />
+
+                <BaseInput v-model="form.capacity" type="number" label="Capacity" placeholder="35"
+                    :error="form.errors.capacity" required />
+
+                <BaseSelect v-model="form.status" label="Status" :options="statusOptions" :error="form.errors.status"
+                    required />
+
+                <div class="md:col-span-2">
+                    <BaseTextarea v-model="form.description" label="Description" rows="4"
+                        placeholder="Room equipment, accessibility notes, or scheduling constraints..."
+                        :error="form.errors.description" />
+                </div>
+            </FormGrid>
+
+            <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                    Classroom name
+                </p>
+
+                <p class="mt-1 font-mono text-lg font-semibold text-indigo-700 dark:text-indigo-300">
+                    {{ updating ? form.name : previewName || "Select building and floor" }}
+                </p>
+            </div>
+        </FormSection>
+
+        <FormActions>
+            <BaseButton type="button" variant="secondary" @click="handleCancel">
+                Cancel
+            </BaseButton>
+
+            <BaseButton type="submit" variant="primary" :disabled="processing">
+                <i v-if="processing" class="fa-solid fa-spinner fa-spin mr-2" />
+
+                {{ updating ? "Update Classroom" : "Create Classroom" }}
+            </BaseButton>
+        </FormActions>
+    </form>
+</template>

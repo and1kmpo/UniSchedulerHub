@@ -24,7 +24,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['from_status_id', 'to_status_id']);
+            $table->unique(['from_status_id', 'to_status_id'], 'ap_status_transitions_unique');
         });
     }
 

@@ -54,7 +54,7 @@ class Student extends Model
 
     public function program()
     {
-        return $this->belongsTo(Program::class);
+        return $this->belongsTo(Program::class)->withTrashed();
     }
 
     public function grades()
@@ -79,8 +79,13 @@ class Student extends Model
         return $this->hasMany(SubjectEnrollment::class);
     }
 
+    public function subjectEnrollments()
+    {
+        return $this->enrollments();
+    }
+
     public function curriculum()
     {
-        return $this->belongsTo(Curriculum::class);
+        return $this->belongsTo(Curriculum::class)->withTrashed();
     }
 }

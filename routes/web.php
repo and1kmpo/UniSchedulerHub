@@ -21,6 +21,8 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SmartSchedulerController;
+use App\Http\Controllers\Scheduling\SmartSchedulerController as SchedulingSmartSchedulerController;
 
 Route::get('/', fn() => redirect()->route('login'));
 Route::get('/favicon.ico', fn() => redirect('/favicon.svg'));
@@ -80,8 +82,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/class-groups/{class_group}/calendar', [ClassScheduleController::class, 'calendar'])->name('class-schedules.calendar');
         Route::get('/class-groups/{classGroup}/schedules-json', [ClassScheduleController::class, 'schedulesJson'])->name('class-schedules.json');
         Route::post('/class-groups/{classGroup}/enroll', [GroupEnrollmentController::class, 'store'])->name('class-groups.enroll');
-        Route::delete('/class-groups/{classGroup}/unenroll/{stduent}', [GroupEnrollmentController::class, 'destroy'])->name('class-groups.unenroll');
-        Route::get('/class-groups/{id}', [ClassGroupController::class, 'show'])->name('class-groups.show');
+        Route::post('/class-groups/{classGroup}/validate-enrollment', [GroupEnrollmentController::class, 'validateEnrollment'])->name('class-groups.validate-enrollment');
+        Route::delete('/class-groups/{classGroup}/unenroll/{student}', [GroupEnrollmentController::class, 'destroy'])->name('class-groups.unenroll');
 
         Route::patch('academic-periods/{id}/activate', [AcademicPeriodController::class, 'activate'])->name('academic-periods.activate');
         Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -94,10 +96,16 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
 
         Route::get('/classrooms/preview', [ClassroomController::class, 'preview'])->name('classrooms.preview');
+        Route::post('/classrooms/{id}/restore', [ClassroomController::class, 'restore'])->name('classrooms.restore');
         Route::resource('classrooms', ClassroomController::class);
 
         Route::get('/classrooms/{classroom}/schedule', [ClassroomController::class, 'schedule'])->name('classrooms.schedule');
         Route::post('/curricula/{curriculum}/subjects', [CurriculumSubjectController::class, 'store']);
+
+        Route::prefix('smart-scheduler')->name('smart-scheduler.')->group(function () {
+            Route::post('/generate', [SmartSchedulerController::class, 'generate'])->name('generate');
+            Route::post('/optimize', [SchedulingSmartSchedulerController::class, 'optimize'])->name('optimize');
+        });
     });
 
     /**

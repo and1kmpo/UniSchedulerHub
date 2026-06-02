@@ -9,6 +9,20 @@ class ClassGroup extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_PUBLISHED = 'published';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_CLOSED = 'closed';
+
+    public const ENROLLABLE_STATUSES = [
+        self::STATUS_PUBLISHED,
+    ];
+
+    public const SCHEDULE_EDITABLE_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_PUBLISHED,
+    ];
+
     protected $fillable = [
         'subject_id',
         'professor_id',
@@ -19,6 +33,7 @@ class ClassGroup extends Model
         'capacity',
         'modality',
         'shift',
+        'status',
     ];
 
     protected static function booted()
@@ -76,7 +91,7 @@ class ClassGroup extends Model
 
     public function subject()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Subject::class)->withTrashed();
     }
 
     public function professor()
@@ -103,5 +118,15 @@ class ClassGroup extends Model
     public function academicPeriod()
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function isPublished(): bool
+    {
+        return in_array($this->status, self::ENROLLABLE_STATUSES, true);
+    }
+
+    public function canManageSchedules(): bool
+    {
+        return in_array($this->status, self::SCHEDULE_EDITABLE_STATUSES, true);
     }
 }

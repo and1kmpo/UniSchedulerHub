@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\ClassGroup;
-use App\Models\SubjectEnrollment;
 use App\Services\GradeService;
+use DomainException;
+use Illuminate\Validation\ValidationException;
 
 class GradeController extends Controller
 {
@@ -17,6 +18,10 @@ class GradeController extends Controller
         $group->loadMissing(['subject', 'academicPeriod']);
 
         $enrollments = $group->subjectEnrollments()
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
+            )
             ->with([
                 'student.user',
                 'grade.state',
@@ -38,7 +43,9 @@ class GradeController extends Controller
                 'student' => [
                     'id' => $enrollment->student->id,
                     'name' => $enrollment->student->user->name,
+                    'document' => $enrollment->student->document,
                 ],
+                'can_edit' => $enrollment->canEditGrades(),
                 'grade' => $enrollment->grade ? [
                     'partial_1'   => $enrollment->grade->partial_1,
                     'partial_2'   => $enrollment->grade->partial_2,
@@ -58,7 +65,7 @@ class GradeController extends Controller
 
     public function store(Request $request, ClassGroup $group, GradeService $gradeService)
     {
-        $this->authorize('manageGrades', $group);
+        $this->authorize('editGrades', $group);
 
         $request->validate([
             'grades' => 'required|array',
@@ -69,22 +76,41 @@ class GradeController extends Controller
             'grades.*.attendance' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $professorId = auth()->user()->professor->id;
+        $professorId = auth()->user()->professor?->id;
         $updatedGrades = [];
 
-        foreach ($request->grades as $enrollmentId => $gradeData) {
+        try {
+            foreach ($request->grades as $enrollmentId => $gradeData) {
 
-            $enrollment = $group->subjectEnrollments()
-                ->with('academicPeriod')
-                ->findOrFail($enrollmentId);
+                $enrollment = $group->subjectEnrollments()
+                    ->with(['academicPeriod', 'classGroup', 'status'])
+                    ->findOrFail($enrollmentId);
 
-            $updatedGrades[$enrollmentId] = $gradeService
-                ->update($enrollment, $gradeData, $professorId);
+                $updatedGrades[$enrollmentId] = $gradeService
+                    ->update($enrollment, $gradeData, $professorId);
+            }
+        } catch (DomainException $exception) {
+            throw ValidationException::withMessages([
+                'grades' => [
+                    $this->domainMessage($exception->getMessage()),
+                ],
+            ]);
         }
 
         return response()->json([
             'success' => true,
             'updated_grades' => $updatedGrades,
         ]);
+    }
+
+    private function domainMessage(string $code): string
+    {
+        return [
+            'BLOCK_NO_ACADEMIC_PERIOD' => 'This enrollment has no academic period assigned.',
+            'BLOCK_PERIOD_FROZEN' => 'This academic period is closed and grades can no longer be changed.',
+            'BLOCK_PERIOD_DOES_NOT_ALLOW_GRADES' => 'This academic period does not allow grade editing.',
+            'BLOCK_ENROLLMENT_DOES_NOT_ALLOW_GRADES' => 'One or more enrollments do not allow grade editing.',
+            'BLOCK_GROUP_DOES_NOT_ALLOW_GRADES' => 'This class group does not allow grade editing.',
+        ][$code] ?? 'The grade change is not allowed.';
     }
 }

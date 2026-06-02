@@ -11,13 +11,23 @@ class ClassGroupPolicy
 
     public function manageGrades(User $user, ClassGroup $group): bool
     {
-        return $user->professor
-            && $group->professor_id === $user->id;
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        return $user->professor && $group->professor_id === $user->id;
     }
 
     public function editGrades(User $user, ClassGroup $group): bool
     {
         if (! $group->academicPeriod?->canEditGrades()) {
+            return false;
+        }
+
+        if (in_array($group->status, [
+            ClassGroup::STATUS_CANCELLED,
+            ClassGroup::STATUS_CLOSED,
+        ], true)) {
             return false;
         }
 

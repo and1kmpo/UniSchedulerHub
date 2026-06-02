@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Curriculum extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'program_id',
         'code',
@@ -27,12 +30,13 @@ class Curriculum extends Model
 
     public function program()
     {
-        return $this->belongsTo(Program::class);
+        return $this->belongsTo(Program::class)->withTrashed();
     }
 
     public function subjects()
     {
         return $this->belongsToMany(Subject::class, 'curriculum_subjects')
+            ->withTrashed()
             ->withPivot([
                 'semester_recommended',
                 'credits',

@@ -19,6 +19,8 @@ class Grade extends Model
         'attendance',
         'final_grade',
         'grade_status_id',
+        'created_by',
+        'updated_by',
     ];
 
     // Relaciones
@@ -45,6 +47,16 @@ class Grade extends Model
     public function professor()
     {
         return $this->belongsTo(Professor::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function state()

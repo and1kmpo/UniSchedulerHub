@@ -15,6 +15,15 @@ class SubjectEnrollment extends Model
         'academic_period_id',
         'class_group_id',
         'status_id',
+        'enrolled_at',
+        'enrolled_by',
+        'cancelled_by',
+        'cancelled_at',
+    ];
+
+    protected $casts = [
+        'enrolled_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function student()
@@ -24,7 +33,7 @@ class SubjectEnrollment extends Model
 
     public function subject()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Subject::class)->withTrashed();
     }
 
     public function academicPeriod()
@@ -40,6 +49,16 @@ class SubjectEnrollment extends Model
     public function classGroup()
     {
         return $this->belongsTo(ClassGroup::class);
+    }
+
+    public function enrolledBy()
+    {
+        return $this->belongsTo(User::class, 'enrolled_by');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function transitionTo(string $toCode): void

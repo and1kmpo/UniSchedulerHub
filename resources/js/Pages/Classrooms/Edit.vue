@@ -1,61 +1,59 @@
-<template>
-    <AppLayout :title="`Edit Classroom — ${classroom.name}`">
-        <template #header>
-            <h1 class="text-2xl font-bold">Edit Classroom</h1>
-        </template>
-
-        <div class="max-w-xl mx-auto mt-6">
-            <div class="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <Form :classroom="classroom" :buildings="buildings" :submitText="'Update'"
-                    :submitTextLoading="'Updating...'" @submit="handleSubmit" @cancel="cancel" />
-            </div>
-        </div>
-    </AppLayout>
-</template>
-
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue'
-import Form from './Form.vue'
-import { useAlert } from '@/Components/Composables/useAlert'
-import { router } from '@inertiajs/vue3'
-import axios from 'axios'
+import { router, useForm } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+
+import ClassroomForm from "./Form.vue";
+
+import { useAlert } from "@/Components/Composables/useAlert";
+
+const { success, error } = useAlert();
 
 const props = defineProps({
-    classroom: Object,
-    buildings: Array
-})
+    classroom: {
+        type: Object,
+        required: true,
+    },
 
-const { toastSuccess, confirm } = useAlert()
+    buildings: {
+        type: Array,
+        default: () => [],
+    },
+});
 
-async function handleSubmit(form) {
-    // Detect if location has changed
-    if (
-        form.building_id !== props.classroom.building_id ||
-        form.floor !== props.classroom.floor
-    ) {
-        const confirmed = await confirm(
-            'Changing the floor or building will deactivate this classroom and create a new one. Do you want to continue?',
-            'Confirm Location Change'
-        )
-        if (!confirmed) return
-    }
+const form = useForm({
+    name: props.classroom.name ?? "",
+    building_id: props.classroom.building_id ?? "",
+    floor: props.classroom.floor ?? "",
+    capacity: props.classroom.capacity ?? "",
+    description: props.classroom.description ?? "",
+    status: props.classroom.status ?? "active",
+});
 
-    try {
-        await axios.post(route('classrooms.update', props.classroom.id), {
-            ...form.data(),
-            _method: 'put'
-        })
-        toastSuccess('Classroom updated successfully')
-        router.visit(route('classrooms.index'))
-    } catch (error) {
-        if (error.response?.status === 422) {
-            form.errors = error.response.data.errors
-        }
-    }
-}
+const submit = () => {
+    form.put(route("classrooms.update", props.classroom.id), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            success(page.props.flash?.success || "Classroom updated successfully");
+        },
+        onError: () => {
+            error("Failed to update classroom");
+        },
+    });
+};
 
-
-function cancel() {
-    router.visit(route('classrooms.index'))
-}
+const handleCancel = () => {
+    router.visit(route("classrooms.index"));
+};
 </script>
+
+<template>
+    <CrudPageLayout title="Edit Classroom" :subtitle="classroom.name">
+        <CrudContainer>
+            <ClassroomForm :form="form" :buildings="buildings" :processing="form.processing" :updating="true"
+                :handle-cancel="handleCancel" @submit="submit" />
+        </CrudContainer>
+    </CrudPageLayout>
+</template>
