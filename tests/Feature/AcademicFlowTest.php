@@ -288,6 +288,107 @@ class AcademicFlowTest extends TestCase
         ]);
     }
 
+    public function test_grade_endpoint_rejects_values_outside_allowed_ranges(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+        $enrollment->update([
+            'status_id' => SubjectEnrollmentStatus::where('code', 'enrolled')->value('id'),
+        ]);
+        $this->period->update([
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'in_progress')->value('id'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('groups.grades.store', $group), [
+                'grades' => [
+                    $enrollment->id => [
+                        'first_exam' => 5.1,
+                        'second_exam' => 4.0,
+                        'third_exam' => 4.0,
+                        'activities' => 4.0,
+                        'attendance' => 101,
+                    ],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                "grades.{$enrollment->id}.first_exam",
+                "grades.{$enrollment->id}.attendance",
+            ]);
+
+        $this->assertDatabaseMissing('grades', [
+            'subject_enrollment_id' => $enrollment->id,
+        ]);
+    }
+
+    public function test_grade_endpoint_blocks_updates_when_group_is_closed(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+        $enrollment->update([
+            'status_id' => SubjectEnrollmentStatus::where('code', 'enrolled')->value('id'),
+        ]);
+        $group->update([
+            'status' => ClassGroup::STATUS_CLOSED,
+        ]);
+        $this->period->update([
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'in_progress')->value('id'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('groups.grades.store', $group), [
+                'grades' => [
+                    $enrollment->id => [
+                        'first_exam' => 4.0,
+                        'second_exam' => 4.0,
+                        'third_exam' => 4.0,
+                        'activities' => 4.0,
+                        'attendance' => 90,
+                    ],
+                ],
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_grade_updates_are_audited_with_before_and_after_values(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+        $enrollment->update([
+            'status_id' => SubjectEnrollmentStatus::where('code', 'enrolled')->value('id'),
+        ]);
+        $this->period->update([
+            'academic_period_status_id' => AcademicPeriodStatus::where('code', 'in_progress')->value('id'),
+        ]);
+
+        $grade = app(GradeService::class)->update($enrollment->fresh(['academicPeriod', 'status', 'classGroup']), [
+            'first_exam' => 3.0,
+            'second_exam' => 3.0,
+            'third_exam' => 3.0,
+            'activities' => 3.0,
+            'attendance' => 90,
+        ], $this->professor->professor?->id);
+
+        app(GradeService::class)->update($enrollment->fresh(['academicPeriod', 'status', 'classGroup']), [
+            'first_exam' => 4.0,
+            'second_exam' => 4.0,
+            'third_exam' => 4.0,
+            'activities' => 4.0,
+            'attendance' => 95,
+        ], $this->professor->professor?->id);
+
+        $log = AcademicAuditLog::where('auditable_id', $grade->id)
+            ->where('auditable_type', Grade::class)
+            ->where('action', 'grade.updated')
+            ->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame(3.0, (float) $log->metadata['before']['final_grade']);
+        $this->assertSame(4.0, (float) $log->metadata['after']['final_grade']);
+        $this->assertSame($enrollment->id, $log->metadata['subject_enrollment_id']);
+    }
+
     public function test_academic_period_can_move_through_full_lifecycle(): void
     {
         $period = AcademicPeriod::create([
