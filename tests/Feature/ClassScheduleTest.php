@@ -28,15 +28,14 @@ class ClassScheduleTest extends TestCase
     }
 
     /** @test */
-    public function it_displays_class_group_schedules()
+    public function it_redirects_schedule_index_to_the_class_group_workspace()
     {
         $group = ClassGroup::factory()->create();
         ClassSchedule::factory()->count(2)->create(['class_group_id' => $group->id]);
 
         $response = $this->get(route('class-schedules.index', ['class_group' => $group->id]));
 
-        $response->assertStatus(200);
-        $response->assertSee($group->name);
+        $response->assertRedirect(route('class-groups.show', $group));
     }
 
     /** @test */

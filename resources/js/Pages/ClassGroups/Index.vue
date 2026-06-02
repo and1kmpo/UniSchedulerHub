@@ -506,18 +506,6 @@ const totalStudents = computed(() => {
 
                         </Link>
 
-                        <!-- CALENDAR -->
-
-                        <Link :href="route(
-                            'class-schedules.calendar',
-                            row.id
-                        )
-                            ">
-
-                            <TableActionButton icon="fa-solid fa-calendar" color="gray" />
-
-                        </Link>
-
                         <!-- DELETE -->
 
                         <TableActionButton icon="fa-solid fa-trash" color="red" @click="destroy(row)" />
