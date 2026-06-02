@@ -53,6 +53,13 @@ class AcademicAuditLogController extends Controller
             ])
             ->values();
 
+        $stats = [
+            'total' => AcademicAuditLog::count(),
+            'today' => AcademicAuditLog::whereDate('created_at', now()->toDateString())->count(),
+            'grade_events' => AcademicAuditLog::where('action', 'like', 'grade.%')->count(),
+            'enrollment_events' => AcademicAuditLog::where('action', 'like', 'enrollment.%')->count(),
+        ];
+
         $logs = $filters
             ->apply($query)
             ->paginate(15)
@@ -91,6 +98,7 @@ class AcademicAuditLogController extends Controller
                 'users' => $users,
                 'auditableTypes' => $auditableTypes,
             ],
+            'stats' => $stats,
         ]);
     }
 }
