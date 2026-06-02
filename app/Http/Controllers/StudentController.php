@@ -213,6 +213,9 @@ class StudentController extends Controller
                 'status_label' => $enrollment->status?->label,
                 'professor_name' => $enrollment->classGroup?->professor?->name ?? 'Unassigned',
                 'group' => $enrollment->classGroup?->code,
+                'group_name' => $enrollment->classGroup?->name,
+                'modality' => $enrollment->classGroup?->modality,
+                'shift' => $enrollment->classGroup?->shift,
                 'period' => $enrollment->academicPeriod?->name,
                 'schedules' => $enrollment->classGroup?->schedules
                     ? $enrollment->classGroup->schedules->map(fn($schedule) => [
@@ -224,6 +227,7 @@ class StudentController extends Controller
                     ])->values()
                     : [],
                 'grade' => $enrollment->grade,
+                'grade_state' => $enrollment->grade?->state,
             ])
             ->filter(fn($subject) => $subject['id'])
             ->values();
@@ -304,8 +308,11 @@ class StudentController extends Controller
                 'partial_2' => $enrollment->grade?->partial_2,
                 'partial_3' => $enrollment->grade?->partial_3,
                 'activities' => $enrollment->grade?->activities,
+                'attendance' => $enrollment->grade?->attendance,
                 'final_grade' => $enrollment->grade?->final_grade,
                 'state' => $enrollment->grade?->state,
+                'period' => $enrollment->academicPeriod?->name,
+                'group' => $enrollment->classGroup?->code,
             ]);
 
         return response()->json(['grades' => $gradesSummary]);
