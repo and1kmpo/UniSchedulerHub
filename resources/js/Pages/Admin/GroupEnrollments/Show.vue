@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { router } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import axios from "axios";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
@@ -75,6 +75,12 @@ const scheduleSummary = computed(() => {
         .join("; ");
 });
 
+const pageSubtitle = computed(() =>
+    props.canManageEnrollments
+        ? "Review and manage active enrollments for this group"
+        : "Read-only roster for your assigned class group"
+);
+
 const enrollmentStatusVariant = (status) => ({
     pre_enrolled: "warning",
     enrolled: "success",
@@ -134,8 +140,16 @@ async function removeEnrollment(row) {
 </script>
 
 <template>
-    <CrudPageLayout :title="`Enrollments - ${classGroup.code}`"
-        subtitle="Review and manage active enrollments for this group">
+    <CrudPageLayout :title="`Roster - ${classGroup.code}`" :subtitle="pageSubtitle">
+        <template #actions>
+            <Link v-if="classGroup.can_manage_grades" :href="route('groups.grades.index', classGroup.id)">
+                <BaseButton :variant="classGroup.can_edit_grades ? 'primary' : 'secondary'">
+                    <i :class="classGroup.can_edit_grades ? 'fa-solid fa-clipboard-list mr-2' : 'fa-solid fa-eye mr-2'" />
+                    {{ classGroup.can_edit_grades ? "Manage Grades" : "View Grades" }}
+                </BaseButton>
+            </Link>
+        </template>
+
         <CrudContainer>
             <div class="space-y-6">
                 <SectionCard>
