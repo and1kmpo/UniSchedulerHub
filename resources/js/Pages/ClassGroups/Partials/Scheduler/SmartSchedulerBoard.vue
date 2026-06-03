@@ -94,6 +94,12 @@ function minutesToTime(totalMinutes) {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+function normalizeTime(time) {
+    const [hours = "00", minutes = "00"] = String(time).split(":");
+
+    return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+}
+
 const persistSchedule = async (schedule) => {
     if (!schedule.id) {
         return null;
@@ -106,8 +112,8 @@ const persistSchedule = async (schedule) => {
         ]),
         {
             day: schedule.day,
-            start_time: schedule.start_time,
-            end_time: schedule.end_time,
+            start_time: normalizeTime(schedule.start_time),
+            end_time: normalizeTime(schedule.end_time),
             classroom_id: schedule.classroom_id ?? null,
             status: schedule.status ?? "published",
         }
@@ -138,18 +144,20 @@ const moveSchedule = async ({
         return;
     }
 
+    const current = localSchedules.value.find((item) => item.id === schedule.id) ?? schedule;
+
     const previous = {
-        day: schedule.day,
-        start_time: schedule.start_time,
-        end_time: schedule.end_time,
+        day: current.day,
+        start_time: current.start_time,
+        end_time: current.end_time,
     };
 
-    const startMinutes = timeToMinutes(schedule.start_time);
-    const endMinutes = timeToMinutes(schedule.end_time);
+    const startMinutes = timeToMinutes(current.start_time);
+    const endMinutes = timeToMinutes(current.end_time);
     const duration = Math.max(60, endMinutes - startMinutes);
     const nextStartMinutes = timeToMinutes(hour);
     const nextSchedule = {
-        ...schedule,
+        ...current,
         day,
         start_time: hour,
         end_time: minutesToTime(nextStartMinutes + duration),

@@ -78,6 +78,13 @@ function scheduleSlotHour(schedule) {
     return `${hours.padStart(2, "0")}:00`;
 }
 
+function hasScheduleStarting(day, hour) {
+    return groupedSchedules.value.some((schedule) => (
+        schedule.day === day &&
+        scheduleSlotHour(schedule) === hour
+    ));
+}
+
 const handleDrop = (payload) => {
     if (!props.editable) {
         return;
@@ -144,7 +151,7 @@ const handleDrop = (payload) => {
                         border-b
                         border-r
                         dark:border-gray-800
-                    ">
+                    " :class="hasScheduleStarting(day, hour) ? 'z-20 overflow-visible' : 'z-0'">
 
                     <!-- DROP ZONE -->
 

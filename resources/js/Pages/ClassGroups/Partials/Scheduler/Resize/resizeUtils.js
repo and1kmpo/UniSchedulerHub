@@ -1,28 +1,47 @@
 export const PIXELS_PER_HOUR = 80;
 
+export const MINUTES_PER_HOUR = 60;
+
+export function parseMinutes(time) {
+    const [hours = 0, minutes = 0] = String(time)
+        .split(":")
+        .map(Number);
+
+    return hours * MINUTES_PER_HOUR + minutes;
+}
+
 export function parseHour(time) {
-    return Number(time.split(":")[0]);
+    return Math.floor(parseMinutes(time) / MINUTES_PER_HOUR);
 }
 
 export function formatHour(hour) {
     return `${String(hour).padStart(2, "0")}:00`;
 }
 
+export function formatMinutes(totalMinutes) {
+    const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+    const minutes = totalMinutes % MINUTES_PER_HOUR;
+
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 export function calculateDuration(start, end) {
-    return parseHour(end) - parseHour(start);
+    return parseMinutes(end) - parseMinutes(start);
 }
 
-export function snapHour(pixels) {
-    return Math.round(pixels / PIXELS_PER_HOUR);
+export function snapMinutes(pixels, step = 30) {
+    const minutes = (pixels / PIXELS_PER_HOUR) * MINUTES_PER_HOUR;
+
+    return Math.round(minutes / step) * step;
 }
 
-export function calculateResizeHour(startHour, deltaPixels) {
-    const deltaHours = snapHour(deltaPixels);
+export function calculateResizeMinutes(startMinutes, deltaPixels) {
+    const deltaMinutes = snapMinutes(deltaPixels);
 
-    return startHour + deltaHours;
+    return startMinutes + deltaMinutes;
 }
 
-export function limitResize(start, end, min = 1, max = 14) {
+export function limitResize(start, end, min = 60, max = 14 * MINUTES_PER_HOUR) {
     const duration = end - start;
 
     if (duration < min) {

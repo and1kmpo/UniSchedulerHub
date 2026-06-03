@@ -1,9 +1,9 @@
 import { ref } from "vue";
 
 import {
-    parseHour,
-    formatHour,
-    calculateResizeHour,
+    parseMinutes,
+    formatMinutes,
+    calculateResizeMinutes,
     limitResize,
 } from "./resizeUtils";
 
@@ -20,7 +20,7 @@ export function useResizeScheduler() {
 
             startY: event.clientY,
 
-            originalEnd: parseHour(schedule.end_time),
+            originalEnd: parseMinutes(schedule.end_time),
         };
 
         onStop.value = callback;
@@ -39,13 +39,13 @@ export function useResizeScheduler() {
 
         previewHeight.value = deltaY;
 
-        const startHour = parseHour(resizing.value.schedule.start_time);
+        const startMinutes = parseMinutes(resizing.value.schedule.start_time);
 
-        let newEnd = calculateResizeHour(resizing.value.originalEnd, deltaY);
+        let newEnd = calculateResizeMinutes(resizing.value.originalEnd, deltaY);
 
-        newEnd = limitResize(startHour, newEnd);
+        newEnd = limitResize(startMinutes, newEnd);
 
-        resizing.value.schedule.end_time = formatHour(newEnd);
+        resizing.value.schedule.end_time = formatMinutes(newEnd);
     };
 
     const stopResize = () => {

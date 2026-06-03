@@ -283,7 +283,7 @@ const blockStyle = computed(() => {
 
 <template>
 
-    <div :draggable="editable" @dragstart="editable ? startDrag(schedule) : null" @dragend="stopDrag"
+    <div :draggable="editable && !resizing" @dragstart="editable && !resizing ? startDrag(schedule) : null" @dragend="stopDrag"
         @click="$emit('select', schedule)" class="
             absolute
             overflow-hidden
@@ -475,7 +475,7 @@ const blockStyle = computed(() => {
         <ResizeHandle v-if="editable" :active="resizing?.schedule?.id
             ===
             schedule.id
-            " @mousedown.stop="
+            " @mousedown.stop.prevent="
                 startResize(
                     $event,
                     schedule,

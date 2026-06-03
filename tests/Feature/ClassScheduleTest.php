@@ -224,6 +224,38 @@ class ClassScheduleTest extends TestCase
     }
 
     /** @test */
+    public function it_normalizes_seconds_when_scheduler_grid_updates_a_schedule()
+    {
+        $group = ClassGroup::factory()->create();
+        $schedule = ClassSchedule::factory()->create([
+            'class_group_id' => $group->id,
+            'day' => 'monday',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
+        ]);
+
+        $response = $this->putJson(
+            route('class-schedules.update', ['class_group' => $group->id, 'schedule' => $schedule->id]),
+            [
+                'day' => 'monday',
+                'start_time' => '08:00:00',
+                'end_time' => '10:30:00',
+                'status' => ClassSchedule::STATUS_PUBLISHED,
+            ]
+        );
+
+        $response
+            ->assertOk()
+            ->assertJson(['message' => 'Schedule updated.']);
+
+        $this->assertDatabaseHas('class_schedules', [
+            'id' => $schedule->id,
+            'start_time' => '08:00:00',
+            'end_time' => '10:30:00',
+        ]);
+    }
+
+    /** @test */
     public function it_returns_json_validation_errors_when_scheduler_grid_creates_a_conflict()
     {
         $group = ClassGroup::factory()->create();

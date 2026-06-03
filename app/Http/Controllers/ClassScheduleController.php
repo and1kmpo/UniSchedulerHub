@@ -120,6 +120,11 @@ class ClassScheduleController extends Controller
 
     private function validateSchedule(Request $request): array
     {
+        $request->merge([
+            'start_time' => $this->normalizeTime($request->input('start_time')),
+            'end_time' => $this->normalizeTime($request->input('end_time')),
+        ]);
+
         return $request->validate([
             'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday',
             'start_time' => 'required|date_format:H:i',
@@ -127,6 +132,17 @@ class ClassScheduleController extends Controller
             'classroom_id' => 'nullable|exists:classrooms,id',
             'status' => 'nullable|in:draft,published,cancelled,closed',
         ]);
+    }
+
+    private function normalizeTime(?string $time): ?string
+    {
+        if ($time === null || $time === '') {
+            return $time;
+        }
+
+        [$hours, $minutes] = array_pad(explode(':', $time), 2, '00');
+
+        return str_pad($hours, 2, '0', STR_PAD_LEFT).':'.str_pad($minutes, 2, '0', STR_PAD_LEFT);
     }
 
     protected function expectsJsonResponse(Request $request): bool
