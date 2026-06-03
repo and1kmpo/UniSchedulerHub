@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Academic\AcademicPeriodGuard;
 use App\Events\EnrollmentCreated;
 use App\Events\EnrollmentWithdrawn;
+use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\Student;
 use App\Models\SubjectEnrollment;
@@ -174,6 +175,64 @@ class EnrollmentService
             );
 
             /* event(new EnrollmentWithdrawn($enrollment)); */
+        });
+    }
+
+    public function confirmPeriodEnrollment(Student $student, AcademicPeriod $period): array
+    {
+        return DB::transaction(function () use ($student, $period) {
+            AcademicPeriodGuard::ensurePeriodNotFrozen($period);
+            AcademicPeriodGuard::ensureEnrollmentAllowed($period);
+
+            $activeStatusCodes = config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']);
+
+            $enrollments = SubjectEnrollment::query()
+                ->with(['status', 'subject'])
+                ->where('student_id', $student->id)
+                ->where('academic_period_id', $period->id)
+                ->whereHas('status', fn($query) => $query->whereIn('code', $activeStatusCodes))
+                ->lockForUpdate()
+                ->get();
+
+            $credits = $enrollments->sum(fn($enrollment) => $enrollment->subject?->credits ?? 0);
+            $minCredits = config('enrollment.min_credits', 7);
+
+            if ($credits < $minCredits) {
+                throw new DomainException('BLOCK_MIN_CREDITS');
+            }
+
+            $confirmed = 0;
+
+            foreach ($enrollments as $enrollment) {
+                if ($enrollment->status?->code !== 'pre_enrolled') {
+                    continue;
+                }
+
+                $enrollment->transitionTo('enrolled');
+                $confirmed++;
+            }
+
+            app(AcademicAuditService::class)->record(
+                'enrollment.period_confirmed',
+                $student,
+                [
+                    'student_id' => $student->id,
+                    'academic_period_id' => $period->id,
+                    'credits' => $credits,
+                    'min_credits' => $minCredits,
+                    'confirmed_enrollments' => $confirmed,
+                ],
+                'Student enrollment load confirmed for academic period'
+            );
+
+            return [
+                'student_id' => $student->id,
+                'academic_period_id' => $period->id,
+                'credits' => $credits,
+                'min_credits' => $minCredits,
+                'meets_minimum' => true,
+                'confirmed_enrollments' => $confirmed,
+            ];
         });
     }
 
