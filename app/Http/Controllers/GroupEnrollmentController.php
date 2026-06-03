@@ -23,6 +23,9 @@ class GroupEnrollmentController extends Controller
         $period = AcademicPeriod::active()->with('status')->first();
 
         $groups = collect();
+        $activeStatusCodes = config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']);
+        $minCredits = config('enrollment.min_credits', 7);
+        $incompleteLoads = collect();
 
         if ($period) {
             $groups = ClassGroup::query()
@@ -35,7 +38,15 @@ class GroupEnrollmentController extends Controller
                 ->withCount([
                     'subjectEnrollments' => fn($query) => $query->whereHas(
                         'status',
-                        fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
+                        fn($status) => $status->whereIn('code', $activeStatusCodes)
+                    ),
+                    'subjectEnrollments as pending_enrollments_count' => fn($query) => $query->whereHas(
+                        'status',
+                        fn($status) => $status->where('code', 'pre_enrolled')
+                    ),
+                    'subjectEnrollments as confirmed_enrollments_count' => fn($query) => $query->whereHas(
+                        'status',
+                        fn($status) => $status->where('code', 'enrolled')
                     ),
                 ])
                 ->latest()
@@ -50,7 +61,32 @@ class GroupEnrollmentController extends Controller
                     'capacity' => $group->capacity,
                     'status' => $group->status,
                     'enrolled' => $group->subject_enrollments_count,
+                    'pending' => $group->pending_enrollments_count,
+                    'confirmed' => $group->confirmed_enrollments_count,
                 ]);
+
+            if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
+                $incompleteLoads = SubjectEnrollment::query()
+                    ->with(['student.user', 'subject', 'status'])
+                    ->where('academic_period_id', $period->id)
+                    ->whereHas('status', fn($status) => $status->whereIn('code', $activeStatusCodes))
+                    ->get()
+                    ->groupBy('student_id')
+                    ->map(function ($enrollments) use ($minCredits) {
+                        $credits = $enrollments->sum(fn($enrollment) => $enrollment->subject?->credits ?? 0);
+                        $student = $enrollments->first()?->student;
+
+                        return [
+                            'student_id' => $student?->id,
+                            'student_name' => $student?->user?->name,
+                            'credits' => $credits,
+                            'min_credits' => $minCredits,
+                            'missing_credits' => max($minCredits - $credits, 0),
+                        ];
+                    })
+                    ->filter(fn($load) => $load['credits'] < $minCredits)
+                    ->values();
+            }
         }
 
         return Inertia::render('Admin/GroupEnrollments/Index', [
@@ -65,7 +101,12 @@ class GroupEnrollmentController extends Controller
                 'groups' => $groups->count(),
                 'students' => $groups->sum('enrolled'),
                 'capacity' => $groups->sum('capacity'),
+                'pending' => $groups->sum('pending'),
+                'confirmed' => $groups->sum('confirmed'),
+                'incomplete_loads' => $incompleteLoads->count(),
+                'min_credits' => $minCredits,
             ],
+            'incompleteLoads' => $incompleteLoads->take(5)->values(),
             'systemState' => $period ? 'ready' : 'no_period',
         ]);
     }
@@ -106,11 +147,11 @@ class GroupEnrollmentController extends Controller
                 'grade_state' => $e->grade?->state?->label,
             ]);
 
+        $enrolledIds = $enrollments->pluck('student_id')->all();
+
         $allStudents = collect();
 
         if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
-            $enrolledIds = $enrollments->pluck('student_id')->all();
-
             $allStudents = Student::with('user')
                 ->whereNotIn('id', $enrolledIds)
                 ->orderBy('document')
@@ -143,6 +184,7 @@ class GroupEnrollmentController extends Controller
                 'can_edit_grades' => $user->can('editGrades', $group),
             ],
             'enrollments' => $enrollments,
+            'enrolledIds' => $enrolledIds,
             'allStudents' => $allStudents,
             'canManageEnrollments' => $user->hasAnyRole(['admin', 'academic_coordinator']),
         ]);

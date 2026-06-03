@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import axios from "axios";
 
@@ -8,10 +8,10 @@ import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
-import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import EnrollmentWorkspace from "@/Pages/ClassGroups/Partials/Sections/EnrollmentWorkspace.vue";
 
 import { useAlert } from "@/Components/Composables/useAlert";
 
@@ -33,14 +33,21 @@ const props = defineProps({
         default: () => [],
     },
 
+    enrolledIds: {
+        type: Array,
+        default: () => [],
+    },
+
     canManageEnrollments: {
         type: Boolean,
         default: false,
     },
 });
 
-const selectedStudentId = ref("");
+const selectedStudent = ref(null);
 const processing = ref(false);
+const validationLoading = ref(false);
+const validationResult = ref(defaultValidationResult());
 
 const columns = [
     { key: "student_name", label: "Student" },
@@ -52,13 +59,6 @@ const columns = [
 ];
 
 const rows = computed(() => props.enrollments);
-
-const studentOptions = computed(() =>
-    props.allStudents.map((student) => ({
-        label: `${student.name} (${student.document})`,
-        value: student.id,
-    }))
-);
 
 const scheduleSummary = computed(() => {
     if (!props.classGroup.schedules?.length) {
@@ -92,8 +92,62 @@ function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
 }
 
+function defaultValidationResult() {
+    return {
+        allowed: true,
+        valid: true,
+        errors: [],
+        conflicts: [],
+        warnings: [],
+        recommendations: [],
+        load: {
+            credits: 0,
+            groups: 0,
+            weekly_hours: 0,
+        },
+        waitlist: false,
+        available_slots: 0,
+    };
+}
+
+async function validateEnrollment() {
+    if (!selectedStudent.value) {
+        validationResult.value = defaultValidationResult();
+        return;
+    }
+
+    validationLoading.value = true;
+
+    try {
+        const response = await axios.post(
+            route("class-groups.validate-enrollment", props.classGroup.id),
+            {
+                student_id: selectedStudent.value.id,
+            }
+        );
+
+        validationResult.value = response.data;
+    } catch (exception) {
+        const message =
+            exception.response?.data?.message
+            || exception.response?.data?.error
+            || "Enrollment validation failed. Please review the selected student and group.";
+
+        validationResult.value = {
+            ...defaultValidationResult(),
+            allowed: false,
+            valid: false,
+            errors: [message],
+        };
+
+        toastError(message);
+    } finally {
+        validationLoading.value = false;
+    }
+}
+
 async function enrollStudent() {
-    if (!selectedStudentId.value) {
+    if (!selectedStudent.value || !validationResult.value.allowed) {
         return;
     }
 
@@ -101,7 +155,7 @@ async function enrollStudent() {
 
     try {
         await axios.post(route("class-groups.enroll", props.classGroup.id), {
-            student_id: selectedStudentId.value,
+            student_id: selectedStudent.value.id,
         });
 
         toastSuccess("Student enrolled successfully");
@@ -110,7 +164,8 @@ async function enrollStudent() {
         toastError(exception.response?.data?.code || exception.response?.data?.message || "Enrollment failed");
     } finally {
         processing.value = false;
-        selectedStudentId.value = "";
+        selectedStudent.value = null;
+        validationResult.value = defaultValidationResult();
     }
 }
 
@@ -137,6 +192,8 @@ async function removeEnrollment(row) {
         processing.value = false;
     }
 }
+
+watch(selectedStudent, validateEnrollment);
 </script>
 
 <template>
@@ -236,29 +293,17 @@ async function removeEnrollment(row) {
                     </div>
                 </SectionCard>
 
-                <SectionCard v-if="canManageEnrollments">
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Enroll Student
-                        </h2>
-
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Administrative enrollment for exceptional or assisted cases.
-                        </p>
-                    </div>
-
-                    <div class="grid gap-4 p-6 md:grid-cols-[1fr_auto] md:items-end">
-                        <BaseSelect v-model="selectedStudentId" label="Student" placeholder="Select a student"
-                            :options="studentOptions" />
-
-                        <BaseButton type="button" variant="primary" :disabled="!selectedStudentId || processing"
-                            @click="enrollStudent">
-                            <i v-if="processing" class="fa-solid fa-spinner fa-spin mr-2" />
-                            <i v-else class="fa-solid fa-user-plus mr-2" />
-                            Enroll
-                        </BaseButton>
-                    </div>
-                </SectionCard>
+                <EnrollmentWorkspace
+                    v-if="canManageEnrollments"
+                    :class-group="classGroup"
+                    :students="allStudents"
+                    :enrolled-ids="enrolledIds"
+                    :selected-student="selectedStudent"
+                    :validation-result="validationResult"
+                    :validation-loading="validationLoading || processing"
+                    @select-student="selectedStudent = $event"
+                    @enroll="enrollStudent"
+                />
             </div>
         </CrudContainer>
     </CrudPageLayout>

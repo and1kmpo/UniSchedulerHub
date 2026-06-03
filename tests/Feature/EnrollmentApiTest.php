@@ -161,6 +161,53 @@ class EnrollmentApiTest extends TestCase
         ]);
     }
 
+    public function test_student_cannot_confirm_period_enrollment_below_minimum_credits(): void
+    {
+        [$student, , $group] = $this->academicFixture();
+
+        $this->actingAs($student->user)
+            ->postJson(route('api.class-groups.enrollments.store', $group))
+            ->assertCreated();
+
+        $this->actingAs($student->user)
+            ->postJson(route('api.enrollments.confirm-period'))
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'BLOCK_MIN_CREDITS');
+
+        $this->assertDatabaseHas('subject_enrollments', [
+            'student_id' => $student->id,
+            'class_group_id' => $group->id,
+            'status_id' => SubjectEnrollmentStatus::where('code', 'pre_enrolled')->value('id'),
+        ]);
+    }
+
+    public function test_student_can_confirm_period_enrollment_when_minimum_credits_are_met(): void
+    {
+        [$student, , $firstGroup] = $this->academicFixture();
+        [, $secondGroup] = $this->addSubjectGroupForStudent($student, 4, 'tuesday');
+
+        $this->actingAs($student->user)
+            ->postJson(route('api.class-groups.enrollments.store', $firstGroup))
+            ->assertCreated();
+
+        $this->actingAs($student->user)
+            ->postJson(route('api.class-groups.enrollments.store', $secondGroup))
+            ->assertCreated();
+
+        $this->actingAs($student->user)
+            ->postJson(route('api.enrollments.confirm-period'))
+            ->assertOk()
+            ->assertJsonPath('data.credits', 7)
+            ->assertJsonPath('data.meets_minimum', true)
+            ->assertJsonPath('data.confirmed_enrollments', 2);
+
+        $this->assertDatabaseCount('subject_enrollments', 2);
+        $this->assertDatabaseMissing('subject_enrollments', [
+            'student_id' => $student->id,
+            'status_id' => SubjectEnrollmentStatus::where('code', 'pre_enrolled')->value('id'),
+        ]);
+    }
+
     private function academicFixture(): array
     {
         $subject = Subject::create([
@@ -213,6 +260,29 @@ class EnrollmentApiTest extends TestCase
             'curriculum_id' => $curriculum->id,
             'academic_status' => Student::STATUS_ACTIVE,
         ]);
+    }
+
+    private function addSubjectGroupForStudent(Student $student, int $credits, string $day): array
+    {
+        $subject = Subject::create([
+            'code' => fake()->unique()->bothify('API###'),
+            'name' => fake()->words(3, true),
+            'description' => 'Additional API enrollment subject',
+            'credits' => $credits,
+            'knowledge_area' => 'Engineering',
+            'elective' => false,
+        ]);
+
+        $student->curriculum->subjects()->attach($subject->id, [
+            'semester_recommended' => 1,
+            'credits' => $subject->credits,
+            'type' => 'required',
+        ]);
+
+        $group = $this->classGroup($subject);
+        $this->schedule($group, $day);
+
+        return [$subject, $group];
     }
 
     private function classGroup(Subject $subject, array $overrides = []): ClassGroup

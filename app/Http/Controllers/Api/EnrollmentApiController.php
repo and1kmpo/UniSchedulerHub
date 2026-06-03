@@ -224,6 +224,31 @@ class EnrollmentApiController extends Controller
         }
     }
 
+    public function confirmPeriod(Request $request, EnrollmentService $service)
+    {
+        $validated = $request->validate([
+            'student_id' => ['nullable', 'integer', 'exists:students,id'],
+            'academic_period_id' => ['nullable', 'integer', 'exists:academic_periods,id'],
+        ]);
+
+        $student = $this->studentFromRequest($request, $validated['student_id'] ?? null);
+        $period = isset($validated['academic_period_id'])
+            ? AcademicPeriod::findOrFail($validated['academic_period_id'])
+            : AcademicPeriod::active()->firstOrFail();
+
+        try {
+            return response()->json([
+                'message' => 'Enrollment load confirmed successfully.',
+                'data' => $service->confirmPeriodEnrollment($student, $period),
+            ]);
+        } catch (DomainException $exception) {
+            return response()->json([
+                'message' => $this->domainMessage($exception),
+                'code' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
     public function destroy(SubjectEnrollment $enrollment, EnrollmentService $service)
     {
         $this->authorize('unenroll', $enrollment);
@@ -281,6 +306,7 @@ class EnrollmentApiController extends Controller
             'BLOCK_GROUP_NOT_PUBLISHED' => 'This class group is not published and cannot receive enrollments.',
             'BLOCK_GROUP_WITHOUT_SCHEDULE' => 'This class group does not have a valid schedule.',
             'BLOCK_MAX_CREDITS' => 'The enrollment would exceed the maximum credit load.',
+            'BLOCK_MIN_CREDITS' => 'The student must enroll at least the minimum required credits before confirming enrollment.',
             'BLOCK_NO_CURRICULUM' => 'The student does not have an assigned curriculum.',
             'BLOCK_OUT_OF_CURRICULUM' => 'The subject is not part of the student curriculum.',
             'BLOCK_SCHEDULE_CONFLICT' => 'The class group schedule conflicts with another active enrollment.',

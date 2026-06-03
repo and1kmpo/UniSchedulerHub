@@ -41,6 +41,8 @@ Route::middleware(['auth:sanctum', 'role:admin|academic_coordinator|student'])->
         ->name('api.class-groups.enrollments.store');
     Route::patch('enrollments/{enrollment}/change-group', [EnrollmentApiController::class, 'changeGroup'])
         ->name('api.enrollments.change-group');
+    Route::post('enrollments/confirm-period', [EnrollmentApiController::class, 'confirmPeriod'])
+        ->name('api.enrollments.confirm-period');
     Route::delete('enrollments/{enrollment}', [EnrollmentApiController::class, 'destroy'])
         ->name('api.enrollments.destroy');
 });
