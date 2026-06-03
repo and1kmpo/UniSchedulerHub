@@ -72,6 +72,12 @@ const groupedSchedules = computed(() => {
     });
 });
 
+function scheduleSlotHour(schedule) {
+    const [hours = "00"] = String(schedule.start_time).split(":");
+
+    return `${hours.padStart(2, "0")}:00`;
+}
+
 const handleDrop = (payload) => {
     if (!props.editable) {
         return;
@@ -150,7 +156,7 @@ const handleDrop = (payload) => {
 
                         <DraggableClassCard v-if="
                             schedule.day === day &&
-                            schedule.start_time.startsWith(hour)
+                            scheduleSlotHour(schedule) === hour
                         " :schedule="schedule" :conflict="schedule.conflict" :editable="editable"
                             @resize="editable ? $emit('resize', $event) : null" />
 

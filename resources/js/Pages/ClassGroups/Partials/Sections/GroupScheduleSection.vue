@@ -9,7 +9,6 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
 import ScheduleForm from "@/Pages/ClassSchedules/Form.vue";
 import ScheduleTimeline from "../ScheduleTimeline.vue";
-import StudentLoadChart from "../Schedule/StudentLoadChart.vue";
 import SmartSchedulerBoard from "../Scheduler/SmartSchedulerBoard.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
 
@@ -132,8 +131,6 @@ const submitCreateSchedule = () => {
             :can-edit="canManageSchedules" @schedule-updated="replaceSchedule" />
 
         <ScheduleTimeline :schedules="localSchedules" />
-
-        <StudentLoadChart :students="classGroup.students" />
 
         <Modal :show="showCreateModal" max-width="2xl" @close="closeCreateModal">
             <ScheduleForm :form="createForm" :class-group="classGroup" :classrooms="classrooms"

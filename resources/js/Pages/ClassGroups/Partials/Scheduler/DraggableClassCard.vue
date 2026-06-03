@@ -84,32 +84,37 @@ const {
 |--------------------------------------------------------------------------
 */
 
-const startHour = computed(() => {
+const hourHeight = 80;
 
-    return Number(
-        props.schedule
-            .start_time
-            .split(":")[0]
-    );
-});
+function timeToMinutes(time) {
+    const [hours = 0, minutes = 0] = String(time)
+        .split(":")
+        .map(Number);
 
-const endHour = computed(() => {
+    return hours * 60 + minutes;
+}
 
-    return Number(
-        props.schedule
-            .end_time
-            .split(":")[0]
-    );
+const startMinutes = computed(() => timeToMinutes(props.schedule.start_time));
+
+const endMinutes = computed(() => timeToMinutes(props.schedule.end_time));
+
+const topOffset = computed(() => {
+    const minutesIntoHour = startMinutes.value % 60;
+
+    return 2 + (minutesIntoHour / 60) * hourHeight;
 });
 
 const duration = computed(() => {
+    const minutes = Math.max(30, endMinutes.value - startMinutes.value);
 
-    return (
-        endHour.value
-        -
-        startHour.value
-    ) * 80;
+    return (minutes / 60) * hourHeight - 4;
 });
+
+function formatTime(time) {
+    const [hours = "00", minutes = "00"] = String(time).split(":");
+
+    return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -246,10 +251,10 @@ const blockStyle = computed(() => {
     return {
 
         top:
-            `${props.schedule.top ?? 2}px`,
+            `${props.schedule.visual?.top ?? topOffset.value}px`,
 
         height:
-            `${props.schedule.height ?? duration.value}px`,
+            `${duration.value}px`,
 
         width:
             props.schedule.visual?.width
@@ -353,9 +358,9 @@ const blockStyle = computed(() => {
                         text-gray-600
                         dark:text-gray-300
                     ">
-                    {{ schedule.start_time }}
+                    {{ formatTime(schedule.start_time) }}
                     —
-                    {{ schedule.end_time }}
+                    {{ formatTime(schedule.end_time) }}
                 </div>
 
             </div>
@@ -482,5 +487,4 @@ const blockStyle = computed(() => {
                 " />
 
     </div>
-
 </template>

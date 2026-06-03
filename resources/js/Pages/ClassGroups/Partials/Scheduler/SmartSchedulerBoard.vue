@@ -79,6 +79,21 @@ const score = computed(() => {
     };
 });
 
+function timeToMinutes(time) {
+    const [hours = 0, minutes = 0] = String(time)
+        .split(":")
+        .map(Number);
+
+    return hours * 60 + minutes;
+}
+
+function minutesToTime(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 const persistSchedule = async (schedule) => {
     if (!schedule.id) {
         return null;
@@ -129,15 +144,15 @@ const moveSchedule = async ({
         end_time: schedule.end_time,
     };
 
-    const startHour = Number(schedule.start_time.split(":")[0]);
-    const endHour = Number(schedule.end_time.split(":")[0]);
-    const duration = Math.max(1, endHour - startHour);
-    const nextStartHour = Number(hour.split(":")[0]);
+    const startMinutes = timeToMinutes(schedule.start_time);
+    const endMinutes = timeToMinutes(schedule.end_time);
+    const duration = Math.max(60, endMinutes - startMinutes);
+    const nextStartMinutes = timeToMinutes(hour);
     const nextSchedule = {
         ...schedule,
         day,
         start_time: hour,
-        end_time: `${String(nextStartHour + duration).padStart(2, "0")}:00`,
+        end_time: minutesToTime(nextStartMinutes + duration),
     };
 
     replaceLocalSchedule(schedule.id, nextSchedule);

@@ -20,16 +20,6 @@ const props = defineProps({
         required: true,
     },
 
-    allStudents: {
-        type: Array,
-        default: () => [],
-    },
-
-    enrolledIds: {
-        type: Array,
-        default: () => [],
-    },
-
     classrooms: {
         type: Array,
         default: () => [],
