@@ -66,6 +66,37 @@ class ApiAcademicResourcesTest extends TestCase
             ->assertJsonPath('data.0.name', 'API Calculus');
     }
 
+    public function test_academic_coordinator_can_access_academic_rest_resources(): void
+    {
+        $coordinator = $this->userWithRole('academic_coordinator');
+
+        Student::factory()->create();
+        Subject::factory()->create(['name' => 'Coordinator API Subject']);
+
+        $this->actingAs($coordinator)
+            ->getJson('/api/students')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'links', 'meta']);
+
+        $this->actingAs($coordinator)
+            ->getJson('/api/subjects?search=Coordinator')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Coordinator API Subject');
+    }
+
+    public function test_professor_and_student_cannot_access_administrative_api_resources(): void
+    {
+        $professor = $this->userWithRole('professor');
+        $student = $this->userWithRole('student');
+
+        foreach ([$professor, $student] as $user) {
+            $this->actingAs($user)->getJson('/api/students')->assertForbidden();
+            $this->actingAs($user)->getJson('/api/professors')->assertForbidden();
+            $this->actingAs($user)->getJson('/api/subjects')->assertForbidden();
+            $this->actingAs($user)->getJson('/api/reports/student-assignments')->assertForbidden();
+        }
+    }
+
     public function test_student_assignment_report_uses_enrollments_with_class_group_professor(): void
     {
         $admin = $this->userWithRole('admin');
