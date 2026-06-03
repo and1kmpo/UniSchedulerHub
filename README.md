@@ -60,6 +60,33 @@ Frontend build:
 npm run build
 ```
 
+## Demo Environment
+
+Fresh local setup:
+
+```bash
+composer install
+npm install
+php artisan migrate:fresh --seed
+php artisan check:seed-integrity
+npm run dev
+php artisan serve
+```
+
+Demo credentials use the password `password`.
+
+| Role | Email |
+| --- | --- |
+| Admin | `admin@unischedulerhub.test` |
+| Academic Coordinator | `coordinator@unischedulerhub.test` |
+| Professor | `professor@unischedulerhub.test` |
+| Professor | `professor.math@unischedulerhub.test` |
+| Student | `student@unischedulerhub.test` |
+| Student | `student.enrolled@unischedulerhub.test` |
+| Student | `student.probation@unischedulerhub.test` |
+| Student | `student.suspended@unischedulerhub.test` |
+| Student | `student.graded@unischedulerhub.test` |
+
 ## Academic Design Principles
 
 - The official assignment flow is `Student -> SubjectEnrollment -> ClassGroup -> Professor`.
