@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
+use App\Models\Curriculum;
 use App\Models\Program;
+use App\Models\Professor;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
@@ -82,6 +84,96 @@ class ApiAcademicResourcesTest extends TestCase
             ->getJson('/api/subjects?search=Coordinator')
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Coordinator API Subject');
+    }
+
+    public function test_admin_can_create_student_through_rest_api(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $program = Program::factory()->create(['name' => 'REST Software Engineering']);
+        $curriculum = Curriculum::factory()->create([
+            'program_id' => $program->id,
+            'code' => 'REST-CUR-001',
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/students', [
+                'document' => 'REST-STU-001',
+                'name' => 'REST Student',
+                'phone' => '3001112233',
+                'email' => 'rest.student@example.test',
+                'password' => 'password',
+                'address' => 'REST Student Address',
+                'city' => 'Bogota',
+                'semester' => 3,
+                'program_id' => $program->id,
+                'curriculum_id' => $curriculum->id,
+                'academic_status' => Student::STATUS_ACTIVE,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.document', 'REST-STU-001')
+            ->assertJsonPath('data.name', 'REST Student')
+            ->assertJsonPath('data.program.name', 'REST Software Engineering')
+            ->assertJsonPath('data.curriculum.code', 'REST-CUR-001');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'rest.student@example.test',
+        ]);
+        $this->assertDatabaseHas('students', [
+            'document' => 'REST-STU-001',
+            'program_id' => $program->id,
+            'curriculum_id' => $curriculum->id,
+        ]);
+        $this->assertTrue(User::where('email', 'rest.student@example.test')->first()->hasRole('student'));
+    }
+
+    public function test_admin_can_create_professor_through_rest_api(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/professors', [
+                'document' => 'REST-PROF-001',
+                'name' => 'REST Professor',
+                'phone' => '3004445566',
+                'email' => 'rest.professor@example.test',
+                'password' => 'password',
+                'address' => 'REST Professor Address',
+                'city' => 'Medellin',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.document', 'REST-PROF-001')
+            ->assertJsonPath('data.name', 'REST Professor')
+            ->assertJsonPath('data.email', 'rest.professor@example.test');
+
+        $this->assertDatabaseHas('professors', [
+            'document' => 'REST-PROF-001',
+            'city' => 'Medellin',
+        ]);
+        $this->assertTrue(User::where('email', 'rest.professor@example.test')->first()->hasRole('professor'));
+    }
+
+    public function test_admin_can_create_subject_through_rest_api(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/subjects', [
+                'name' => 'REST Differential Calculus',
+                'description' => 'Calculus for REST API validation.',
+                'credits' => 4,
+                'knowledge_area' => 'Mathematics',
+                'elective' => false,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'REST Differential Calculus')
+            ->assertJsonPath('data.credits', 4)
+            ->assertJsonPath('data.knowledge_area', 'Mathematics')
+            ->assertJsonPath('data.elective', false);
+
+        $subject = Subject::where('name', 'REST Differential Calculus')->first();
+
+        $this->assertNotNull($subject);
+        $this->assertNotEmpty($subject->code);
     }
 
     public function test_professor_and_student_cannot_access_administrative_api_resources(): void
