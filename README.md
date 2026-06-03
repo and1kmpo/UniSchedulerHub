@@ -35,6 +35,12 @@ The project started from a junior developer challenge about assigning university
 
 See [docs/api.md](docs/api.md) for the current academic REST API documentation.
 
+See [docs/demo-testing.md](docs/demo-testing.md) for the functional demo testing guide.
+
+See [docs/database.md](docs/database.md) for the database model reference used to generate ER diagrams.
+
+See [docs/production-checklist.md](docs/production-checklist.md) for deployment and production readiness checks.
+
 Covered API areas:
 
 - Students CRUD
@@ -71,6 +77,12 @@ php artisan migrate:fresh --seed
 php artisan check:seed-integrity
 npm run dev
 php artisan serve
+```
+
+Functional demo guide:
+
+```text
+docs/demo-testing.md
 ```
 
 Demo credentials use the password `password`.
