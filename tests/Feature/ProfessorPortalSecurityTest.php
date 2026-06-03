@@ -92,6 +92,25 @@ class ProfessorPortalSecurityTest extends TestCase
         $this->assertFalse($groups->contains('id', $otherGroup->id));
     }
 
+    public function test_admin_group_enrollments_index_contains_confirmation_metrics(): void
+    {
+        [$group] = $this->groupWithEnrollment($this->firstProfessor, 'Linear Algebra');
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.group-enrollments.index'))
+            ->assertOk();
+
+        $props = $response->viewData('page')['props'];
+        $groups = collect($props['classGroups']);
+
+        $this->assertSame(1, $props['summary']['pending']);
+        $this->assertSame(0, $props['summary']['confirmed']);
+        $this->assertSame(1, $props['summary']['incomplete_loads']);
+        $this->assertSame(7, $props['summary']['min_credits']);
+        $this->assertSame(1, $groups->firstWhere('id', $group->id)['pending']);
+        $this->assertCount(1, $props['incompleteLoads']);
+    }
+
     public function test_professor_cannot_open_other_professors_group_enrollments_by_url(): void
     {
         [$otherGroup] = $this->groupWithEnrollment($this->secondProfessor, 'Operating Systems');
