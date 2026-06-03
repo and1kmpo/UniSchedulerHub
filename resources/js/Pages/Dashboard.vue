@@ -477,9 +477,6 @@ function gradingProgressData(items) {
                                 Subjects assigned to each student with the responsible professor and group.
                             </p>
                         </div>
-                        <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
-                            Challenge report
-                        </span>
                     </div>
 
                     <div class="mt-5 overflow-x-auto">
@@ -508,15 +505,33 @@ function gradingProgressData(items) {
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="space-y-2">
-                                            <div v-for="assignment in student.subjects" :key="`${student.id}-${assignment.code}-${assignment.group}`"
+                                            <div v-for="assignment in student.subjects.slice(0, 3)" :key="`${student.id}-${assignment.code}-${assignment.group}`"
                                                 class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
                                                 <p class="font-medium text-gray-900 dark:text-white">
                                                     {{ assignment.code }} - {{ assignment.subject }}
                                                 </p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                    {{ assignment.professor }} · {{ assignment.group || "No group" }}
+                                                    {{ assignment.professor }} - {{ assignment.group || "No group" }}
                                                 </p>
                                             </div>
+                                            <details v-if="student.subjects.length > 3"
+                                                class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+                                                <summary class="cursor-pointer text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+                                                    View {{ student.subjects.length - 3 }} more assignments
+                                                </summary>
+                                                <div class="mt-2 space-y-2">
+                                                    <div v-for="assignment in student.subjects.slice(3)"
+                                                        :key="`${student.id}-${assignment.code}-${assignment.group}-extra`"
+                                                        class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                                        <p class="font-medium text-gray-900 dark:text-white">
+                                                            {{ assignment.code }} - {{ assignment.subject }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                            {{ assignment.professor }} - {{ assignment.group || "No group" }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </details>
                                         </div>
                                     </td>
                                 </tr>
