@@ -138,7 +138,9 @@ class GroupEnrollmentController extends Controller
                     'end_time' => $s->end_time,
                     'classroom' => $s->classroom?->name,
                 ]),
-                'subject_enrollments_count' => $group->subject_enrollments_count
+                'subject_enrollments_count' => $group->subject_enrollments_count,
+                'can_manage_grades' => $user->can('manageGrades', $group),
+                'can_edit_grades' => $user->can('editGrades', $group),
             ],
             'enrollments' => $enrollments,
             'allStudents' => $allStudents,

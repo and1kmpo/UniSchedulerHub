@@ -17,11 +17,27 @@ class ClassScheduleService
         $this->ensureGroupAllowsScheduleChanges($group);
         $this->ensureNoConflicts($group, $data);
 
-        return $group->schedules()->create([
+        $schedule = $group->schedules()->create([
             ...$data,
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
         ]);
+
+        app(AcademicAuditService::class)->record(
+            'schedule.created',
+            $schedule,
+            [
+                'class_group_id' => $group->id,
+                'academic_period_id' => $group->academic_period_id,
+                'day' => $schedule->day,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+                'classroom_id' => $schedule->classroom_id,
+            ],
+            'Class schedule created'
+        );
+
+        return $schedule;
     }
 
     public function update(ClassSchedule $schedule, array $data)
@@ -34,10 +50,23 @@ class ClassScheduleService
         $this->ensureGroupAllowsScheduleChanges($schedule->classGroup);
         $this->ensureNoConflicts($schedule->classGroup, $data, $schedule->id);
 
+        $before = $schedule->only(['day', 'start_time', 'end_time', 'classroom_id', 'status']);
+
         $schedule->update([
             ...$data,
             'updated_by' => auth()->id(),
         ]);
+
+        app(AcademicAuditService::class)->record(
+            'schedule.updated',
+            $schedule,
+            [
+                'class_group_id' => $schedule->class_group_id,
+                'before' => $before,
+                'after' => $schedule->fresh()->only(['day', 'start_time', 'end_time', 'classroom_id', 'status']),
+            ],
+            'Class schedule updated'
+        );
 
         return $schedule->fresh(['classroom', 'classGroup.subject', 'classGroup.professor']);
     }
@@ -59,8 +88,27 @@ class ClassScheduleService
                 'cancelled_at' => now(),
             ]);
 
+            app(AcademicAuditService::class)->record(
+                'schedule.cancelled',
+                $schedule,
+                [
+                    'class_group_id' => $schedule->class_group_id,
+                    'reason' => 'schedule_has_enrollments',
+                ],
+                'Class schedule cancelled'
+            );
+
             return;
         }
+
+        app(AcademicAuditService::class)->record(
+            'schedule.deleted',
+            $schedule,
+            [
+                'class_group_id' => $schedule->class_group_id,
+            ],
+            'Class schedule deleted'
+        );
 
         $schedule->delete();
     }

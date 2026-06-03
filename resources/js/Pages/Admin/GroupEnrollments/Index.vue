@@ -52,6 +52,16 @@ const columns = [
     { key: "status", label: "Status" },
 ];
 
+const pageTitle = computed(() =>
+    props.canManageEnrollments ? "Group Enrollments" : "My Group Rosters"
+);
+
+const pageSubtitle = computed(() =>
+    props.canManageEnrollments
+        ? "Review and manage active enrollments by academic group"
+        : "Review students enrolled in your assigned academic groups"
+);
+
 const rows = computed(() =>
     props.classGroups.map((group) => ({
         ...group,
@@ -72,7 +82,7 @@ function formatStatus(status) {
 </script>
 
 <template>
-    <CrudPageLayout title="Group Enrollments" subtitle="Review active enrollments by academic group">
+    <CrudPageLayout :title="pageTitle" :subtitle="pageSubtitle">
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -99,6 +109,18 @@ function formatStatus(status) {
                 </SectionCard>
 
                 <SectionCard>
+                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ canManageEnrollments ? "Enrollment Operations" : "Assigned Rosters" }}
+                        </h2>
+
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            {{ canManageEnrollments
+                                ? "Open a group to manage assisted enrollments and withdrawals."
+                                : "Open a group to review enrolled students and current grade status." }}
+                        </p>
+                    </div>
+
                     <div class="p-6">
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-status="{ value }">

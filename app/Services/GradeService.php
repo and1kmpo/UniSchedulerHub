@@ -49,6 +49,10 @@ class GradeService
             'subject_enrollment_id' => $enrollment->id,
         ]);
 
+        $before = $grade->exists
+            ? $grade->only(['partial_1', 'partial_2', 'partial_3', 'activities', 'attendance', 'final_grade', 'grade_status_id'])
+            : null;
+
         if (! $grade->exists) {
             $grade->created_by = auth()->id();
         }
@@ -66,6 +70,21 @@ class GradeService
         ]);
 
         $grade->save();
+
+        app(AcademicAuditService::class)->record(
+            $before ? 'grade.updated' : 'grade.created',
+            $grade,
+            [
+                'subject_enrollment_id' => $enrollment->id,
+                'student_id' => $enrollment->student_id,
+                'subject_id' => $enrollment->subject_id,
+                'class_group_id' => $enrollment->class_group_id,
+                'academic_period_id' => $enrollment->academic_period_id,
+                'before' => $before,
+                'after' => $grade->only(['partial_1', 'partial_2', 'partial_3', 'activities', 'attendance', 'final_grade', 'grade_status_id']),
+            ],
+            $before ? 'Grade updated' : 'Grade created'
+        );
 
         return $grade->load('state');
     }

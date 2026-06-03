@@ -9,6 +9,7 @@ use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Services\DegreeAuditService;
 use App\Services\EnrollmentService;
+use App\Services\Enrollment\EnrollmentValidationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -103,11 +104,6 @@ class SubjectEnrollmentController extends Controller
                     'alreadyEnrolled' => (bool) $enrollment,
                     'currentGroupId' => $currentGroupId,
                     'availableGroupsCount' => $availableGroups->count(),
-                    'availableProfessors' => $availableGroups
-                        ->map(fn($group) => $group->professor?->name)
-                        ->filter()
-                        ->unique()
-                        ->values(),
                 ];
             });
 
@@ -227,7 +223,7 @@ class SubjectEnrollmentController extends Controller
     /**
      * 📦 Obtener grupos disponibles
      */
-    public function groups(Subject $subject)
+    public function groups(Subject $subject, EnrollmentValidationService $validator)
     {
         $student = auth()->user()->student;
         $period = AcademicPeriod::active()->firstOrFail();
@@ -254,20 +250,29 @@ class SubjectEnrollmentController extends Controller
                 'professor',
             ])
             ->get()
-            ->map(fn($group) => [
-                'id' => $group->id,
-                'code' => $group->code,
-                'name' => $group->name,
-                'capacity' => $group->capacity,
-                'enrolled' => $group->active_enrollments_count,
-                'professor' => optional($group->professor)->name,
-                'isCurrent' => $group->id === $currentGroupId,
-                'schedules' => $group->schedules->map(fn($s) => [
-                    'day' => strtolower($s->day),
-                    'start_time' => $s->start_time,
-                    'end_time' => $s->end_time,
-                ]),
-            ]);
+            ->map(function ($group) use ($student, $enrollment, $currentGroupId, $validator) {
+                $validation = $validator->validate($student, $group, $enrollment)->toArray();
+
+                return [
+                    'id' => $group->id,
+                    'code' => $group->code,
+                    'name' => $group->name,
+                    'capacity' => $group->capacity,
+                    'enrolled' => $group->active_enrollments_count,
+                    'availableSeats' => max($group->capacity - $group->active_enrollments_count, 0),
+                    'modality' => $group->modality,
+                    'shift' => $group->shift,
+                    'professor' => optional($group->professor)->name,
+                    'isCurrent' => $group->id === $currentGroupId,
+                    'validation' => $validation,
+                    'canSelect' => $validation['allowed'] && $group->id !== $currentGroupId,
+                    'schedules' => $group->schedules->map(fn($s) => [
+                        'day' => strtolower($s->day),
+                        'start_time' => $s->start_time,
+                        'end_time' => $s->end_time,
+                    ]),
+                ];
+            });
 
         return response()->json(['groups' => $groups]);
     }

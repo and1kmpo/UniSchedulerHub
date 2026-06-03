@@ -10,6 +10,10 @@ class AcademicLoadValidator
 {
     protected int $maxCredits = 21;
 
+    public function __construct(
+        protected ?int $ignoreEnrollmentId = null,
+    ) {}
+
     public function validate(
         Student $student,
         ClassGroup $group,
@@ -20,6 +24,17 @@ class AcademicLoadValidator
             ->subjectEnrollments()
             ->with('classGroup.subject')
             ->where('academic_period_id', $group->academic_period_id)
+            ->when(
+                $this->ignoreEnrollmentId,
+                fn($query) => $query->where('id', '!=', $this->ignoreEnrollmentId)
+            )
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn(
+                    'code',
+                    config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled'])
+                )
+            )
             ->get()
             ->sum(
                 fn($enrollment) =>
@@ -40,12 +55,34 @@ class AcademicLoadValidator
         $currentGroups = $student
             ->subjectEnrollments()
             ->where('academic_period_id', $group->academic_period_id)
+            ->when(
+                $this->ignoreEnrollmentId,
+                fn($query) => $query->where('id', '!=', $this->ignoreEnrollmentId)
+            )
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn(
+                    'code',
+                    config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled'])
+                )
+            )
             ->count();
 
         $weeklyHours = $student
             ->subjectEnrollments()
             ->with('classGroup.schedules')
             ->where('academic_period_id', $group->academic_period_id)
+            ->when(
+                $this->ignoreEnrollmentId,
+                fn($query) => $query->where('id', '!=', $this->ignoreEnrollmentId)
+            )
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn(
+                    'code',
+                    config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled'])
+                )
+            )
             ->get()
             ->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules ?? [])
             ->sum(fn($schedule) => $this->hoursBetween($schedule->start_time, $schedule->end_time));

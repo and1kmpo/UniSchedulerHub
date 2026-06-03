@@ -11,6 +11,7 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
 
 const props = defineProps({
@@ -62,12 +63,13 @@ const selectedSubject = ref(null);
 const loadingGroups = ref(false);
 const submitting = ref(false);
 const groupsError = ref(null);
+const selectedProfessorFilter = ref("");
 
 const columns = [
     { key: "name", label: "Subject" },
     { key: "credits", label: "Credits" },
     { key: "semester", label: "Semester" },
-    { key: "available_professors", label: "Available Professors" },
+    { key: "availableGroupsCount", label: "Groups" },
     { key: "status_label", label: "Status" },
     { key: "block_reason", label: "Academic Rule" },
 ];
@@ -78,7 +80,6 @@ const rows = computed(() =>
         status_label: formatStatus(subject.status || subject.audit?.status),
         status_variant: statusVariant(subject.status || subject.audit?.status),
         block_reason: blockReason(subject),
-        available_professors: professorSummary(subject.availableProfessors),
     }))
 );
 
@@ -93,6 +94,29 @@ const enrolledSubjects = computed(() =>
 const isEnrollmentOpen = computed(() => props.canEnroll);
 
 const selectedGroups = computed(() => selectedSubject.value?.groups ?? []);
+
+const professorOptions = computed(() => {
+    const professors = selectedGroups.value
+        .map((group) => group.professor)
+        .filter(Boolean);
+
+    return [...new Set(professors)]
+        .sort()
+        .map((professor) => ({
+            value: professor,
+            label: professor,
+        }));
+});
+
+const filteredSelectedGroups = computed(() => {
+    if (!selectedProfessorFilter.value) {
+        return selectedGroups.value;
+    }
+
+    return selectedGroups.value.filter(
+        (group) => group.professor === selectedProfessorFilter.value
+    );
+});
 
 function formatDate(date) {
     if (!date) {
@@ -159,12 +183,94 @@ function scheduleSummary(schedules = []) {
         .join("; ");
 }
 
-function professorSummary(professors = []) {
-    if (!professors.length) {
-        return "No published professor yet";
+function capacityVariant(group) {
+    if (group.availableSeats <= 0) {
+        return "danger";
     }
 
-    return professors.join(", ");
+    if (group.availableSeats <= 5) {
+        return "warning";
+    }
+
+    return "success";
+}
+
+function capacityLabel(group) {
+    if (group.availableSeats <= 0) {
+        return "FULL";
+    }
+
+    return `${group.availableSeats} seats left`;
+}
+
+function validationState(group) {
+    if (group.isCurrent) {
+        return {
+            label: "CURRENT",
+            variant: "success",
+        };
+    }
+
+    if (!group.validation?.allowed) {
+        return {
+            label: "BLOCKED",
+            variant: "danger",
+        };
+    }
+
+    if (group.validation?.warnings?.length) {
+        return {
+            label: "REVIEW",
+            variant: "warning",
+        };
+    }
+
+    return {
+        label: "AVAILABLE",
+        variant: "success",
+    };
+}
+
+function selectionButtonLabel(group) {
+    if (group.isCurrent) {
+        return "Selected";
+    }
+
+    if (!group.validation?.allowed) {
+        return "Unavailable";
+    }
+
+    return "Select";
+}
+
+function validationMessages(group) {
+    return [
+        ...(group.validation?.errors ?? []).map((message) => ({
+            type: "error",
+            icon: "fa-solid fa-circle-exclamation",
+            text: message,
+        })),
+        ...(group.validation?.warnings ?? []).map((message) => ({
+            type: "warning",
+            icon: "fa-solid fa-triangle-exclamation",
+            text: message,
+        })),
+        ...(group.validation?.recommendations ?? [])
+            .filter((recommendation) => recommendation.type !== "ready")
+            .map((recommendation) => ({
+                type: recommendation.priority === "high" ? "warning" : "info",
+                icon: "fa-solid fa-lightbulb",
+                text: recommendation.message ?? recommendation,
+            })),
+    ];
+}
+
+function messageClasses(type) {
+    return {
+        error: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
+        warning: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+        info: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
+    }[type] || "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300";
 }
 
 async function openGroupModal(subject) {
@@ -173,6 +279,7 @@ async function openGroupModal(subject) {
         groups: [],
     };
     groupsError.value = null;
+    selectedProfessorFilter.value = "";
     loadingGroups.value = true;
 
     try {
@@ -193,6 +300,7 @@ async function openGroupModal(subject) {
 function closeGroupModal() {
     selectedSubject.value = null;
     groupsError.value = null;
+    selectedProfessorFilter.value = "";
 }
 
 async function enrollInGroup(group) {
@@ -319,9 +427,9 @@ async function unenrollFromSubject() {
                                 <StatusBadge :label="row.status_label" :variant="row.status_variant" />
                             </template>
 
-                            <template #cell-available_professors="{ value }">
-                                <span class="block max-w-xs whitespace-normal text-sm text-gray-700 dark:text-gray-300">
-                                    {{ value }}
+                            <template #cell-availableGroupsCount="{ value }">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ value || 0 }} {{ value === 1 ? "group" : "groups" }}
                                 </span>
                             </template>
 
@@ -375,7 +483,7 @@ async function unenrollFromSubject() {
             role="dialog"
             aria-label="Class group selection"
         >
-            <div class="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-900">
                 <div class="flex items-start justify-between gap-4 border-b border-gray-200 p-6 dark:border-gray-800">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -408,40 +516,97 @@ async function unenrollFromSubject() {
                     />
 
                     <div v-else class="space-y-4">
+                        <div class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    Compare available groups
+                                </p>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Filter by professor and compare schedule, capacity, modality and shift before selecting.
+                                </p>
+                            </div>
+
+                            <div class="w-full sm:max-w-xs">
+                                <BaseSelect
+                                    v-model="selectedProfessorFilter"
+                                    :options="professorOptions"
+                                    placeholder="All professors"
+                                />
+                            </div>
+                        </div>
+
+                        <EmptyState
+                            v-if="!filteredSelectedGroups.length"
+                            title="No groups match this filter"
+                            description="Change the professor filter to review other available groups."
+                            icon="fa-solid fa-filter-circle-xmark"
+                        />
+
                         <div
-                            v-for="group in selectedGroups"
+                            v-for="group in filteredSelectedGroups"
                             :key="group.id"
                             class="rounded-lg border border-gray-200 p-4 dark:border-gray-800"
                             :class="group.isCurrent ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'bg-white dark:bg-gray-900'"
                         >
                             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
+                                <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="font-semibold text-gray-900 dark:text-white">
                                             {{ group.code }} - {{ group.name }}
                                         </h3>
                                         <StatusBadge v-if="group.isCurrent" label="CURRENT" variant="success" />
+                                        <StatusBadge v-else :label="validationState(group).label" :variant="validationState(group).variant" />
+                                        <StatusBadge :label="capacityLabel(group)" :variant="capacityVariant(group)" />
                                     </div>
 
-                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                        Professor: {{ group.professor || "TBD" }}
-                                    </p>
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                        Capacity: {{ group.enrolled }}/{{ group.capacity }}
-                                    </p>
-                                    <p class="mt-1 max-w-xl text-sm text-gray-600 dark:text-gray-300">
+                                    <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                                        <div>
+                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Professor</dt>
+                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.professor || "TBD" }}</dd>
+                                        </div>
+
+                                        <div>
+                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Capacity</dt>
+                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.enrolled }}/{{ group.capacity }}</dd>
+                                        </div>
+
+                                        <div>
+                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Modality</dt>
+                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.modality || "TBD" }}</dd>
+                                        </div>
+
+                                        <div>
+                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Shift</dt>
+                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.shift || "TBD" }}</dd>
+                                        </div>
+                                    </dl>
+
+                                    <div class="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                        <span class="font-medium text-gray-500 dark:text-gray-400">Schedule:</span>
                                         {{ scheduleSummary(group.schedules) }}
-                                    </p>
+                                    </div>
+
+                                    <div v-if="validationMessages(group).length" class="mt-4 space-y-2">
+                                        <div
+                                            v-for="message in validationMessages(group)"
+                                            :key="`${message.type}-${message.text}`"
+                                            class="flex gap-2 rounded-lg border px-3 py-2 text-xs"
+                                            :class="messageClasses(message.type)"
+                                        >
+                                            <i :class="[message.icon, 'mt-0.5']" />
+                                            <span>{{ message.text }}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <BaseButton
                                     size="sm"
                                     :variant="group.isCurrent ? 'secondary' : 'primary'"
-                                    :disabled="group.isCurrent || submitting"
+                                    :disabled="group.isCurrent || submitting || !group.canSelect"
                                     @click="enrollInGroup(group)"
                                 >
                                     <i class="fa-solid fa-check mr-2" />
-                                    {{ group.isCurrent ? "Selected" : "Select" }}
+                                    {{ selectionButtonLabel(group) }}
                                 </BaseButton>
                             </div>
                         </div>

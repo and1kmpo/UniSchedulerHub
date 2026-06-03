@@ -8,6 +8,10 @@ use App\Services\Enrollment\DTOs\EnrollmentValidationResult;
 
 class ScheduleConflictValidator
 {
+    public function __construct(
+        protected ?int $ignoreGroupId = null,
+    ) {}
+
     public function validate(
         Student $student,
         ClassGroup $group,
@@ -18,6 +22,17 @@ class ScheduleConflictValidator
             ->subjectEnrollments()
             ->with('classGroup.subject', 'classGroup.schedules')
             ->where('academic_period_id', $group->academic_period_id)
+            ->when(
+                $this->ignoreGroupId,
+                fn($query) => $query->where('class_group_id', '!=', $this->ignoreGroupId)
+            )
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn(
+                    'code',
+                    config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled'])
+                )
+            )
             ->get();
 
         foreach ($studentEnrollments as $enrollment) {

@@ -7,6 +7,7 @@ use App\Models\Subject;
 use App\Models\User;
 use Database\Seeders\RolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -28,6 +29,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('users.index'))->assertOk();
         $this->actingAs($admin)->get(route('students.index'))->assertOk();
         $this->actingAs($admin)->get(route('academic-periods.index'))->assertOk();
+        $this->actingAs($admin)->get(route('academic-audit-logs.index'))->assertOk();
     }
 
     public function test_academic_coordinator_can_access_academic_operations_but_not_security_administration(): void
@@ -37,6 +39,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($coordinator)->get(route('students.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('class-groups.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('academic-periods.index'))->assertOk();
+        $this->actingAs($coordinator)->get(route('academic-audit-logs.index'))->assertOk();
 
         $this->actingAs($coordinator)->get(route('users.index'))->assertForbidden();
         $this->actingAs($coordinator)->get(route('roles.index'))->assertForbidden();
@@ -51,6 +54,7 @@ class RoleAccessTest extends TestCase
 
         $this->actingAs($professor)->get(route('students.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('class-groups.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('academic-audit-logs.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('users.index'))->assertForbidden();
     }
 
@@ -61,6 +65,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('students.index'))->assertForbidden();
         $this->actingAs($student)->get(route('professors.index'))->assertForbidden();
         $this->actingAs($student)->get(route('subjects.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('academic-audit-logs.index'))->assertForbidden();
         $this->actingAs($student)->get(route('users.index'))->assertForbidden();
     }
 
@@ -104,6 +109,30 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)
             ->get('/dashboard')
             ->assertRedirect(route('student.subjects'));
+    }
+
+    public function test_dashboard_payload_is_role_aware(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $professor = $this->userWithRole('professor');
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn(Assert $page) => $page
+                ->component('Dashboard')
+                ->where('dashboardType', 'academic')
+                ->has('academicDashboard.metrics')
+            );
+
+        $this->actingAs($professor)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn(Assert $page) => $page
+                ->component('Dashboard')
+                ->where('dashboardType', 'professor')
+                ->has('professorDashboard.metrics')
+            );
     }
 
     private function userWithRole(string $role): User

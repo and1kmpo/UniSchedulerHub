@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ClassGroup;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
+use App\Models\AcademicAuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -57,6 +58,10 @@ class ClassScheduleTest extends TestCase
             'classroom_id' => $classroom->id,
             'day' => 'monday',
             'start_time' => '09:00:00',
+        ]);
+        $this->assertDatabaseHas('academic_audit_logs', [
+            'auditable_type' => ClassSchedule::class,
+            'action' => 'schedule.created',
         ]);
     }
 
@@ -180,6 +185,11 @@ class ClassScheduleTest extends TestCase
             'day' => 'tuesday',
             'classroom_id' => $classroom->id,
         ]);
+        $this->assertDatabaseHas('academic_audit_logs', [
+            'auditable_id' => $schedule->id,
+            'auditable_type' => ClassSchedule::class,
+            'action' => 'schedule.updated',
+        ]);
     }
 
     /** @test */
@@ -296,5 +306,9 @@ class ClassScheduleTest extends TestCase
 
         $response->assertRedirect(route('class-groups.show', $group));
         $this->assertDatabaseMissing('class_schedules', ['id' => $schedule->id]);
+        $this->assertSame(1, AcademicAuditLog::where('auditable_id', $schedule->id)
+            ->where('auditable_type', ClassSchedule::class)
+            ->where('action', 'schedule.deleted')
+            ->count());
     }
 }

@@ -49,12 +49,17 @@ const selectedSubject = ref(null);
 const isGradeModalOpen = ref(false);
 const showSummary = ref(false);
 const allGrades = ref([]);
+const gradesLoading = ref(false);
+const gradesError = ref(null);
+const summaryLoading = ref(false);
+const summaryError = ref(null);
 
 const rows = computed(() =>
     props.subjects.map((subject) => ({
         ...subject,
         schedule_summary: formatSchedules(subject.schedules),
         final_grade: subject.grade?.final_grade ?? "Pending",
+        grade_state_label: subject.grade_state?.label ?? "Pending",
     }))
 );
 
@@ -66,6 +71,12 @@ const statusVariant = (status) => ({
     cancelled: "gray",
     withdrawn: "gray",
 }[status] || "gray");
+
+const gradeVariant = (state) => ({
+    passed: "success",
+    failed: "danger",
+    failed_attendance: "warning",
+}[state] || "gray");
 
 function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
@@ -91,12 +102,18 @@ function formatSchedules(schedules = []) {
 
 const viewGrades = async (subject) => {
     selectedSubject.value = subject;
+    selectedGrade.value = null;
+    gradesError.value = null;
+    gradesLoading.value = true;
 
     try {
         const response = await axios.get(route("student.subject.grades.json", subject.id));
         selectedGrade.value = response.data.grade;
     } catch (error) {
         selectedGrade.value = null;
+        gradesError.value = "Grades could not be loaded. Try again later.";
+    } finally {
+        gradesLoading.value = false;
     }
 
     isGradeModalOpen.value = true;
@@ -106,11 +123,22 @@ const closeGradeModal = () => {
     isGradeModalOpen.value = false;
     selectedGrade.value = null;
     selectedSubject.value = null;
+    gradesError.value = null;
 };
 
 const loadAllGrades = async () => {
-    const response = await axios.get(route("student.grades.summary"));
-    allGrades.value = response.data.grades;
+    summaryLoading.value = true;
+    summaryError.value = null;
+
+    try {
+        const response = await axios.get(route("student.grades.summary"));
+        allGrades.value = response.data.grades;
+    } catch (error) {
+        allGrades.value = [];
+        summaryError.value = "Grade summary could not be loaded. Try again later.";
+    } finally {
+        summaryLoading.value = false;
+    }
 };
 
 const handleOpenSummary = async () => {
@@ -201,10 +229,34 @@ const handleOpenSummary = async () => {
                                 <StatusBadge :label="formatStatus(value)" :variant="statusVariant(value)" />
                             </template>
 
+                            <template #cell-group="{ row }">
+                                <div class="space-y-1">
+                                    <p class="font-medium text-gray-900 dark:text-white">
+                                        {{ row.group || "Pending" }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ row.modality || "TBD" }} · {{ row.shift || "TBD" }}
+                                    </p>
+                                </div>
+                            </template>
+
                             <template #cell-schedule_summary="{ value }">
                                 <span class="block max-w-md whitespace-normal text-sm text-gray-700 dark:text-gray-300">
                                     {{ value }}
                                 </span>
+                            </template>
+
+                            <template #cell-final_grade="{ row }">
+                                <div class="space-y-1">
+                                    <p class="font-medium text-gray-900 dark:text-white">
+                                        {{ row.final_grade }}
+                                    </p>
+                                    <StatusBadge
+                                        v-if="row.grade_state?.code"
+                                        :label="row.grade_state_label"
+                                        :variant="gradeVariant(row.grade_state.code)"
+                                    />
+                                </div>
                             </template>
 
                             <template #actions="{ row }">
@@ -236,19 +288,27 @@ const handleOpenSummary = async () => {
                     </button>
                 </div>
 
-                <dl class="space-y-3 text-sm">
+                <div v-if="gradesLoading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    Loading grades...
+                </div>
+
+                <div v-else-if="gradesError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    {{ gradesError }}
+                </div>
+
+                <dl v-else class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Partial 1</dt>
+                        <dt class="font-medium text-gray-500">First Exam</dt>
                         <dd>{{ selectedGrade?.partial_1 ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Partial 2</dt>
+                        <dt class="font-medium text-gray-500">Second Exam</dt>
                         <dd>{{ selectedGrade?.partial_2 ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Partial 3</dt>
+                        <dt class="font-medium text-gray-500">Third Exam</dt>
                         <dd>{{ selectedGrade?.partial_3 ?? "Pending" }}</dd>
                     </div>
 
@@ -258,8 +318,18 @@ const handleOpenSummary = async () => {
                     </div>
 
                     <div class="flex justify-between gap-4">
+                        <dt class="font-medium text-gray-500">Attendance</dt>
+                        <dd>{{ selectedGrade?.attendance ?? "Pending" }}</dd>
+                    </div>
+
+                    <div class="flex justify-between gap-4">
                         <dt class="font-medium text-gray-500">Final Grade</dt>
                         <dd>{{ selectedGrade?.final_grade ?? "Pending" }}</dd>
+                    </div>
+
+                    <div class="flex justify-between gap-4">
+                        <dt class="font-medium text-gray-500">Status</dt>
+                        <dd>{{ selectedGrade?.state?.label ?? "Pending" }}</dd>
                     </div>
                 </dl>
             </div>
@@ -278,21 +348,33 @@ const handleOpenSummary = async () => {
                     </button>
                 </div>
 
-                <DataTable :columns="[
+                <div v-if="summaryLoading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    Loading grade summary...
+                </div>
+
+                <div v-else-if="summaryError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    {{ summaryError }}
+                </div>
+
+                <DataTable v-else :columns="[
                     { key: 'subject_name', label: 'Subject' },
-                    { key: 'partial_1', label: 'P1' },
-                    { key: 'partial_2', label: 'P2' },
-                    { key: 'partial_3', label: 'P3' },
+                    { key: 'group', label: 'Group' },
+                    { key: 'partial_1', label: 'First Exam' },
+                    { key: 'partial_2', label: 'Second Exam' },
+                    { key: 'partial_3', label: 'Third Exam' },
                     { key: 'activities', label: 'Activities' },
+                    { key: 'attendance', label: 'Attendance' },
                     { key: 'final_grade', label: 'Final' },
                     { key: 'state', label: 'Status' },
                 ]" :rows="allGrades.map((grade) => ({
                     id: grade.subject.id,
                     subject_name: grade.subject.name,
+                    group: grade.group ?? '-',
                     partial_1: grade.partial_1 ?? '-',
                     partial_2: grade.partial_2 ?? '-',
                     partial_3: grade.partial_3 ?? '-',
                     activities: grade.activities ?? '-',
+                    attendance: grade.attendance ?? '-',
                     final_grade: grade.final_grade ?? '-',
                     state: grade.state?.label ?? 'Pending',
                 }))" />
