@@ -6,6 +6,9 @@ defineProps({
             credits: 0,
             groups: 0,
             weekly_hours: 0,
+            min_credits: 7,
+            max_credits: 21,
+            meets_minimum: true,
         }),
     },
 })
@@ -53,6 +56,18 @@ defineProps({
 
         </div>
 
+        <div class="mt-4 rounded-xl px-4 py-3 text-sm" :class="load.meets_minimum
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+            : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">
+            <i :class="load.meets_minimum ? 'fa-solid fa-circle-check mr-2' : 'fa-solid fa-triangle-exclamation mr-2'"></i>
+            <span v-if="load.meets_minimum">
+                Meets minimum load of {{ load.min_credits }} credits
+            </span>
+            <span v-else>
+                Below minimum load of {{ load.min_credits }} credits
+            </span>
+        </div>
+
         <div class="mt-6 grid grid-cols-2 gap-4">
 
             <div>
@@ -76,5 +91,9 @@ defineProps({
             </div>
 
         </div>
+
+        <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            Regular range: {{ load.min_credits }}-{{ load.max_credits }} credits
+        </p>
     </div>
 </template>

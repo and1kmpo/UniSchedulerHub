@@ -7,13 +7,11 @@ use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
-use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Models\SubjectEnrollmentStatus;
 use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -346,6 +344,7 @@ class DashboardController extends Controller
     private function attentionItems(?int $periodId, $activeStatusIds)
     {
         $items = collect();
+        $minCredits = config('enrollment.min_credits', 7);
 
         $groupsWithoutSchedule = ClassGroup::query()
             ->where('status', ClassGroup::STATUS_PUBLISHED)
@@ -362,6 +361,35 @@ class DashboardController extends Controller
             ]);
 
         $items = $items->merge($groupsWithoutSchedule);
+
+        $studentsBelowMinimum = Student::query()
+            ->with([
+                'user:id,name',
+                'enrollments' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds)
+                    ->when($periodId, fn($query) => $query->where('academic_period_id', $periodId))
+                    ->with('subject:id,credits'),
+            ])
+            ->whereHas('enrollments', function ($enrollments) use ($activeStatusIds, $periodId) {
+                $enrollments
+                    ->whereIn('status_id', $activeStatusIds)
+                    ->when($periodId, fn($query) => $query->where('academic_period_id', $periodId));
+            })
+            ->get()
+            ->map(fn($student) => [
+                'student' => $student,
+                'credits' => $student->enrollments->sum(fn($enrollment) => (int) ($enrollment->subject?->credits ?? 0)),
+            ])
+            ->filter(fn($load) => $load['credits'] < $minCredits)
+            ->take(3)
+            ->map(fn($load) => [
+                'type' => 'Academic load',
+                'severity' => 'warning',
+                'title' => 'Student below minimum credits',
+                'description' => "{$load['student']->user?->name} has {$load['credits']} of {$minCredits} credits",
+            ]);
+
+        $items = $items->merge($studentsBelowMinimum);
 
         $roomsWithoutCapacity = Classroom::query()
             ->where(function ($query) {
@@ -426,103 +454,4 @@ class DashboardController extends Controller
             ]);
     }
 
-    public function showAssignmentsReport(Request $request)
-    {
-        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes'))
-            ->pluck('id');
-
-        $query = Student::query()
-            ->with([
-                'user:id,name,email',
-                'enrollments' => fn($enrollments) => $enrollments
-                    ->whereIn('status_id', $activeStatusIds)
-                    ->with([
-                        'subject:id,name,code,credits,elective',
-                        'classGroup:id,code,group_code,professor_id',
-                        'classGroup.professor:id,name,email',
-                    ]),
-            ])
-            ->whereHas('enrollments', fn($enrollments) => $enrollments->whereIn('status_id', $activeStatusIds));
-
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where(function ($query) use ($search, $activeStatusIds) {
-                $query
-                    ->whereHas('user', function ($user) use ($search) {
-                        $user
-                            ->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    })
-                    ->orWhere('students.document', 'like', "%{$search}%")
-                    ->orWhereHas('enrollments', function ($enrollments) use ($search, $activeStatusIds) {
-                        $enrollments
-                            ->whereIn('status_id', $activeStatusIds)
-                            ->where(function ($query) use ($search) {
-                                $query
-                                    ->whereHas('subject', fn($subject) => $subject->where('name', 'like', "%{$search}%"))
-                                    ->orWhereHas('classGroup.professor', fn($professor) => $professor->where('name', 'like', "%{$search}%"));
-                            });
-                    });
-            });
-        }
-
-        return $query
-            ->orderBy('document')
-            ->paginate(4)
-            ->withQueryString()
-            ->through(fn(Student $student) => [
-                'student_id' => $student->id,
-                'nameStudent' => $student->user?->name,
-                'document' => $student->document,
-                'email' => $student->user?->email,
-                'subjects' => $student->enrollments->map(fn($enrollment) => [
-                    'subjectName' => $enrollment->subject?->name,
-                    'subjectCode' => $enrollment->subject?->code,
-                    'credits' => $enrollment->subject?->credits,
-                    'type' => $enrollment->subject?->elective ? 'Elective' : 'Required',
-                    'groupCode' => $enrollment->classGroup?->code,
-                    'professorName' => $enrollment->classGroup?->professor?->name ?? 'No professor assigned',
-                ])->values(),
-            ]);
-
-    }
-
-    public function totalStudentsPerProgram()
-    {
-        $studentsPerProgram = Program::select('programs.id', 'programs.name', DB::raw('COUNT(students.id) as student_count'))
-            ->leftJoin('students', 'programs.id', '=', 'students.program_id')
-            ->groupBy('programs.id', 'programs.name')
-            ->get();
-
-        return response()->json($studentsPerProgram);
-    }
-
-    public function percentageElectiveSubjects()
-    {
-        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes'))
-            ->pluck('id');
-
-        $enrollmentMix = SubjectEnrollment::query()
-            ->join('subjects', 'subject_enrollments.subject_id', '=', 'subjects.id')
-            ->whereIn('subject_enrollments.status_id', $activeStatusIds)
-            ->selectRaw('
-                ROUND((SUM(CASE WHEN subjects.elective = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 4) AS percentageElective,
-                ROUND((SUM(CASE WHEN subjects.elective = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 4) AS percentageMandatory
-            ')
-            ->first();
-
-        return response()->json([
-            'percentageElective' => (float) ($enrollmentMix?->percentageElective ?? 0),
-            'percentageMandatory' => (float) ($enrollmentMix?->percentageMandatory ?? 0),
-        ]);
-    }
-
-    public function studentsPerSemester()
-    {
-        $studentsPerSemester = Student::select('semester', DB::raw('COUNT(*) as student_count'))
-            ->groupBy('semester')
-            ->orderBy('semester', 'asc')
-            ->get();
-        return response()->json($studentsPerSemester);
-    }
 }

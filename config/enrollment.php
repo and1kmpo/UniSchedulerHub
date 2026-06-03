@@ -8,15 +8,21 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    // Estados que cuentan como inscripción activa
+    // Statuses that count as an active enrollment.
     'active_status_codes' => [
         'pre_enrolled',
         'enrolled',
     ],
 
-    // Estado por defecto al inscribir
+    // Default status assigned when a student enrolls.
     'default_status_code' => 'pre_enrolled',
 
-    // Máximo de créditos en probation
+    // Minimum academic load expected for a regular enrollment period.
+    'min_credits' => 7,
+
+    // Maximum academic load for a regular enrollment period.
+    'max_credits' => 21,
+
+    // Maximum credits allowed for students on academic probation.
     'probation_max_credits' => 12,
 ];

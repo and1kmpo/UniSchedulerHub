@@ -129,12 +129,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         });
 
         Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->name('user.assignments');
-        Route::get('/subjects-with-professors', [SubjectController::class, 'getSubjectsWithProfessors']);
-
-        Route::get('/assignments-report', [DashboardController::class, 'showAssignmentsReport'])->name('assignments.report');
-        Route::get('/students-program-report', [DashboardController::class, 'totalStudentsPerProgram'])->name('studentsPrograms.report');
-        Route::get('/elective-subjects-report', [DashboardController::class, 'percentageElectiveSubjects'])->name('electiveSubjects.report');
-        Route::get('/students-semester-report', [DashboardController::class, 'studentsPerSemester'])->name('studentsSemester.report');
     });
 
     /*
