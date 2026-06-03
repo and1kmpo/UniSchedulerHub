@@ -101,7 +101,7 @@ const calendarEvents = computed(() => {
         .filter((schedule) => referenceWeek[schedule.day])
         .map((schedule) => ({
             id: String(schedule.id),
-            title: schedule.subject || schedule.name || "Class",
+            title: displayValue(schedule.subject || schedule.name, "Class"),
             start: `${referenceWeek[schedule.day]}T${normalizeTime(schedule.start_time)}:00`,
             end: `${referenceWeek[schedule.day]}T${normalizeTime(schedule.end_time)}:00`,
             classNames: [
@@ -111,8 +111,8 @@ const calendarEvents = computed(() => {
             ],
             extendedProps: {
                 raw: schedule,
-                classroom: schedule.classroom || "No classroom",
-                professor: schedule.professor || "No professor",
+                classroom: displayValue(schedule.classroom, "No classroom"),
+                professor: displayValue(schedule.professor, "No professor"),
                 status: schedule.status || "published",
             },
         }));
@@ -172,6 +172,22 @@ function formatDisplayTime(time) {
     return normalizeTime(time);
 }
 
+function displayValue(value, fallback = "Not assigned") {
+    if (value === null || value === undefined || value === "") {
+        return fallback;
+    }
+
+    if (typeof value === "string" || typeof value === "number") {
+        return String(value);
+    }
+
+    if (typeof value === "object") {
+        return value.name || value.code || value.label || fallback;
+    }
+
+    return fallback;
+}
+
 function timeFromDate(date) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
@@ -203,9 +219,9 @@ function replaceLocalSchedule(scheduleId, updates) {
 
 function readableSchedule(schedule) {
     return {
-        subject: schedule?.subject || schedule?.name || "Class",
-        professor: schedule?.professor || "No professor",
-        classroom: schedule?.classroom || "No classroom",
+        subject: displayValue(schedule?.subject || schedule?.name, "Class"),
+        professor: displayValue(schedule?.professor, "No professor"),
+        classroom: displayValue(schedule?.classroom, "No classroom"),
         status: schedule?.status || "published",
         day: schedule?.day || "monday",
         start_time: formatDisplayTime(schedule?.start_time),
