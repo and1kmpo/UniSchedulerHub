@@ -4,7 +4,6 @@ import axios from "axios";
 import FullCalendar from "@fullcalendar/vue3";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import esLocale from "@fullcalendar/core/locales/es";
 
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
@@ -106,9 +105,8 @@ const calendarEvents = computed(() => {
             start: `${referenceWeek[schedule.day]}T${normalizeTime(schedule.start_time)}:00`,
             end: `${referenceWeek[schedule.day]}T${normalizeTime(schedule.end_time)}:00`,
             classNames: [
-                schedule.status === "cancelled"
-                    ? "uh-calendar-event-cancelled"
-                    : "uh-calendar-event",
+                "uh-calendar-event",
+                `uh-calendar-event-${schedule.status || "published"}`,
             ],
             extendedProps: {
                 raw: schedule,
@@ -124,10 +122,7 @@ const calendarOptions = computed(() => ({
         timeGridPlugin,
         interactionPlugin,
     ],
-    locales: [
-        esLocale,
-    ],
-    locale: "es",
+    locale: "en",
     initialView: "timeGridWeek",
     initialDate: "2026-01-05",
     firstDay: 1,
@@ -239,15 +234,29 @@ function readableSchedule(schedule) {
     };
 }
 
+function readableStatus(status) {
+    return String(status || "published")
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function renderEventContent(arg) {
     const schedule = readableSchedule(arg.event.extendedProps.raw);
+    const classroom = schedule.classroom === "No classroom" ? "Room pending" : schedule.classroom;
+    const professor = schedule.professor === "No professor" ? "Professor pending" : schedule.professor;
 
     return {
         html: `
             <div class="uh-calendar-event-body">
+                <div class="uh-calendar-event-topline">
+                    <span class="uh-calendar-event-time">${escapeHtml(schedule.start_time)} - ${escapeHtml(schedule.end_time)}</span>
+                    <span class="uh-calendar-event-status">${escapeHtml(readableStatus(schedule.status))}</span>
+                </div>
                 <div class="uh-calendar-event-title">${escapeHtml(schedule.subject)}</div>
-                <div class="uh-calendar-event-time">${escapeHtml(schedule.start_time)} - ${escapeHtml(schedule.end_time)}</div>
-                <div class="uh-calendar-event-meta">${escapeHtml(schedule.classroom)}</div>
+                <div class="uh-calendar-event-meta">
+                    <span>${escapeHtml(classroom)}</span>
+                    <span>${escapeHtml(professor)}</span>
+                </div>
             </div>
         `,
     };
@@ -486,41 +495,95 @@ async function persistCalendarChange(info) {
 
 .uh-full-calendar .fc-timegrid-event {
     border-radius: 0.5rem;
-    box-shadow: 0 8px 18px rgb(79 70 229 / 18%);
+    box-shadow: 0 10px 24px rgb(37 99 235 / 18%);
+    overflow: hidden;
 }
 
 .uh-full-calendar .uh-calendar-event {
-    background: rgb(79 70 229);
-    border-color: rgb(67 56 202);
+    background: linear-gradient(135deg, rgb(37 99 235), rgb(79 70 229));
+    border: 1px solid rgb(29 78 216);
+    border-left: 4px solid rgb(191 219 254);
 }
 
 .uh-full-calendar .uh-calendar-event-cancelled {
-    background: rgb(107 114 128);
+    background: linear-gradient(135deg, rgb(107 114 128), rgb(75 85 99));
     border-color: rgb(75 85 99);
     opacity: 0.75;
 }
 
+.uh-full-calendar .uh-calendar-event-draft {
+    background: linear-gradient(135deg, rgb(217 119 6), rgb(180 83 9));
+    border-color: rgb(146 64 14);
+}
+
+.uh-full-calendar .uh-calendar-event-closed {
+    background: linear-gradient(135deg, rgb(15 118 110), rgb(13 148 136));
+    border-color: rgb(15 118 110);
+}
+
+.uh-full-calendar .fc-event-main {
+    height: 100%;
+}
+
 .uh-calendar-event-body {
     display: grid;
-    gap: 0.125rem;
-    padding: 0.125rem;
+    height: 100%;
+    align-content: start;
+    gap: 0.2rem;
+    padding: 0.35rem 0.45rem;
     line-height: 1.15;
+}
+
+.uh-calendar-event-topline {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
 }
 
 .uh-calendar-event-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     font-weight: 700;
+    letter-spacing: 0;
 }
 
-.uh-calendar-event-time,
-.uh-calendar-event-meta {
+.uh-calendar-event-time {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 0.68rem;
-    opacity: 0.92;
+    font-weight: 700;
+    opacity: 0.95;
+}
+
+.uh-calendar-event-status {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 18%);
+    padding: 0.1rem 0.35rem;
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.uh-calendar-event-meta {
+    display: grid;
+    gap: 0.05rem;
+    min-width: 0;
+    font-size: 0.66rem;
+    opacity: 0.9;
+}
+
+.uh-calendar-event-meta span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>
