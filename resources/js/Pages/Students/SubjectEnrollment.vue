@@ -35,6 +35,10 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
+    minCredits: {
+        type: Number,
+        default: 7,
+    },
     maxCredits: {
         type: Number,
         default: 0,
@@ -57,11 +61,12 @@ const props = defineProps({
     },
 });
 
-const { toastSuccess, toastError } = useAlert();
+const { toastSuccess, toastError, confirm } = useAlert();
 
 const selectedSubject = ref(null);
 const loadingGroups = ref(false);
 const submitting = ref(false);
+const confirmingEnrollment = ref(false);
 const groupsError = ref(null);
 const selectedProfessorFilter = ref("");
 
@@ -92,6 +97,23 @@ const enrolledSubjects = computed(() =>
 );
 
 const isEnrollmentOpen = computed(() => props.canEnroll);
+
+const hasPendingEnrollment = computed(() =>
+    props.subjects.some((subject) => subject.status === "pre_enrolled")
+);
+
+const meetsMinimumCredits = computed(() => props.currentCredits >= props.minCredits);
+
+const missingCredits = computed(() =>
+    Math.max(props.minCredits - props.currentCredits, 0)
+);
+
+const canConfirmEnrollment = computed(() =>
+    isEnrollmentOpen.value
+    && hasPendingEnrollment.value
+    && meetsMinimumCredits.value
+    && !confirmingEnrollment.value
+);
 
 const selectedGroups = computed(() => selectedSubject.value?.groups ?? []);
 
@@ -354,14 +376,53 @@ async function unenrollFromSubject() {
         submitting.value = false;
     }
 }
+
+async function confirmPeriodEnrollment() {
+    if (!hasPendingEnrollment.value) {
+        toastError("There are no pending enrollments to confirm.");
+        return;
+    }
+
+    if (!meetsMinimumCredits.value) {
+        toastError(`Add ${missingCredits.value} more credits before confirming enrollment.`);
+        return;
+    }
+
+    const accepted = await confirm(
+        "This will confirm your selected subjects for the active academic period.",
+        "Confirm enrollment"
+    );
+
+    if (!accepted) {
+        return;
+    }
+
+    confirmingEnrollment.value = true;
+
+    try {
+        const { data } = await axios.post(route("api.enrollments.confirm-period"));
+
+        toastSuccess(data.message || "Enrollment confirmed successfully.");
+        router.reload({ only: ["subjects", "currentSchedules", "currentCredits"] });
+    } catch (error) {
+        toastError(
+            error.response?.data?.message
+            || error.response?.data?.error
+            || "Enrollment confirmation failed."
+        );
+    } finally {
+        confirmingEnrollment.value = false;
+    }
+}
 </script>
 
 <template>
     <CrudPageLayout title="Subject Enrollment" subtitle="Select available subjects and class groups for the active academic period">
         <CrudContainer>
             <div class="space-y-6">
-                <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <section class="grid grid-cols-1 gap-6 md:grid-cols-4">
                     <StatCard title="Current Credits" :value="currentCredits" icon="fa-solid fa-layer-group" />
+                    <StatCard title="Minimum Credits" :value="minCredits" icon="fa-solid fa-list-check" />
                     <StatCard title="Credit Limit" :value="maxCredits || '-'" icon="fa-solid fa-gauge-high" />
                     <StatCard title="Available Subjects" :value="availableSubjects" icon="fa-solid fa-book-open" />
                 </section>
@@ -392,6 +453,31 @@ async function unenrollFromSubject() {
                             <p class="font-medium text-gray-500 dark:text-gray-400">Unenrollment deadline</p>
                             <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(unenrollmentDeadline) }}</p>
                         </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4 border-t border-gray-200 p-6 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                Enrollment confirmation
+                            </p>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                <span v-if="meetsMinimumCredits">
+                                    Minimum credit load met. Confirm pending selections when your schedule is ready.
+                                </span>
+                                <span v-else>
+                                    Add {{ missingCredits }} more credits to reach the minimum required load.
+                                </span>
+                            </p>
+                        </div>
+
+                        <BaseButton
+                            variant="success"
+                            :disabled="!canConfirmEnrollment"
+                            @click="confirmPeriodEnrollment"
+                        >
+                            <i class="fa-solid fa-circle-check mr-2" />
+                            {{ confirmingEnrollment ? "Confirming..." : "Confirm Enrollment" }}
+                        </BaseButton>
                     </div>
                 </SectionCard>
 
