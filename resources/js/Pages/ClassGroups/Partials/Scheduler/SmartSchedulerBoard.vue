@@ -27,6 +27,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
+    "schedule-create-request",
     "schedule-updated",
 ]);
 
@@ -134,6 +135,9 @@ const calendarOptions = computed(() => ({
         0,
     ],
     allDaySlot: false,
+    selectable: props.canEdit,
+    selectMirror: true,
+    unselectAuto: true,
     nowIndicator: false,
     expandRows: true,
     height: "auto",
@@ -156,6 +160,8 @@ const calendarOptions = computed(() => ({
     eventAllow: (dropInfo) => {
         return minutesBetween(dropInfo.start, dropInfo.end) >= 30;
     },
+    dateClick: handleDateClick,
+    select: handleDateSelect,
     eventContent: renderEventContent,
     eventClick: handleEventClick,
     eventDrop: persistCalendarChange,
@@ -190,6 +196,10 @@ function displayValue(value, fallback = "Not assigned") {
 
 function timeFromDate(date) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function addMinutes(date, minutes) {
+    return new Date(date.getTime() + minutes * 60000);
 }
 
 function minutesBetween(start, end) {
@@ -254,6 +264,33 @@ function escapeHtml(value) {
 
 function handleEventClick(info) {
     selectedSchedule.value = readableSchedule(info.event.extendedProps.raw);
+}
+
+function requestScheduleCreate(start, end) {
+    if (!props.canEdit) {
+        return;
+    }
+
+    const day = dayNames[start.getDay()];
+
+    if (!day || minutesBetween(start, end) < 30) {
+        return;
+    }
+
+    emit("schedule-create-request", {
+        day,
+        start_time: timeFromDate(start),
+        end_time: timeFromDate(end),
+    });
+}
+
+function handleDateClick(info) {
+    requestScheduleCreate(info.date, addMinutes(info.date, 60));
+}
+
+function handleDateSelect(info) {
+    requestScheduleCreate(info.start, info.end);
+    info.view.calendar.unselect();
 }
 
 async function persistCalendarChange(info) {
