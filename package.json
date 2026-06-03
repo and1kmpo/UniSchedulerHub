@@ -37,8 +37,7 @@
     "sass": "~1.32.0",
     "sass-loader": "^10.0.0",
     "tailwindcss": "^3.1.0",
-    "vue": "^3.2.31",
-    "vue-cli-plugin-vuetify": "~2.5.8"
+    "vue": "^3.2.31"
   },
   "type": "module"
 }

@@ -21,5 +21,17 @@ class AdminUserSeeder extends Seeder
         );
 
         $admin->assignRole('admin');
+
+        $coordinator = User::updateOrCreate(
+            ['email' => 'coordinator@unischedulerhub.test'],
+            [
+                'name' => 'Academic Coordinator',
+                'password' => Hash::make('password'),
+                'status' => User::STATUS_ACTIVE,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $coordinator->assignRole('academic_coordinator');
     }
 }
