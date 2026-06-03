@@ -34,14 +34,6 @@ class Professor extends Model
         return $this->hasMany(ClassGroup::class, 'professor_id', 'user_id');
     }
 
-    // Relación inversa con la tabla pivot `student_subject_professor`
-    public function students()
-    {
-        return $this->belongsToMany(Student::class, 'student_subject_professor')
-            ->withPivot('subject_id')
-            ->withTimestamps();
-    }
-
     public function grades()
     {
         return $this->hasMany(Grade::class);

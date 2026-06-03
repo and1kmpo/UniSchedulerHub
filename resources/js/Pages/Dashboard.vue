@@ -468,6 +468,81 @@ function gradingProgressData(items) {
                         </p>
                     </div>
                 </section>
+
+                <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Student Assignment Report</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Subjects assigned to each student with the responsible professor and group.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 overflow-x-auto">
+                        <table v-if="(academicDashboard.assignmentPreview || []).length" class="min-w-full text-sm">
+                            <thead class="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">Student</th>
+                                    <th class="px-4 py-3 font-semibold">Document</th>
+                                    <th class="px-4 py-3 font-semibold">Credits</th>
+                                    <th class="px-4 py-3 font-semibold">Subjects and professors</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr v-for="student in academicDashboard.assignmentPreview" :key="student.id">
+                                    <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">{{ student.name }}</td>
+                                    <td class="px-4 py-4 text-gray-600 dark:text-gray-300">{{ student.document }}</td>
+                                    <td class="px-4 py-4">
+                                        <span :class="[
+                                            'rounded-full px-3 py-1 text-xs font-semibold',
+                                            student.credits >= 7
+                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                                : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                                        ]">
+                                            {{ student.credits }} credits
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="space-y-2">
+                                            <div v-for="assignment in student.subjects.slice(0, 3)" :key="`${student.id}-${assignment.code}-${assignment.group}`"
+                                                class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                                <p class="font-medium text-gray-900 dark:text-white">
+                                                    {{ assignment.code }} - {{ assignment.subject }}
+                                                </p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ assignment.professor }} - {{ assignment.group || "No group" }}
+                                                </p>
+                                            </div>
+                                            <details v-if="student.subjects.length > 3"
+                                                class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+                                                <summary class="cursor-pointer text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+                                                    View {{ student.subjects.length - 3 }} more assignments
+                                                </summary>
+                                                <div class="mt-2 space-y-2">
+                                                    <div v-for="assignment in student.subjects.slice(3)"
+                                                        :key="`${student.id}-${assignment.code}-${assignment.group}-extra`"
+                                                        class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                                        <p class="font-medium text-gray-900 dark:text-white">
+                                                            {{ assignment.code }} - {{ assignment.subject }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                            {{ assignment.professor }} - {{ assignment.group || "No group" }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p v-else class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No student assignments available yet.
+                        </p>
+                    </div>
+                </section>
             </div>
 
             <div v-else class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">

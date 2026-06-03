@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subject;
+use App\Models\SubjectEnrollmentStatus;
 use App\Models\User;
 use App\Models\Program;
 use Illuminate\Http\Request;
@@ -269,64 +270,62 @@ class UserController extends Controller
     {
         $user = $request->user();
         $role = $user->roles->first()->name;
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes'))
+            ->pluck('id');
 
         if ($role === 'student') {
-            $assignments = DB::table('student_subject_professor')
-                ->join('professors', 'professors.id', '=', 'student_subject_professor.professor_id')
-                ->join('subjects', 'subjects.id', '=', 'student_subject_professor.subject_id')
-                ->join('users', 'users.id', '=', 'professors.user_id')
-                ->where('student_subject_professor.student_id', $user->student->id)
-                ->select(
-                    'subjects.id as subject_id',
-                    'subjects.name as subject_name',
-                    'subjects.credits',
-                    'subjects.knowledge_area',
-                    'subjects.elective',
-                    'users.name as professor_name'
-                )
-                ->get();
+            $assignments = $user->student
+                ?->enrollments()
+                ->whereIn('status_id', $activeStatusIds)
+                ->with(['subject:id,name,credits,knowledge_area,elective', 'classGroup.professor:id,name'])
+                ->get()
+                ->map(fn($enrollment) => [
+                    'subject_id' => $enrollment->subject_id,
+                    'subject_name' => $enrollment->subject?->name,
+                    'credits' => $enrollment->subject?->credits,
+                    'knowledge_area' => $enrollment->subject?->knowledge_area,
+                    'elective' => $enrollment->subject?->elective,
+                    'professor_name' => $enrollment->classGroup?->professor?->name ?? 'No professor assigned',
+                    'group_code' => $enrollment->classGroup?->code,
+                ]) ?? collect();
 
-            $totalCredits = $assignments->sum(fn($assignment) => $assignment->credits);
+            $totalCredits = $assignments->sum(fn($assignment) => $assignment['credits']);
 
             return inertia('Assignments/Index', [
                 'assignments' => $assignments,
                 'totalCredits' => $totalCredits,
                 'role' => $role,
             ]);
-        } elseif ($role === 'professor') {
-            $assignments = DB::table('professor_subject')
-                ->join('subjects', 'professor_subject.subject_id', '=', 'subjects.id')
-                ->where('professor_subject.professor_id', $user->professor->id)
-                ->select(
-                    'subjects.id as subject_id',
-                    'subjects.name as subject_name',
-                    'subjects.credits',
-                )
-                ->get()
-                ->map(function ($assignment) use ($user) {
-                    // Añadir estudiantes matriculados a cada asignatura
-                    $students = DB::table('student_subject_professor')
-                        ->join('students', 'students.id', '=', 'student_subject_professor.student_id')
-                        ->join('users', 'users.id', '=', 'students.user_id')
-                        ->where('student_subject_professor.professor_id', $user->professor->id)
-                        ->where('student_subject_professor.subject_id', $assignment->subject_id)
-                        ->select(
-                            'students.id as student_id',
-                            'users.name as student_name',
-                            'users.email as student_email'
-                        )
-                        ->get();
+        }
 
-                    $assignment->students = $students;
-                    return $assignment;
-                });
+        if ($role === 'professor') {
+            $assignments = $user->professor
+                ?->classGroups()
+                ->with([
+                    'subject:id,name,credits',
+                    'subjectEnrollments' => fn($enrollments) => $enrollments
+                        ->whereIn('status_id', $activeStatusIds)
+                        ->with('student.user:id,name,email'),
+                ])
+                ->get()
+                ->map(fn($group) => [
+                    'subject_id' => $group->subject_id,
+                    'subject_name' => $group->subject?->name,
+                    'credits' => $group->subject?->credits,
+                    'group_code' => $group->code,
+                    'students' => $group->subjectEnrollments->map(fn($enrollment) => [
+                        'student_id' => $enrollment->student_id,
+                        'student_name' => $enrollment->student?->user?->name,
+                        'student_email' => $enrollment->student?->user?->email,
+                    ])->values(),
+                ]) ?? collect();
 
             return inertia('Assignments/Index', [
                 'assignments' => $assignments,
                 'role' => $role,
             ]);
-        } else {
-            return response()->json(['error' => 'Role not supported'], 403);
         }
+
+        return response()->json(['error' => 'Role not supported'], 403);
     }
 }

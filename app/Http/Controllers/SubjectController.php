@@ -146,12 +146,4 @@ class SubjectController extends Controller
         return $blockers;
     }
 
-    public function getSubjectsWithProfessors()
-    {
-        $subjects = Subject::with('professors')
-            ->has('professors')
-            ->get();
-
-        return response()->json($subjects);
-    }
 }

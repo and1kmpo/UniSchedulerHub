@@ -133,6 +133,31 @@ class StudentSubjectEnrollmentGroupsTest extends TestCase
         $this->assertEmpty($alternative['validation']['errors']);
     }
 
+    public function test_groups_endpoint_warns_when_projected_load_is_below_minimum_credits(): void
+    {
+        config(['enrollment.min_credits' => 7]);
+
+        $subject = $this->subject([
+            'credits' => 3,
+        ]);
+        $student = $this->studentForSubjects([$subject]);
+        $group = $this->classGroup($subject);
+        $this->schedule($group);
+
+        $response = $this->actingAs($student->user)
+            ->getJson(route('student.subject-enrollment.groups', $subject))
+            ->assertOk()
+            ->assertJsonPath('groups.0.validation.allowed', true)
+            ->assertJsonPath('groups.0.validation.load.credits', 3)
+            ->assertJsonPath('groups.0.validation.load.min_credits', 7)
+            ->assertJsonPath('groups.0.validation.load.meets_minimum', false);
+
+        $this->assertContains(
+            'Academic load is below the minimum expected 7 credits.',
+            $response->json('groups.0.validation.warnings')
+        );
+    }
+
     private function studentForSubjects(array $subjects): Student
     {
         $program = Program::create([
@@ -172,7 +197,7 @@ class StudentSubjectEnrollmentGroupsTest extends TestCase
         ]);
     }
 
-    private function subject(): Subject
+    private function subject(array $overrides = []): Subject
     {
         return Subject::create([
             'code' => fake()->unique()->bothify('SUB###'),
@@ -181,6 +206,7 @@ class StudentSubjectEnrollmentGroupsTest extends TestCase
             'credits' => 3,
             'knowledge_area' => 'Engineering',
             'elective' => false,
+            ...$overrides,
         ]);
     }
 

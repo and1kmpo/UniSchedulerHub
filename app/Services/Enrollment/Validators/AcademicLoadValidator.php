@@ -8,8 +8,6 @@ use App\Services\Enrollment\DTOs\EnrollmentValidationResult;
 
 class AcademicLoadValidator
 {
-    protected int $maxCredits = 21;
-
     public function __construct(
         protected ?int $ignoreEnrollmentId = null,
     ) {}
@@ -44,11 +42,19 @@ class AcademicLoadValidator
         $incomingCredits = $group->subject?->credits ?? 0;
 
         $total = $currentCredits + $incomingCredits;
+        $minCredits = config('enrollment.min_credits', 7);
+        $maxCredits = config('enrollment.max_credits', 21);
 
-        if ($total > $this->maxCredits) {
+        if ($total > $maxCredits) {
 
             $result->addWarning(
-                "Academic load exceeds {$this->maxCredits} credits."
+                "Academic load exceeds {$maxCredits} credits."
+            );
+        }
+
+        if ($total < $minCredits) {
+            $result->addWarning(
+                "Academic load is below the minimum expected {$minCredits} credits."
             );
         }
 
@@ -94,6 +100,9 @@ class AcademicLoadValidator
             'credits' => $total,
             'groups' => $currentGroups + 1,
             'weekly_hours' => $weeklyHours + $incomingHours,
+            'min_credits' => $minCredits,
+            'max_credits' => $maxCredits,
+            'meets_minimum' => $total >= $minCredits,
         ];
 
         $result->meta['current_credits'] = $currentCredits;
