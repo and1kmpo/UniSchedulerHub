@@ -139,6 +139,7 @@ class DashboardController extends Controller
             'scheduleConflicts' => $this->scheduleConflictPreview($activePeriod?->id),
             'attentionItems' => $this->attentionItems($activePeriod?->id, $activeStatusIds),
             'recentEvents' => $this->recentAuditEvents(),
+            'assignmentPreview' => $this->assignmentReportPreview($activeStatusIds),
             'charts' => [
                 'enrollment_trend' => $this->enrollmentTrend($activePeriod?->id),
                 'status_distribution' => $this->enrollmentStatusBreakdown($activePeriod?->id),
@@ -394,8 +395,96 @@ class DashboardController extends Controller
             ]);
     }
 
+    private function assignmentReportPreview($activeStatusIds)
+    {
+        return Student::query()
+            ->with([
+                'user:id,name,email',
+                'enrollments' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds)
+                    ->with([
+                        'subject:id,name,code,credits',
+                        'classGroup:id,code,professor_id',
+                        'classGroup.professor:id,name',
+                    ]),
+            ])
+            ->whereHas('enrollments', fn($enrollments) => $enrollments->whereIn('status_id', $activeStatusIds))
+            ->orderBy('document')
+            ->limit(5)
+            ->get()
+            ->map(fn(Student $student) => [
+                'id' => $student->id,
+                'name' => $student->user?->name,
+                'document' => $student->document,
+                'credits' => $student->enrollments->sum(fn($enrollment) => (int) ($enrollment->subject?->credits ?? 0)),
+                'subjects' => $student->enrollments->map(fn($enrollment) => [
+                    'subject' => $enrollment->subject?->name,
+                    'code' => $enrollment->subject?->code,
+                    'professor' => $enrollment->classGroup?->professor?->name ?? 'No professor assigned',
+                    'group' => $enrollment->classGroup?->code,
+                ])->values(),
+            ]);
+    }
+
     public function showAssignmentsReport(Request $request)
     {
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes'))
+            ->pluck('id');
+
+        $query = Student::query()
+            ->with([
+                'user:id,name,email',
+                'enrollments' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds)
+                    ->with([
+                        'subject:id,name,code,credits,elective',
+                        'classGroup:id,code,group_code,professor_id',
+                        'classGroup.professor:id,name,email',
+                    ]),
+            ])
+            ->whereHas('enrollments', fn($enrollments) => $enrollments->whereIn('status_id', $activeStatusIds));
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($query) use ($search, $activeStatusIds) {
+                $query
+                    ->whereHas('user', function ($user) use ($search) {
+                        $user
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhere('students.document', 'like', "%{$search}%")
+                    ->orWhereHas('enrollments', function ($enrollments) use ($search, $activeStatusIds) {
+                        $enrollments
+                            ->whereIn('status_id', $activeStatusIds)
+                            ->where(function ($query) use ($search) {
+                                $query
+                                    ->whereHas('subject', fn($subject) => $subject->where('name', 'like', "%{$search}%"))
+                                    ->orWhereHas('classGroup.professor', fn($professor) => $professor->where('name', 'like', "%{$search}%"));
+                            });
+                    });
+            });
+        }
+
+        return $query
+            ->orderBy('document')
+            ->paginate(4)
+            ->withQueryString()
+            ->through(fn(Student $student) => [
+                'student_id' => $student->id,
+                'nameStudent' => $student->user?->name,
+                'document' => $student->document,
+                'email' => $student->user?->email,
+                'subjects' => $student->enrollments->map(fn($enrollment) => [
+                    'subjectName' => $enrollment->subject?->name,
+                    'subjectCode' => $enrollment->subject?->code,
+                    'credits' => $enrollment->subject?->credits,
+                    'type' => $enrollment->subject?->elective ? 'Elective' : 'Required',
+                    'groupCode' => $enrollment->classGroup?->code,
+                    'professorName' => $enrollment->classGroup?->professor?->name ?? 'No professor assigned',
+                ])->values(),
+            ]);
+
         $query = Student::leftJoin('student_subject_professor', 'students.id', '=', 'student_subject_professor.student_id')
             ->leftJoin('subjects', 'student_subject_professor.subject_id', '=', 'subjects.id')
             ->leftJoin('professors', 'student_subject_professor.professor_id', '=', 'professors.id')
@@ -466,6 +555,23 @@ class DashboardController extends Controller
 
     public function percentageElectiveSubjects()
     {
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes'))
+            ->pluck('id');
+
+        $enrollmentMix = SubjectEnrollment::query()
+            ->join('subjects', 'subject_enrollments.subject_id', '=', 'subjects.id')
+            ->whereIn('subject_enrollments.status_id', $activeStatusIds)
+            ->selectRaw('
+                ROUND((SUM(CASE WHEN subjects.elective = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 4) AS percentageElective,
+                ROUND((SUM(CASE WHEN subjects.elective = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 4) AS percentageMandatory
+            ')
+            ->first();
+
+        return response()->json([
+            'percentageElective' => (float) ($enrollmentMix?->percentageElective ?? 0),
+            'percentageMandatory' => (float) ($enrollmentMix?->percentageMandatory ?? 0),
+        ]);
+
         $result = DB::table('students as st')
             ->join('student_subject_professor as sp', 'st.id', '=', 'sp.student_id')
             ->join('subjects as s', 'sp.subject_id', '=', 's.id')
