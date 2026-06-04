@@ -138,6 +138,17 @@ const calendarOptions = computed(() => ({
     slotDuration: "00:30:00",
     snapDuration: "00:30:00",
     slotLabelInterval: "01:00:00",
+    slotLabelFormat: {
+        hour: "numeric",
+        meridiem: "short",
+        hour12: true,
+    },
+    eventTimeFormat: {
+        hour: "numeric",
+        minute: "2-digit",
+        meridiem: "short",
+        hour12: true,
+    },
     dayHeaderFormat: {
         weekday: "short",
     },
@@ -163,6 +174,17 @@ function normalizeTime(time) {
     const [hours = "00", minutes = "00"] = String(time || "").split(":");
 
     return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+}
+
+function formatTime(time) {
+    const [hours = "0", minutes = "0"] = normalizeTime(time).split(":");
+    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: Number(minutes) === 0 ? undefined : "2-digit",
+        hour12: true,
+    }).format(date);
 }
 
 function displayValue(value, fallback = "Not assigned") {
@@ -223,6 +245,8 @@ function readableSchedule(schedule) {
         day: schedule?.day || "monday",
         start_time: normalizeTime(schedule?.start_time),
         end_time: normalizeTime(schedule?.end_time),
+        start_label: formatTime(schedule?.start_time),
+        end_label: formatTime(schedule?.end_time),
     };
 }
 
@@ -241,7 +265,7 @@ function renderEventContent(arg) {
         html: `
             <div class="uh-calendar-event-body">
                 <div class="uh-calendar-event-topline">
-                    <span class="uh-calendar-event-time">${escapeHtml(schedule.start_time)} - ${escapeHtml(schedule.end_time)}</span>
+                    <span class="uh-calendar-event-time">${escapeHtml(schedule.start_label)} - ${escapeHtml(schedule.end_label)}</span>
                     <span class="uh-calendar-event-status">${escapeHtml(readableStatus(schedule.status))}</span>
                 </div>
                 <div class="uh-calendar-event-title">${escapeHtml(schedule.subject)}</div>
@@ -259,7 +283,7 @@ function addEventTitle(info) {
 
     info.el.setAttribute(
         "title",
-        `${schedule.subject}\n${schedule.start_time} - ${schedule.end_time}\n${schedule.classroom}\n${schedule.professor}\n${readableStatus(schedule.status)}`
+        `${schedule.subject}\n${schedule.start_label} - ${schedule.end_label}\n${schedule.classroom}\n${schedule.professor}\n${readableStatus(schedule.status)}`
     );
 }
 
@@ -431,7 +455,7 @@ async function persistCalendarChange(info) {
                         </h4>
 
                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            {{ selectedSchedule.start_time }} - {{ selectedSchedule.end_time }}
+                            {{ selectedSchedule.start_label }} - {{ selectedSchedule.end_label }}
                         </p>
                     </div>
 

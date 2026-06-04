@@ -9,7 +9,12 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
 <template>
     <nav class="space-y-1">
         <!-- Dashboard (común) -->
-        <NavItem label="Dashboard" routeName="dashboard" :active="route().current('dashboard')" />
+        <NavItem
+            v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)"
+            label="Dashboard"
+            routeName="dashboard"
+            :active="route().current('dashboard')"
+        />
 
         <!-- ADMIN -->
         <template v-if="userRole === 'admin'">
@@ -35,7 +40,8 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
         <!-- STUDENT -->
         <template v-else-if="userRole === 'student'">
             <NavItem label="My Subjects" routeName="student.subjects" />
-            <NavItem label="Professors" routeName="professors.index" />
+            <NavItem label="My Schedule" routeName="student.schedule" />
+            <NavItem label="Subject Enrollment" routeName="student.subject-enrollment.index" />
         </template>
     </nav>
 </template>

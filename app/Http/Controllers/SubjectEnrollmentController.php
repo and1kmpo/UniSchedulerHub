@@ -54,21 +54,41 @@ class SubjectEnrollmentController extends Controller
             ]);
         }
 
-        $enrollments = SubjectEnrollment::with(['status', 'classGroup.schedules'])
+        $enrollments = SubjectEnrollment::with([
+            'status',
+            'subject:id,code,name',
+            'classGroup:id,code,name,subject_id,professor_id,modality,shift',
+            'classGroup.professor:id,name',
+            'classGroup.schedules.classroom:id,name',
+        ])
             ->where('student_id', $student->id)
             ->where('academic_period_id', $period->id)
             ->get();
 
         $activeStatusCodes = config('enrollment.active_status_codes');
-
         $currentSchedules = $enrollments
             ->filter(fn($enrollment) => in_array($enrollment->status?->code, $activeStatusCodes, true))
             ->flatMap(
                 fn($e) => ($e->classGroup?->schedules ?? [])->map(fn($s) => [
-                    'day' => $s->day,
+                    'id' => $s->id,
+                    'day' => strtolower($s->day),
                     'start_time' => $s->start_time,
                     'end_time' => $s->end_time,
-                    'subject_id' => $e->classGroup->subject_id, // ✅ correcto
+                    'subject' => [
+                        'id' => $e->subject?->id,
+                        'code' => $e->subject?->code,
+                        'name' => $e->subject?->name,
+                    ],
+                    'group' => [
+                        'id' => $e->classGroup?->id,
+                        'code' => $e->classGroup?->code,
+                        'name' => $e->classGroup?->name,
+                        'modality' => $e->classGroup?->modality,
+                        'shift' => $e->classGroup?->shift,
+                    ],
+                    'professor' => $e->classGroup?->professor?->name,
+                    'classroom' => $s->classroom?->name,
+                    'status' => $e->status?->code,
                 ])
             )
             ->values();
@@ -280,3 +300,4 @@ class SubjectEnrollmentController extends Controller
         return response()->json(['groups' => $groups]);
     }
 }
+

@@ -13,6 +13,7 @@ import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
+import WeeklySchedule from "@/Pages/Students/Partials/WeeklySchedule.vue";
 
 const props = defineProps({
     subjects: {
@@ -156,6 +157,17 @@ function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
 }
 
+function formatTime(time) {
+    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
+    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: Number(minutes) === 0 ? undefined : "2-digit",
+        hour12: true,
+    }).format(date);
+}
+
 function statusVariant(status) {
     return {
         approved: "success",
@@ -201,7 +213,7 @@ function scheduleSummary(schedules = []) {
     }
 
     return schedules
-        .map((schedule) => `${formatStatus(schedule.day)} ${schedule.start_time}-${schedule.end_time}`)
+        .map((schedule) => `${formatStatus(schedule.day)} ${formatTime(schedule.start_time)}-${formatTime(schedule.end_time)}`)
         .join("; ");
 }
 
@@ -478,6 +490,21 @@ async function confirmPeriodEnrollment() {
                             <i class="fa-solid fa-circle-check mr-2" />
                             {{ confirmingEnrollment ? "Confirming..." : "Confirm Enrollment" }}
                         </BaseButton>
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            My Weekly Schedule
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Review your current selections before confirming the academic period enrollment.
+                        </p>
+                    </div>
+
+                    <div class="p-6">
+                        <WeeklySchedule :schedules="currentSchedules" />
                     </div>
                 </SectionCard>
 

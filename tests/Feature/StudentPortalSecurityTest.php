@@ -101,6 +101,22 @@ class StudentPortalSecurityTest extends TestCase
         $this->assertNotSame($firstStudent->id, $secondStudent->id);
     }
 
+    public function test_student_schedule_only_contains_authenticated_student_active_schedules(): void
+    {
+        [$firstStudent, $firstSubject] = $this->studentWithEnrollment('Computer Networks');
+        [$secondStudent, $secondSubject] = $this->studentWithEnrollment('Artificial Intelligence');
+
+        $response = $this->actingAs($firstStudent->user)
+            ->get(route('student.schedule'))
+            ->assertOk();
+
+        $schedules = collect($response->viewData('page')['props']['currentSchedules']);
+
+        $this->assertTrue($schedules->contains(fn($schedule) => $schedule['subject']['id'] === $firstSubject->id));
+        $this->assertFalse($schedules->contains(fn($schedule) => $schedule['subject']['id'] === $secondSubject->id));
+        $this->assertNotSame($firstStudent->id, $secondStudent->id);
+    }
+
     public function test_student_grade_summary_only_contains_authenticated_student_grades(): void
     {
         [$firstStudent, $firstSubject, $firstEnrollment] = $this->studentWithEnrollment('Software Testing');

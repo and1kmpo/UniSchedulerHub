@@ -1,6 +1,5 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Link } from "@inertiajs/vue3";
 import axios from "axios";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
@@ -32,6 +31,7 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+
 });
 
 const columns = [
@@ -86,6 +86,29 @@ function formatDay(day) {
     return day ? day.charAt(0).toUpperCase() + day.slice(1) : "";
 }
 
+function formatDate(date) {
+    if (!date) {
+        return "Not defined";
+    }
+
+    return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    }).format(new Date(date));
+}
+
+function formatTime(time) {
+    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
+    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: Number(minutes) === 0 ? undefined : "2-digit",
+        hour12: true,
+    }).format(date);
+}
+
 function formatSchedules(schedules = []) {
     if (!schedules.length) {
         return "Pending";
@@ -95,7 +118,7 @@ function formatSchedules(schedules = []) {
         .map((schedule) => {
             const room = schedule.classroom ? ` - ${schedule.classroom}` : "";
 
-            return `${formatDay(schedule.day)} ${schedule.start_time}-${schedule.end_time}${room}`;
+            return `${formatDay(schedule.day)} ${formatTime(schedule.start_time)}-${formatTime(schedule.end_time)}${room}`;
         })
         .join("; ");
 }
@@ -151,13 +174,6 @@ const handleOpenSummary = async () => {
     <CrudPageLayout title="My Subjects" subtitle="Current enrollments, schedule and academic progress">
         <template #actions>
             <div class="flex flex-col gap-2 sm:flex-row">
-                <Link v-if="currentPeriod?.can_enroll" :href="route('student.subject-enrollment.index')">
-                    <BaseButton variant="primary">
-                        <i class="fa-solid fa-user-plus mr-2" />
-                        Enroll Subjects
-                    </BaseButton>
-                </Link>
-
                 <BaseButton variant="secondary" @click="handleOpenSummary">
                     <i class="fa-solid fa-list mr-2" />
                     Grade Summary
@@ -196,7 +212,7 @@ const handleOpenSummary = async () => {
                             </p>
 
                             <p class="mt-1 text-gray-900 dark:text-white">
-                                {{ currentPeriod.enrollment_deadline ?? "Not defined" }}
+                                {{ formatDate(currentPeriod.enrollment_deadline) }}
                             </p>
                         </div>
 
@@ -206,7 +222,7 @@ const handleOpenSummary = async () => {
                             </p>
 
                             <p class="mt-1 text-gray-900 dark:text-white">
-                                {{ currentPeriod.unenrollment_deadline ?? "Not defined" }}
+                                {{ formatDate(currentPeriod.unenrollment_deadline) }}
                             </p>
                         </div>
                     </div>
@@ -235,7 +251,7 @@ const handleOpenSummary = async () => {
                                         {{ row.group || "Pending" }}
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ row.modality || "TBD" }} · {{ row.shift || "TBD" }}
+                                        {{ row.modality || "TBD" }} / {{ row.shift || "TBD" }}
                                     </p>
                                 </div>
                             </template>

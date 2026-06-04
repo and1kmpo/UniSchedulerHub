@@ -139,6 +139,15 @@ class DemoSeedIntegrityTest extends TestCase
         $this->assertGreaterThanOrEqual(7, $studentProps['summary']['current_credits']);
         $this->assertNotEmpty($studentProps['subjects']);
         $this->assertNotNull($studentProps['currentPeriod']);
+
+        $scheduleResponse = $this->actingAs($student)
+            ->get(route('student.schedule'))
+            ->assertOk();
+
+        $scheduleProps = $scheduleResponse->viewData('page')['props'];
+
+        $this->assertNotEmpty($scheduleProps['currentSchedules']);
+        $this->assertSame($studentProps['currentPeriod']['id'], $scheduleProps['currentPeriod']['id']);
     }
 
     private function assertDemoUser(string $email, string $role): void

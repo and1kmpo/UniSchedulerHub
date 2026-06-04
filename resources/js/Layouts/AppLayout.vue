@@ -218,6 +218,9 @@ onBeforeUnmount(() => {
                                 <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
                             </li>
                             <li>
+                                <Link :href="route('student.schedule')" class="nav-link">My Schedule</Link>
+                            </li>
+                            <li>
                                 <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
                                 Enrollment</Link>
                             </li>
@@ -307,6 +310,9 @@ onBeforeUnmount(() => {
                             <template v-if="userRole === 'student'">
                                 <li>
                                     <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
+                                </li>
+                                <li>
+                                    <Link :href="route('student.schedule')" class="nav-link">My Schedule</Link>
                                 </li>
                                 <li>
                                     <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject

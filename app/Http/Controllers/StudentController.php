@@ -255,6 +255,21 @@ class StudentController extends Controller
         ]);
     }
 
+    public function schedule()
+    {
+        $student = auth()->user()->student;
+        $period = AcademicPeriod::active()->with('status')->first();
+
+        return Inertia::render('Students/Schedule', [
+            'currentSchedules' => $this->currentSchedulePayload($student, $period),
+            'currentPeriod' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ] : null,
+        ]);
+    }
+
     public function viewGrades($subjectId)
     {
         $student = auth()->user()->student;
@@ -316,6 +331,55 @@ class StudentController extends Controller
             ]);
 
         return response()->json(['grades' => $gradesSummary]);
+    }
+
+    private function currentSchedulePayload(Student $student, ?AcademicPeriod $period)
+    {
+        if (! $period) {
+            return collect();
+        }
+
+        return $student
+            ->enrollments()
+            ->with([
+                'status',
+                'subject:id,code,name',
+                'classGroup:id,code,name,subject_id,professor_id,modality,shift',
+                'classGroup.professor:id,name',
+                'classGroup.schedules.classroom:id,name',
+            ])
+            ->where('academic_period_id', $period->id)
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
+            )
+            ->get()
+            ->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules
+                ? $enrollment->classGroup->schedules
+                    ->where('status', '!=', 'cancelled')
+                    ->map(fn($schedule) => [
+                        'id' => $schedule->id,
+                        'day' => strtolower($schedule->day),
+                        'start_time' => $schedule->start_time,
+                        'end_time' => $schedule->end_time,
+                        'subject' => [
+                            'id' => $enrollment->subject?->id,
+                            'code' => $enrollment->subject?->code,
+                            'name' => $enrollment->subject?->name,
+                        ],
+                        'group' => [
+                            'id' => $enrollment->classGroup?->id,
+                            'code' => $enrollment->classGroup?->code,
+                            'name' => $enrollment->classGroup?->name,
+                            'modality' => $enrollment->classGroup?->modality,
+                            'shift' => $enrollment->classGroup?->shift,
+                        ],
+                        'professor' => $enrollment->classGroup?->professor?->name,
+                        'classroom' => $schedule->classroom?->name,
+                        'status' => $enrollment->status?->code,
+                    ])
+                : collect())
+            ->values();
     }
 
     private function formOptions(): array
