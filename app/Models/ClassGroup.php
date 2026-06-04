@@ -99,6 +99,11 @@ class ClassGroup extends Model
         return $this->belongsTo(User::class, 'professor_id');
     }
 
+    public function professorProfile()
+    {
+        return $this->belongsTo(Professor::class, 'professor_id', 'user_id');
+    }
+
 
     public function schedules()
     {

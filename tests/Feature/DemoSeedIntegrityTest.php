@@ -115,6 +115,46 @@ class DemoSeedIntegrityTest extends TestCase
         $this->assertGreaterThan(0, $adminProps['academicDashboard']['capacity']['total_capacity']);
         $this->assertNotEmpty($adminProps['academicDashboard']['charts']['capacity_by_group']);
 
+        $reportResponse = $this->actingAs($admin)
+            ->get(route('reports.student-assignments.index'))
+            ->assertOk();
+
+        $reportProps = $reportResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $reportProps['summary']['students']);
+        $this->assertNotEmpty($reportProps['students']['data']);
+
+        $csvResponse = $this->actingAs($admin)
+            ->get(route('reports.student-assignments.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $csv = $csvResponse->streamedContent();
+
+        $this->assertStringContainsString('Student document', $csv);
+        $this->assertStringContainsString('Subject code', $csv);
+        $this->assertStringContainsString('Professor', $csv);
+
+        $professorLoadResponse = $this->actingAs($admin)
+            ->get(route('reports.professor-load.index'))
+            ->assertOk();
+
+        $professorLoadProps = $professorLoadResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $professorLoadProps['summary']['professors']);
+        $this->assertGreaterThan(0, $professorLoadProps['summary']['groups']);
+        $this->assertNotEmpty($professorLoadProps['professors']['data']);
+
+        $professorLoadCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.professor-load.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $professorLoadCsv = $professorLoadCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Professor document', $professorLoadCsv);
+        $this->assertStringContainsString('Pending grades', $professorLoadCsv);
+
         $this->flushSession();
 
         $professorResponse = $this->actingAs($professor)

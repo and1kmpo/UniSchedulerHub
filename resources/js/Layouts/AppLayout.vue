@@ -187,6 +187,9 @@ onBeforeUnmount(() => {
                                 <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
                             </li>
                             <li>
+                                <Link :href="route('reports.student-assignments.index')" class="nav-link">Reports</Link>
+                            </li>
+                            <li>
                                 <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
                             </li>
                             <li>
@@ -281,6 +284,9 @@ onBeforeUnmount(() => {
                                 </li>
                                 <li>
                                     <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
+                                </li>
+                                <li>
+                                    <Link :href="route('reports.student-assignments.index')" class="nav-link">Reports</Link>
                                 </li>
                                 <li>
                                     <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>

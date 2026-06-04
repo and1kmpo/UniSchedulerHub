@@ -472,11 +472,14 @@ function gradingProgressData(items) {
                 <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Student Assignment Report</h2>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Student Assignments Overview</h2>
                             <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Subjects assigned to each student with the responsible professor and group.
+                                Quick view of active student loads and assigned groups. Use the full report for filtering and exports.
                             </p>
                         </div>
+                        <Link :href="route('reports.student-assignments.index')" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300">
+                            Open full report
+                        </Link>
                     </div>
 
                     <div class="mt-5 overflow-x-auto">
@@ -486,7 +489,7 @@ function gradingProgressData(items) {
                                     <th class="px-4 py-3 font-semibold">Student</th>
                                     <th class="px-4 py-3 font-semibold">Document</th>
                                     <th class="px-4 py-3 font-semibold">Credits</th>
-                                    <th class="px-4 py-3 font-semibold">Subjects and professors</th>
+                                    <th class="px-4 py-3 font-semibold">Recent assignments</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -517,7 +520,7 @@ function gradingProgressData(items) {
                                             <details v-if="student.subjects.length > 3"
                                                 class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
                                                 <summary class="cursor-pointer text-xs font-semibold text-indigo-600 dark:text-indigo-300">
-                                                    View {{ student.subjects.length - 3 }} more assignments
+                                                    {{ student.subjects.length - 3 }} more in full report
                                                 </summary>
                                                 <div class="mt-2 space-y-2">
                                                     <div v-for="assignment in student.subjects.slice(3)"

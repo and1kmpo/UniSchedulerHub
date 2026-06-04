@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\AcademicAuditLogController;
+use App\Http\Controllers\AcademicReportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\ClassGroupController;
@@ -111,6 +112,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/academic-periods/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('academic-periods.archive');
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
         Route::get('/academic-audit-logs', [AcademicAuditLogController::class, 'index'])->name('academic-audit-logs.index');
+        Route::get('/reports/student-assignments', [AcademicReportController::class, 'studentAssignments'])->name('reports.student-assignments.index');
+        Route::get('/reports/student-assignments/export', [AcademicReportController::class, 'exportStudentAssignments'])->name('reports.student-assignments.export');
+        Route::get('/reports/professor-load', [AcademicReportController::class, 'professorLoad'])->name('reports.professor-load.index');
+        Route::get('/reports/professor-load/export', [AcademicReportController::class, 'exportProfessorLoad'])->name('reports.professor-load.export');
 
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
