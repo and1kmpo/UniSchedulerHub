@@ -1,7 +1,3 @@
-<script setup>
-import { Link } from '@inertiajs/inertia-vue3';
-</script>
-
 <template>
     <h1>Users</h1>
     <div class="overflow-x-auto shadow-md sm:rounded-lg m-4">
