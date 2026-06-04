@@ -10,7 +10,7 @@ import "element-plus/dist/index.css";
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import '../css/calendar.css';
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || "UniSchedulerHub";
 
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
