@@ -1,5 +1,5 @@
 <script setup>
-import debounce from "lodash/debounce";
+import debounce from "lodash.debounce";
 
 const props = defineProps({
     modelValue: {
