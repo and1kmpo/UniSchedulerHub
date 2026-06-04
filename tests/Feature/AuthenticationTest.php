@@ -3,13 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Providers\RouteServiceProvider;
+use Database\Seeders\RolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolSeeder::class);
+    }
 
     public function test_login_screen_can_be_rendered(): void
     {
@@ -18,9 +25,10 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_admin_can_authenticate_and_is_redirected_to_academic_dashboard(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('admin');
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -28,7 +36,49 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(RouteServiceProvider::HOME);
+        $response->assertRedirect(route('dashboard'));
+    }
+
+    public function test_academic_coordinator_can_authenticate_and_is_redirected_to_academic_dashboard(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('academic_coordinator');
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard'));
+    }
+
+    public function test_professor_can_authenticate_and_is_redirected_to_teaching_portal(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('professor');
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('professor.subjects'));
+    }
+
+    public function test_student_can_authenticate_and_is_redirected_to_student_portal(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('student');
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('student.subjects'));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
