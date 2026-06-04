@@ -426,6 +426,8 @@ class DemoAcademicSeeder extends Seeder
         $statuses = SubjectEnrollmentStatus::query()->pluck('id', 'code');
 
         $this->enrollment($students['enrolled'], $subjects['programming'], $groups['programmingA'], $periods['enrollment'], $statuses['pre_enrolled']);
+        $this->enrollment($students['enrolled'], $subjects['dataStructures'], $groups['dataStructuresA'], $periods['enrollment'], $statuses['pre_enrolled']);
+        $this->enrollment($students['enrolled'], $subjects['ethics'], $groups['ethicsA'], $periods['enrollment'], $statuses['pre_enrolled']);
         $this->enrollment($students['probation'], $subjects['databases'], $groups['databasesA'], $periods['enrollment'], $statuses['enrolled']);
 
         $gradedEnrollment = $this->enrollment($students['graded'], $subjects['programming'], $groups['gradingProgramming'], $periods['grading'], $statuses['enrolled']);

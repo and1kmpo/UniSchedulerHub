@@ -96,6 +96,51 @@ class DemoSeedIntegrityTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_seeded_demo_users_can_open_operational_role_workspaces(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::where('email', 'admin@unischedulerhub.test')->firstOrFail();
+        $professor = User::where('email', 'professor@unischedulerhub.test')->firstOrFail();
+        $student = User::where('email', 'student.enrolled@unischedulerhub.test')->firstOrFail();
+
+        $adminResponse = $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk();
+
+        $adminProps = $adminResponse->viewData('page')['props'];
+
+        $this->assertSame('academic', $adminProps['dashboardType']);
+        $this->assertGreaterThan(0, $adminProps['academicDashboard']['metrics']['published_groups']);
+        $this->assertGreaterThan(0, $adminProps['academicDashboard']['capacity']['total_capacity']);
+        $this->assertNotEmpty($adminProps['academicDashboard']['charts']['capacity_by_group']);
+
+        $this->flushSession();
+
+        $professorResponse = $this->actingAs($professor)
+            ->get(route('professor.subjects'))
+            ->assertOk();
+
+        $professorProps = $professorResponse->viewData('page')['props'];
+
+        $this->assertSame('ready', $professorProps['systemState']);
+        $this->assertGreaterThan(0, $professorProps['summary']['groups']);
+        $this->assertNotEmpty($professorProps['groups']);
+
+        $this->flushSession();
+
+        $studentResponse = $this->actingAs($student)
+            ->get(route('student.subjects'))
+            ->assertOk();
+
+        $studentProps = $studentResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $studentProps['summary']['active_subjects']);
+        $this->assertGreaterThanOrEqual(7, $studentProps['summary']['current_credits']);
+        $this->assertNotEmpty($studentProps['subjects']);
+        $this->assertNotNull($studentProps['currentPeriod']);
+    }
+
     private function assertDemoUser(string $email, string $role): void
     {
         $user = User::where('email', $email)->first();
