@@ -72,12 +72,24 @@ class ProfessorPortalSecurityTest extends TestCase
             ->assertOk();
 
         $groups = collect($response->viewData('page')['props']['groups']);
-        $schedules = collect($response->viewData('page')['props']['currentSchedules']);
-
         $this->assertTrue($groups->contains('id', $ownGroup->id));
         $this->assertFalse($groups->contains('id', $otherGroup->id));
+    }
+
+    public function test_professor_schedule_only_contains_assigned_groups(): void
+    {
+        [$ownGroup] = $this->groupWithEnrollment($this->firstProfessor, 'Calculus I');
+        [$otherGroup] = $this->groupWithEnrollment($this->secondProfessor, 'Physics I');
+
+        $response = $this->actingAs($this->firstProfessor)
+            ->get(route('professor.schedule'))
+            ->assertOk();
+
+        $schedules = collect($response->viewData('page')['props']['currentSchedules']);
+
         $this->assertTrue($schedules->contains(fn($schedule) => $schedule['group']['id'] === $ownGroup->id));
         $this->assertFalse($schedules->contains(fn($schedule) => $schedule['group']['id'] === $otherGroup->id));
+        $this->assertSame(1, $response->viewData('page')['props']['summary']['blocks']);
     }
 
     public function test_professor_group_enrollments_index_only_contains_assigned_groups(): void

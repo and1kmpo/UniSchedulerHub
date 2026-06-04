@@ -135,6 +135,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
      */
     Route::middleware(['role:professor'])->group(function () {
         Route::get('/professor/subjects', [ProfessorController::class, 'mySubjects'])->name('professor.subjects');
+        Route::get('/professor/schedule', [ProfessorController::class, 'schedule'])->name('professor.schedule');
         Route::get('/subjects/{subject}/students', [ProfessorController::class, 'viewAllStudents'])->name('subjects.students.view');
     });
 

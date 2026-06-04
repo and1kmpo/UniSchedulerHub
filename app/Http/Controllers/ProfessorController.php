@@ -172,7 +172,6 @@ class ProfessorController extends Controller
         if (! $period) {
             return Inertia::render('Professors/MySubjects', [
                 'groups' => [],
-                'currentSchedules' => [],
                 'period' => null,
                 'summary' => [
                     'groups' => 0,
@@ -183,7 +182,49 @@ class ProfessorController extends Controller
             ]);
         }
 
-        $groups = ClassGroup::with([
+        $groups = $this->currentProfessorGroups($period);
+
+        return Inertia::render('Professors/MySubjects', [
+            'groups' => $groups,
+            'period' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+                'can_edit_grades' => $period->canEditGrades(),
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'students' => $groups->sum('subject_enrollments_count'),
+                'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
+            ],
+            'systemState' => 'ready',
+        ]);
+    }
+
+    public function schedule()
+    {
+        $period = AcademicPeriod::active()->with('status')->first();
+        $groups = $period ? $this->currentProfessorGroups($period) : collect();
+        $currentSchedules = $this->professorSchedulePayload($groups);
+
+        return Inertia::render('Professors/Schedule', [
+            'currentSchedules' => $currentSchedules,
+            'currentPeriod' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'blocks' => $currentSchedules->count(),
+                'students' => $groups->sum('subject_enrollments_count'),
+            ],
+        ]);
+    }
+
+    private function currentProfessorGroups(AcademicPeriod $period)
+    {
+        return ClassGroup::with([
             'subject',
             'academicPeriod',
             'schedules.classroom.building',
@@ -243,23 +284,6 @@ class ProfessorController extends Controller
                     ] : null,
                 ])->values(),
             ]);
-
-        return Inertia::render('Professors/MySubjects', [
-            'groups' => $groups,
-            'currentSchedules' => $this->professorSchedulePayload($groups),
-            'period' => $period ? [
-                'id' => $period->id,
-                'name' => $period->name,
-                'state' => $period->state()?->value,
-                'can_edit_grades' => $period->canEditGrades(),
-            ] : null,
-            'summary' => [
-                'groups' => $groups->count(),
-                'students' => $groups->sum('subject_enrollments_count'),
-                'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
-            ],
-            'systemState' => 'ready',
-        ]);
     }
 
     private function professorSchedulePayload($groups)

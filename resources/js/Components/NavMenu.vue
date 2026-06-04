@@ -34,7 +34,8 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
         <!-- PROFESSOR -->
         <template v-else-if="userRole === 'professor'">
             <NavItem label="My Subjects" routeName="professor.subjects" />
-            <NavItem label="Students" routeName="students.index" />
+            <NavItem label="My Schedule" routeName="professor.schedule" />
+            <NavItem label="Group Enrollments" routeName="admin.group-enrollments.index" />
         </template>
 
         <!-- STUDENT -->

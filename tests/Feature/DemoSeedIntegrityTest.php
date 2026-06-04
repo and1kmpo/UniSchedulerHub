@@ -127,6 +127,15 @@ class DemoSeedIntegrityTest extends TestCase
         $this->assertGreaterThan(0, $professorProps['summary']['groups']);
         $this->assertNotEmpty($professorProps['groups']);
 
+        $professorScheduleResponse = $this->actingAs($professor)
+            ->get(route('professor.schedule'))
+            ->assertOk();
+
+        $professorScheduleProps = $professorScheduleResponse->viewData('page')['props'];
+
+        $this->assertNotEmpty($professorScheduleProps['currentSchedules']);
+        $this->assertGreaterThan(0, $professorScheduleProps['summary']['blocks']);
+
         $this->flushSession();
 
         $studentResponse = $this->actingAs($student)

@@ -11,15 +11,9 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
-import WeeklySchedule from "@/Pages/Students/Partials/WeeklySchedule.vue";
 
 const props = defineProps({
     groups: {
-        type: Array,
-        default: () => [],
-    },
-
-    currentSchedules: {
         type: Array,
         default: () => [],
     },
@@ -155,26 +149,6 @@ const groupStatusVariant = (status) => ({
 
                         <StatusBadge :label="period?.state ? formatStatus(period.state) : 'NOT ACTIVE'"
                             :variant="period?.can_edit_grades ? 'success' : 'gray'" />
-                    </div>
-                </SectionCard>
-
-                <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Weekly Teaching Schedule
-                        </h2>
-
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Your assigned class blocks with classroom and building location for the active period.
-                        </p>
-                    </div>
-
-                    <div class="p-6">
-                        <WeeklySchedule
-                            :schedules="currentSchedules"
-                            empty-title="No teaching schedule yet"
-                            empty-description="Published class schedules assigned to you will appear here."
-                        />
                     </div>
                 </SectionCard>
 
