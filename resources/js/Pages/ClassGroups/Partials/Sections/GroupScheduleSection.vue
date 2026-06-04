@@ -66,8 +66,15 @@ const resetCreateForm = () => {
     createForm.status = "published";
 };
 
-const openCreateModal = () => {
+const openCreateModal = (defaults = {}) => {
     resetCreateForm();
+
+    if (defaults?.day) {
+        createForm.day = defaults.day;
+        createForm.start_time = defaults.start_time || "";
+        createForm.end_time = defaults.end_time || "";
+    }
+
     showCreateModal.value = true;
 };
 
@@ -128,7 +135,8 @@ const submitCreateSchedule = () => {
         </SectionCard>
 
         <SmartSchedulerBoard :class-group-id="classGroup.id" :schedules="localSchedules"
-            :can-edit="canManageSchedules" @schedule-updated="replaceSchedule" />
+            :can-edit="canManageSchedules" @schedule-create-request="openCreateModal"
+            @schedule-updated="replaceSchedule" />
 
         <ScheduleTimeline :schedules="localSchedules" />
 
