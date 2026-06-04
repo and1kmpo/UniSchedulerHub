@@ -2,9 +2,9 @@
 
 namespace App\Services\AcademicPeriod;
 
+use App\Enums\AcademicPeriodState;
 use App\Models\AcademicPeriod;
 use App\Models\AcademicPeriodStatus;
-use App\Enums\AcademicPeriodState;
 use DomainException;
 
 class AcademicPeriodTransitionService
@@ -79,7 +79,7 @@ class AcademicPeriodTransitionService
         $allowedTransitions = self::TRANSITIONS[$current->value] ?? [];
 
         $isAllowed = collect($allowedTransitions)
-            ->contains(fn($state) => $state === $target);
+            ->contains(fn ($state) => $state === $target);
 
         if (! $isAllowed) {
             throw new DomainException(
