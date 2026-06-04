@@ -148,11 +148,10 @@ Validate:
 Known non-blocking warnings:
 
 - Browserslist data may be outdated.
-- Element Plus may still produce a large vendor chunk while it is registered globally.
 
 Future improvement:
 
-- Replace global Element Plus registration with local/on-demand imports where it is still needed.
+- Keep reviewing bundle size when adding charting, calendar, or UI libraries.
 
 ## Demo Verification
 

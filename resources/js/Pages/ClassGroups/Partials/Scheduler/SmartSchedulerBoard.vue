@@ -147,12 +147,13 @@ const calendarOptions = computed(() => ({
     eventDurationEditable: props.canEdit && editable.value,
     eventResizableFromStart: true,
     dragRevertDuration: 180,
-    eventMinHeight: 36,
+    eventMinHeight: 52,
     events: calendarEvents.value,
     eventAllow: (dropInfo) => minutesBetween(dropInfo.start, dropInfo.end) >= 30,
     dateClick: handleDateClick,
     select: handleDateSelect,
     eventContent: renderEventContent,
+    eventDidMount: addEventTitle,
     eventClick: handleEventClick,
     eventDrop: persistCalendarChange,
     eventResize: persistCalendarChange,
@@ -251,6 +252,15 @@ function renderEventContent(arg) {
             </div>
         `,
     };
+}
+
+function addEventTitle(info) {
+    const schedule = readableSchedule(info.event.extendedProps.raw);
+
+    info.el.setAttribute(
+        "title",
+        `${schedule.subject}\n${schedule.start_time} - ${schedule.end_time}\n${schedule.classroom}\n${schedule.professor}\n${readableStatus(schedule.status)}`
+    );
 }
 
 function escapeHtml(value) {
@@ -481,7 +491,7 @@ async function persistCalendarChange(info) {
 }
 
 .uh-full-calendar .fc-timegrid-slot {
-    height: 2.5rem;
+    height: 3rem;
 }
 
 .uh-full-calendar .fc-timegrid-event {
@@ -520,9 +530,9 @@ async function persistCalendarChange(info) {
     display: grid;
     height: 100%;
     align-content: start;
-    gap: 0.2rem;
-    padding: 0.35rem 0.45rem;
-    line-height: 1.15;
+    gap: 0.28rem;
+    padding: 0.45rem 0.55rem;
+    line-height: 1.2;
 }
 
 .uh-calendar-event-topline {
@@ -534,10 +544,11 @@ async function persistCalendarChange(info) {
 }
 
 .uh-calendar-event-title {
+    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.78rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.84rem;
     font-weight: 700;
     letter-spacing: 0;
 }
@@ -546,7 +557,7 @@ async function persistCalendarChange(info) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
     opacity: 0.95;
 }
@@ -559,17 +570,17 @@ async function persistCalendarChange(info) {
     border-radius: 999px;
     background: rgb(255 255 255 / 18%);
     padding: 0.1rem 0.35rem;
-    font-size: 0.58rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
 }
 
 .uh-calendar-event-meta {
     display: grid;
-    gap: 0.05rem;
+    gap: 0.1rem;
     min-width: 0;
-    font-size: 0.66rem;
-    opacity: 0.9;
+    font-size: 0.7rem;
+    opacity: 0.95;
 }
 
 .uh-calendar-event-meta span {

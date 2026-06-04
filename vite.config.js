@@ -19,10 +19,6 @@ export default defineConfig({
                         return "vendor-charts";
                     }
 
-                    if (id.includes("element-plus") || id.includes("@element-plus")) {
-                        return "vendor-element-plus";
-                    }
-
                     if (id.includes("@fortawesome")) {
                         return "vendor-fontawesome";
                     }
