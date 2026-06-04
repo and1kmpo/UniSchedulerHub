@@ -84,6 +84,8 @@ const completedGradesCount = computed(() =>
 
 const pendingChangesCount = computed(() => Object.keys(getChangedGrades()).length);
 
+const saveButtonLabel = computed(() => (props.canEdit ? "Save Grades" : "Grades Locked"));
+
 const invalidGrades = computed(() => {
     const invalid = {};
 
@@ -316,13 +318,14 @@ async function submitGrades() {
 </script>
 
 <template>
-    <CrudPageLayout :title="`Grades - ${subject.name}`" :subtitle="`${group.code} · ${academicPeriod?.name ?? 'No period'}`">
+    <CrudPageLayout :title="`Grades - ${subject.name}`" :subtitle="`${group.code} / ${academicPeriod?.name ?? 'No period'}`">
         <template #actions>
             <BaseButton type="button" variant="primary" :disabled="!canEdit || !hasChanges || hasInvalidGrades || isSubmitting"
                 @click="submitGrades">
                 <i v-if="isSubmitting" class="fa-solid fa-spinner fa-spin mr-2" />
-                <i v-else class="fa-solid fa-floppy-disk mr-2" />
-                Save Grades
+                <i v-else-if="canEdit" class="fa-solid fa-floppy-disk mr-2" />
+                <i v-else class="fa-solid fa-lock mr-2" />
+                {{ saveButtonLabel }}
             </BaseButton>
         </template>
 
@@ -367,7 +370,15 @@ async function submitGrades() {
                     </div>
 
                     <div v-if="!canEdit" class="border-t border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
-                        {{ lockReason || "Grade editing is locked for this group or academic period. You can review current grades only." }}
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-lock mt-0.5" />
+                            <div>
+                                <p class="font-semibold">Grade entry is locked</p>
+                                <p class="mt-1">
+                                    {{ lockReason || "Grade editing is locked for this group or academic period. You can review current grades only." }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </SectionCard>
 

@@ -197,7 +197,7 @@ class StudentController extends Controller
                 'subject',
                 'status',
                 'classGroup.professor',
-                'classGroup.schedules.classroom',
+                'classGroup.schedules.classroom.building',
                 'grade.state',
                 'academicPeriod',
             ])
@@ -224,6 +224,7 @@ class StudentController extends Controller
                         'start_time' => $schedule->start_time,
                         'end_time' => $schedule->end_time,
                         'classroom' => $schedule->classroom?->name,
+                        'classroom_location' => $this->classroomLocation($schedule->classroom),
                     ])->values()
                     : [],
                 'grade' => $enrollment->grade,
@@ -346,7 +347,7 @@ class StudentController extends Controller
                 'subject:id,code,name',
                 'classGroup:id,code,name,subject_id,professor_id,modality,shift',
                 'classGroup.professor:id,name',
-                'classGroup.schedules.classroom:id,name',
+                'classGroup.schedules.classroom.building:id,code,name',
             ])
             ->where('academic_period_id', $period->id)
             ->whereHas(
@@ -376,10 +377,27 @@ class StudentController extends Controller
                         ],
                         'professor' => $enrollment->classGroup?->professor?->name,
                         'classroom' => $schedule->classroom?->name,
+                        'classroom_location' => $this->classroomLocation($schedule->classroom),
                         'status' => $enrollment->status?->code,
                     ])
                 : collect())
             ->values();
+    }
+
+    private function classroomLocation($classroom): ?string
+    {
+        if (! $classroom) {
+            return null;
+        }
+
+        return collect([
+            $classroom->name,
+            $classroom->building?->name,
+            $classroom->building?->code,
+        ])
+            ->filter()
+            ->unique()
+            ->join(' - ');
     }
 
     private function formOptions(): array

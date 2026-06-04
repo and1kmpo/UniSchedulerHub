@@ -59,7 +59,7 @@ class SubjectEnrollmentController extends Controller
             'subject:id,code,name',
             'classGroup:id,code,name,subject_id,professor_id,modality,shift',
             'classGroup.professor:id,name',
-            'classGroup.schedules.classroom:id,name',
+            'classGroup.schedules.classroom.building:id,code,name',
         ])
             ->where('student_id', $student->id)
             ->where('academic_period_id', $period->id)
@@ -88,6 +88,7 @@ class SubjectEnrollmentController extends Controller
                     ],
                     'professor' => $e->classGroup?->professor?->name,
                     'classroom' => $s->classroom?->name,
+                    'classroom_location' => $this->classroomLocation($s->classroom),
                     'status' => $e->status?->code,
                 ])
             )
@@ -148,6 +149,22 @@ class SubjectEnrollmentController extends Controller
             ],
             'systemState' => 'ready',
         ]);
+    }
+
+    private function classroomLocation($classroom): ?string
+    {
+        if (! $classroom) {
+            return null;
+        }
+
+        return collect([
+            $classroom->name,
+            $classroom->building?->name,
+            $classroom->building?->code,
+        ])
+            ->filter()
+            ->unique()
+            ->join(' - ');
     }
 
     /**

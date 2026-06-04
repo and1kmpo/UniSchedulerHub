@@ -11,6 +11,14 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    emptyTitle: {
+        type: String,
+        default: "No schedule yet",
+    },
+    emptyDescription: {
+        type: String,
+        default: "Selected subjects with published schedules will appear here as your enrollment takes shape.",
+    },
 });
 
 const selectedSchedule = ref(null);
@@ -132,6 +140,11 @@ function formatDay(day) {
 function readableSchedule(schedule) {
     const subjectName = schedule?.subject?.name || schedule?.subject_name || "Class";
     const subjectCode = schedule?.subject?.code;
+    const classroom = schedule?.classroom_location
+        || schedule?.classroom?.location
+        || schedule?.classroom?.name
+        || schedule?.classroom
+        || "Room pending";
 
     return {
         subject: subjectCode ? `${subjectCode} - ${subjectName}` : subjectName,
@@ -139,7 +152,7 @@ function readableSchedule(schedule) {
         day: formatDay(schedule?.day),
         group: schedule?.group?.code || schedule?.group_code || "Group pending",
         professor: schedule?.professor || "Professor pending",
-        classroom: schedule?.classroom || "Room pending",
+        classroom,
         status: schedule?.status || "enrolled",
     };
 }
@@ -186,8 +199,8 @@ function renderEventContent(arg) {
     <div class="space-y-5">
         <EmptyState
             v-if="!schedules.length"
-            title="No schedule yet"
-            description="Selected subjects with published schedules will appear here as your enrollment takes shape."
+            :title="emptyTitle"
+            :description="emptyDescription"
             icon="fa-solid fa-calendar-week"
         />
 

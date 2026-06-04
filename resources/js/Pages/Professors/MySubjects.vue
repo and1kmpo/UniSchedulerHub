@@ -11,9 +11,15 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import WeeklySchedule from "@/Pages/Students/Partials/WeeklySchedule.vue";
 
 const props = defineProps({
     groups: {
+        type: Array,
+        default: () => [],
+    },
+
+    currentSchedules: {
         type: Array,
         default: () => [],
     },
@@ -93,7 +99,9 @@ function formatSchedules(schedules = []) {
 
     return schedules
         .map((schedule) => {
-            const room = schedule.classroom ? ` - ${schedule.classroom}` : "";
+            const room = (schedule.classroom_location || schedule.classroom)
+                ? ` - ${schedule.classroom_location || schedule.classroom}`
+                : "";
 
             return `${formatDay(schedule.day)} ${formatTime(schedule.start_time)}-${formatTime(schedule.end_time)}${room}`;
         })
@@ -153,6 +161,26 @@ const groupStatusVariant = (status) => ({
                 <SectionCard>
                     <div class="border-b border-gray-200 p-6 dark:border-gray-800">
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Weekly Teaching Schedule
+                        </h2>
+
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Your assigned class blocks with classroom and building location for the active period.
+                        </p>
+                    </div>
+
+                    <div class="p-6">
+                        <WeeklySchedule
+                            :schedules="currentSchedules"
+                            empty-title="No teaching schedule yet"
+                            empty-description="Published class schedules assigned to you will appear here."
+                        />
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                             Assigned Class Groups
                         </h2>
 
@@ -200,16 +228,16 @@ const groupStatusVariant = (status) => ({
                                         </BaseButton>
                                     </Link>
 
-                                    <Link v-if="row.source.can_manage_grades" :href="route('groups.grades.index', row.id)">
-                                        <BaseButton size="sm" variant="primary">
+                                    <Link v-if="row.source.can_view_grades" :href="route('groups.grades.index', row.id)">
+                                        <BaseButton size="sm" :variant="row.source.can_edit_grades ? 'primary' : 'secondary'">
                                             <i class="fa-solid fa-clipboard-list mr-2" />
-                                            Grades
+                                            {{ row.source.can_edit_grades ? "Grades" : "View Grades" }}
                                         </BaseButton>
                                     </Link>
 
                                     <BaseButton v-else size="sm" variant="secondary" disabled>
                                         <i class="fa-solid fa-lock mr-2" />
-                                        Grades Locked
+                                        Grades Unavailable
                                     </BaseButton>
                                 </div>
                             </template>

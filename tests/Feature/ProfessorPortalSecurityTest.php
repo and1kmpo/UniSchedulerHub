@@ -72,9 +72,12 @@ class ProfessorPortalSecurityTest extends TestCase
             ->assertOk();
 
         $groups = collect($response->viewData('page')['props']['groups']);
+        $schedules = collect($response->viewData('page')['props']['currentSchedules']);
 
         $this->assertTrue($groups->contains('id', $ownGroup->id));
         $this->assertFalse($groups->contains('id', $otherGroup->id));
+        $this->assertTrue($schedules->contains(fn($schedule) => $schedule['group']['id'] === $ownGroup->id));
+        $this->assertFalse($schedules->contains(fn($schedule) => $schedule['group']['id'] === $otherGroup->id));
     }
 
     public function test_professor_group_enrollments_index_only_contains_assigned_groups(): void

@@ -172,6 +172,7 @@ class ProfessorController extends Controller
         if (! $period) {
             return Inertia::render('Professors/MySubjects', [
                 'groups' => [],
+                'currentSchedules' => [],
                 'period' => null,
                 'summary' => [
                     'groups' => 0,
@@ -185,7 +186,7 @@ class ProfessorController extends Controller
         $groups = ClassGroup::with([
             'subject',
             'academicPeriod',
-            'schedules.classroom',
+            'schedules.classroom.building',
             'subjectEnrollments' => fn($query) => $query->whereHas(
                 'status',
                 fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
@@ -209,7 +210,8 @@ class ProfessorController extends Controller
                 'modality' => $group->modality,
                 'shift' => $group->shift,
                 'subject_enrollments_count' => $group->subject_enrollments_count,
-                'can_manage_grades' => $period?->canEditGrades() && $group->status !== ClassGroup::STATUS_CANCELLED,
+                'can_view_grades' => auth()->user()->can('manageGrades', $group),
+                'can_edit_grades' => auth()->user()->can('editGrades', $group),
                 'subject' => [
                     'id' => $group->subject?->id,
                     'name' => $group->subject?->name,
@@ -223,6 +225,7 @@ class ProfessorController extends Controller
                     'start_time' => $schedule->start_time,
                     'end_time' => $schedule->end_time,
                     'classroom' => $schedule->classroom?->name,
+                    'classroom_location' => $this->classroomLocation($schedule->classroom),
                     'status' => $schedule->status,
                 ])->values(),
                 'subject_enrollments' => $group->subjectEnrollments->map(fn($enrollment) => [
@@ -243,6 +246,7 @@ class ProfessorController extends Controller
 
         return Inertia::render('Professors/MySubjects', [
             'groups' => $groups,
+            'currentSchedules' => $this->professorSchedulePayload($groups),
             'period' => $period ? [
                 'id' => $period->id,
                 'name' => $period->name,
@@ -256,6 +260,52 @@ class ProfessorController extends Controller
             ],
             'systemState' => 'ready',
         ]);
+    }
+
+    private function professorSchedulePayload($groups)
+    {
+        return $groups
+            ->flatMap(fn($group) => collect($group['schedules'])
+                ->where('status', '!=', 'cancelled')
+                ->map(fn($schedule) => [
+                    'id' => $schedule['id'],
+                    'day' => strtolower($schedule['day']),
+                    'start_time' => $schedule['start_time'],
+                    'end_time' => $schedule['end_time'],
+                    'subject' => [
+                        'id' => $group['subject']['id'],
+                        'code' => $group['subject']['code'],
+                        'name' => $group['subject']['name'],
+                    ],
+                    'group' => [
+                        'id' => $group['id'],
+                        'code' => $group['code'],
+                        'name' => $group['name'],
+                        'modality' => $group['modality'],
+                        'shift' => $group['shift'],
+                    ],
+                    'professor' => 'You',
+                    'classroom' => $schedule['classroom'],
+                    'classroom_location' => $schedule['classroom_location'],
+                    'status' => $group['status'],
+                ]))
+            ->values();
+    }
+
+    private function classroomLocation($classroom): ?string
+    {
+        if (! $classroom) {
+            return null;
+        }
+
+        return collect([
+            $classroom->name,
+            $classroom->building?->name,
+            $classroom->building?->code,
+        ])
+            ->filter()
+            ->unique()
+            ->join(' - ');
     }
 
     public function viewAllStudents(Subject $subject)

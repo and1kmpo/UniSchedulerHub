@@ -149,7 +149,11 @@ class GradeController extends Controller
         }
 
         if (! $group->academicPeriod->canEditGrades()) {
-            return 'Grades can only be edited while the academic period is in progress.';
+            $status = $group->academicPeriod->status?->label
+                ?? $group->academicPeriod->status?->code
+                ?? 'not editable';
+
+            return "Grades can only be edited while the academic period is in progress. Current period status: {$status}.";
         }
 
         if (in_array($group->status, [
