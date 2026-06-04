@@ -1,9 +1,6 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
-
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
-import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
@@ -27,24 +24,6 @@ function formatStatus(status) {
 
 <template>
     <CrudPageLayout title="My Schedule" subtitle="Weekly class schedule for the active academic period">
-        <template #actions>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <Link :href="route('student.subject-enrollment.index')">
-                    <BaseButton variant="primary">
-                        <i class="fa-solid fa-user-plus mr-2" />
-                        Enrollment
-                    </BaseButton>
-                </Link>
-
-                <Link :href="route('student.subjects')">
-                    <BaseButton variant="secondary">
-                        <i class="fa-solid fa-book-open mr-2" />
-                        My Subjects
-                    </BaseButton>
-                </Link>
-            </div>
-        </template>
-
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">

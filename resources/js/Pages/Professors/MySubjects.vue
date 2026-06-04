@@ -43,18 +43,20 @@ const columns = [
     { key: "code", label: "Group" },
     { key: "schedule_summary", label: "Schedule" },
     { key: "modality_summary", label: "Mode" },
-    { key: "capacity_summary", label: "Capacity" },
+    { key: "students_summary", label: "Students" },
+    { key: "grade_summary", label: "Grades" },
     { key: "status", label: "Status" },
 ];
 
 const rows = computed(() =>
     props.groups.map((group) => ({
         id: group.id,
-        subject: group.subject?.name ?? "N/A",
+        subject: `${group.subject?.code ?? "N/A"} - ${group.subject?.name ?? "N/A"}`,
         code: group.code ?? group.name,
         schedule_summary: formatSchedules(group.schedules),
-        modality_summary: `${group.modality ?? "TBD"} · ${group.shift ?? "TBD"}`,
-        capacity_summary: `${group.subject_enrollments_count}/${group.capacity}`,
+        modality_summary: `${formatLabel(group.modality)} / ${formatLabel(group.shift)}`,
+        students_summary: `${group.subject_enrollments_count}/${group.capacity}`,
+        grade_summary: formatGradeProgress(group.subject_enrollments),
         status: group.status,
         source: group,
     }))
@@ -68,6 +70,22 @@ function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
 }
 
+function formatLabel(value) {
+    return value ? value.replaceAll("_", " ").toUpperCase() : "TBD";
+}
+
+function formatTime(time) {
+    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes), 0, 0);
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: Number(minutes) === 0 ? undefined : "2-digit",
+        hour12: true,
+    }).format(date);
+}
+
 function formatSchedules(schedules = []) {
     if (!schedules.length) {
         return "Pending";
@@ -77,9 +95,21 @@ function formatSchedules(schedules = []) {
         .map((schedule) => {
             const room = schedule.classroom ? ` - ${schedule.classroom}` : "";
 
-            return `${formatDay(schedule.day)} ${schedule.start_time}-${schedule.end_time}${room}`;
+            return `${formatDay(schedule.day)} ${formatTime(schedule.start_time)}-${formatTime(schedule.end_time)}${room}`;
         })
         .join("; ");
+}
+
+function formatGradeProgress(enrollments = []) {
+    if (!enrollments.length) {
+        return "No students";
+    }
+
+    const graded = enrollments.filter((enrollment) =>
+        enrollment.grade?.final_grade !== null && enrollment.grade?.final_grade !== undefined
+    ).length;
+
+    return `${graded}/${enrollments.length} graded`;
 }
 
 const groupStatusVariant = (status) => ({
@@ -100,7 +130,7 @@ const groupStatusVariant = (status) => ({
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <StatCard title="Assigned Groups" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
                     <StatCard title="Active Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
-                    <StatCard title="Subject Credits" :value="summary.credits" icon="fa-solid fa-layer-group" />
+                    <StatCard title="Credits Assigned" :value="summary.credits" icon="fa-solid fa-layer-group" />
                 </section>
 
                 <SectionCard>
@@ -127,7 +157,7 @@ const groupStatusVariant = (status) => ({
                         </h2>
 
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Groups, schedules, roster access and grading access for the active period.
+                            Teaching groups, schedules, enrolled students and grade entry for the active period.
                         </p>
                     </div>
 
@@ -140,6 +170,18 @@ const groupStatusVariant = (status) => ({
                             </template>
 
                             <template #cell-modality_summary="{ value }">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    {{ value }}
+                                </span>
+                            </template>
+
+                            <template #cell-students_summary="{ value }">
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    {{ value }}
+                                </span>
+                            </template>
+
+                            <template #cell-grade_summary="{ value }">
                                 <span class="text-sm text-gray-700 dark:text-gray-300">
                                     {{ value }}
                                 </span>
