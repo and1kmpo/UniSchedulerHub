@@ -106,6 +106,8 @@ class RoleAccessTest extends TestCase
             ->get('/dashboard')
             ->assertRedirect(route('dashboard'));
 
+        $this->flushSession();
+
         $this->actingAs($student)
             ->get('/dashboard')
             ->assertRedirect(route('student.subjects'));
@@ -124,6 +126,8 @@ class RoleAccessTest extends TestCase
                 ->where('dashboardType', 'academic')
                 ->has('academicDashboard.metrics')
             );
+
+        $this->flushSession();
 
         $this->actingAs($professor)
             ->get(route('dashboard'))

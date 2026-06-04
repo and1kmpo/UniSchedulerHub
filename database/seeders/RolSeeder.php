@@ -4,12 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Role;
 
 class RolSeeder extends Seeder
 {
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $roles = [
             'admin',
             'academic_coordinator',
@@ -42,9 +45,14 @@ class RolSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        Role::findByName('admin')->syncPermissions($permissions);
+        $permissionModels = Permission::query()
+            ->whereIn('name', $permissions)
+            ->get()
+            ->keyBy('name');
 
-        Role::findByName('academic_coordinator')->syncPermissions([
+        Role::findByName('admin')->syncPermissions($permissionModels->values());
+
+        Role::findByName('academic_coordinator')->syncPermissions($permissionModels->only([
             'manage programs',
             'manage subjects',
             'manage professors',
@@ -56,17 +64,19 @@ class RolSeeder extends Seeder
             'view professor subjects',
             'view student subjects',
             'view reports',
-        ]);
+        ])->values());
 
-        Role::findByName('professor')->syncPermissions([
+        Role::findByName('professor')->syncPermissions($permissionModels->only([
             'manage grades',
             'view professor subjects',
             'view student subjects',
             'view reports',
-        ]);
+        ])->values());
 
-        Role::findByName('student')->syncPermissions([
+        Role::findByName('student')->syncPermissions($permissionModels->only([
             'view student subjects',
-        ]);
+        ])->values());
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
