@@ -191,7 +191,7 @@ class UserController extends Controller
 
             DB::commit();
 
-            // Retornar el usuario actualizado con relaciones necesarias
+            // Return the updated user with the relationships needed by the UI.
             return response()->json(
                 User::with(['roles:id,name', 'professor', 'student'])->find($user->id),
                 200

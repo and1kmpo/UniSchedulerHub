@@ -413,4 +413,4 @@ At the end of the demo, the system should prove:
 - Professors see and manage only their assigned academic workload.
 - Grades and academic history are preserved.
 - Dashboards and reports use real academic data.
-- REST API exists and supports the core challenge requirements.
+- REST API exists and supports the core academic product requirements.

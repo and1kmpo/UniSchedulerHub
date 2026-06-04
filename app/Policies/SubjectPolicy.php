@@ -12,7 +12,7 @@ class SubjectPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'professor']);
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -20,22 +20,7 @@ class SubjectPolicy
      */
     public function view(User $user, Subject $subject): bool
     {
-        // Admin puede todo
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        // Profesor solo materias asignadas
-        if ($user->hasRole('professor')) {
-            $professor = $user->professor;
-
-            return $professor
-                && $professor->subjects()
-                ->where('subjects.id', $subject->id)
-                ->exists();
-        }
-
-        return false;
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -43,7 +28,7 @@ class SubjectPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -51,7 +36,7 @@ class SubjectPolicy
      */
     public function update(User $user, Subject $subject): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -59,7 +44,7 @@ class SubjectPolicy
      */
     public function delete(User $user, Subject $subject): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -67,7 +52,7 @@ class SubjectPolicy
      */
     public function restore(User $user, Subject $subject): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 
     /**
@@ -75,6 +60,6 @@ class SubjectPolicy
      */
     public function forceDelete(User $user, Subject $subject): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'academic_coordinator']);
     }
 }

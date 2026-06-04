@@ -16,8 +16,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\Scheduling\SmartSchedulerController as SchedulingSmartSchedulerController;
-use App\Http\Controllers\SmartSchedulerController;
+use App\Http\Controllers\Scheduling\SmartSchedulerController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectEnrollmentController;
@@ -125,7 +124,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         Route::prefix('smart-scheduler')->name('smart-scheduler.')->group(function () {
             Route::post('/generate', [SmartSchedulerController::class, 'generate'])->name('generate');
-            Route::post('/optimize', [SchedulingSmartSchedulerController::class, 'optimize'])->name('optimize');
+            Route::post('/optimize', [SmartSchedulerController::class, 'optimize'])->name('optimize');
         });
 
         Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->name('user.assignments');
