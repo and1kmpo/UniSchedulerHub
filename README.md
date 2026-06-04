@@ -2,8 +2,6 @@
 
 UniSchedulerHub is an academic scheduling and enrollment management system built with Laravel, Inertia, Vue, and Tailwind CSS.
 
-The project started from a junior developer challenge about assigning university subjects to students and professors, and has evolved into a broader academic operations platform.
-
 ## Current Scope
 
 - Academic CRUD modules: programs, subjects, students, professors, buildings, classrooms, and class groups.
@@ -35,17 +33,22 @@ The project started from a junior developer challenge about assigning university
 
 See [docs/api.md](docs/api.md) for the current academic REST API documentation.
 
+See [docs/functional-scope.md](docs/functional-scope.md) for the current academic capabilities and validation references.
+
 See [docs/demo-testing.md](docs/demo-testing.md) for the functional demo testing guide.
 
 See [docs/database.md](docs/database.md) for the database model reference used to generate ER diagrams.
 
 See [docs/production-checklist.md](docs/production-checklist.md) for deployment and production readiness checks.
 
+See [docs/development-workflow.md](docs/development-workflow.md) for the branch, commit, PR, and database safety workflow.
+
 Covered API areas:
 
 - Students CRUD
 - Professors CRUD
 - Subjects CRUD
+- Academic resource creation through REST
 - Student assignment report
 - Available class groups
 - Enrollment
@@ -57,7 +60,7 @@ Covered API areas:
 Recommended functional test set:
 
 ```bash
-php artisan test tests/Feature/EnrollmentApiTest.php tests/Feature/ApiAcademicResourcesTest.php tests/Feature/StudentSubjectEnrollmentGroupsTest.php tests/Feature/AcademicFlowTest.php tests/Feature/RoleAccessTest.php
+php artisan test tests/Feature/ApiAcademicResourcesTest.php tests/Feature/EnrollmentApiTest.php tests/Feature/StudentSubjectEnrollmentGroupsTest.php tests/Feature/AcademicFlowTest.php tests/Feature/RoleAccessTest.php
 ```
 
 Frontend build:

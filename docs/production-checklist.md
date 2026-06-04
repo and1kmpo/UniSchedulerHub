@@ -121,6 +121,7 @@ Validate:
 
 - API routes require authenticated users.
 - Admin/coordinator can access CRUD APIs.
+- Students, professors, and subjects can be created through REST APIs.
 - Student assignment report works.
 - Available groups API returns professor comparison data.
 - Student self-service API is scoped to the authenticated student.
@@ -147,11 +148,11 @@ Validate:
 Known non-blocking warnings:
 
 - Browserslist data may be outdated.
-- Some chunks may be larger than 500 kB.
+- Element Plus may still produce a large vendor chunk while it is registered globally.
 
 Future improvement:
 
-- Add manual chunks/code splitting for dashboard/chart-heavy pages.
+- Replace global Element Plus registration with local/on-demand imports where it is still needed.
 
 ## Demo Verification
 
@@ -173,6 +174,7 @@ Demo should prove:
 - Student enrollment flow.
 - Professor assignment flow.
 - Student assignment report.
+- Academic functional scope documented in `docs/functional-scope.md`.
 - Capacity and schedule conflict validation.
 - Role-based access.
 - Dashboards with real data.
@@ -212,3 +214,4 @@ Ready for demo/pilot when:
 - Seeded demo flow is documented and reproducible.
 - Roles are validated.
 - Database diagram and API docs are available.
+- Branch, commit, PR, and database safety workflow is documented.
