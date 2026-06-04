@@ -30,6 +30,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('students.index'))->assertOk();
         $this->actingAs($admin)->get(route('academic-periods.index'))->assertOk();
         $this->actingAs($admin)->get(route('academic-audit-logs.index'))->assertOk();
+        $this->actingAs($admin)->get(route('reports.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.student-assignments.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.student-assignments.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.professor-load.index'))->assertOk();
@@ -44,6 +45,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($coordinator)->get(route('class-groups.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('academic-periods.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('academic-audit-logs.index'))->assertOk();
+        $this->actingAs($coordinator)->get(route('reports.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('reports.student-assignments.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('reports.student-assignments.export'))->assertOk();
         $this->actingAs($coordinator)->get(route('reports.professor-load.index'))->assertOk();
@@ -63,6 +65,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($professor)->get(route('students.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('class-groups.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('academic-audit-logs.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('reports.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.student-assignments.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.student-assignments.export'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.professor-load.index'))->assertForbidden();
@@ -78,6 +81,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('professors.index'))->assertForbidden();
         $this->actingAs($student)->get(route('subjects.index'))->assertForbidden();
         $this->actingAs($student)->get(route('academic-audit-logs.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('reports.index'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.student-assignments.index'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.student-assignments.export'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.professor-load.index'))->assertForbidden();

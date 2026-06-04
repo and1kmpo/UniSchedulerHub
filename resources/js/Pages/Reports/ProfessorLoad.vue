@@ -13,7 +13,6 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
-import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
 
 const props = defineProps({
     professors: {
@@ -115,9 +114,7 @@ function printReport() {
         `)
     ).join("");
 
-    const printWindow = window.open("", "_blank", "width=1200,height=800");
-
-    printWindow.document.write(`
+    printHtml(`
         <!doctype html>
         <html>
             <head>
@@ -168,10 +165,6 @@ function printReport() {
             </body>
         </html>
     `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
 }
 
 function escapeHtml(value) {
@@ -182,6 +175,30 @@ function escapeHtml(value) {
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
 }
+
+function printHtml(html) {
+    const iframe = document.createElement("iframe");
+
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+
+    document.body.appendChild(iframe);
+
+    const printDocument = iframe.contentWindow.document;
+    printDocument.open();
+    printDocument.write(html);
+    printDocument.close();
+
+    iframe.onload = () => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 500);
+    };
+}
 </script>
 
 <template>
@@ -189,6 +206,16 @@ function escapeHtml(value) {
         title="Professor Load Report"
         subtitle="Assigned groups, active students, scheduled blocks and pending grades"
     >
+        <template v-slot:actions>
+            <Link
+                :href="route('reports.index')"
+                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+                <i class="fa-solid fa-arrow-left mr-2" />
+                Reports
+            </Link>
+        </template>
+
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-5">
@@ -200,48 +227,48 @@ function escapeHtml(value) {
                 </section>
 
                 <SectionCard>
-                    <TableToolbar>
-                        <template #search>
-                            <div class="w-full lg:max-w-sm">
-                                <TableSearch v-model="filterForm.search" placeholder="Search professor, document or email..." />
-                            </div>
-                        </template>
+                    <div class="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
+                        <div class="grid gap-3 lg:grid-cols-[minmax(18rem,24rem)_1fr]">
+                            <TableSearch v-model="filterForm.search" placeholder="Search professor, document or email..." />
 
-                        <template #filters>
-                            <div class="grid w-full gap-3 md:grid-cols-2">
+                            <div class="grid gap-3 md:grid-cols-2">
                                 <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period" :options="periodOptions" />
                                 <BaseSelect v-model="filterForm.status" placeholder="Group status" :options="statusOptions" />
                             </div>
-                        </template>
+                        </div>
 
-                        <template #actions>
-                            <Link
-                                :href="route('reports.student-assignments.index')"
-                                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                            >
-                                <i class="fa-solid fa-users mr-2" />
-                                Student Report
-                            </Link>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Exports use the current search and filter criteria.
+                        </p>
 
-                            <a
-                                :href="csvExportUrl"
-                                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            >
-                                <i class="fa-solid fa-file-csv mr-2" />
-                                Export CSV
-                            </a>
-
-                            <BaseButton variant="secondary" @click="printReport">
-                                <i class="fa-solid fa-print mr-2" />
-                                Print / PDF
-                            </BaseButton>
-
+                        <div class="flex justify-start border-t border-gray-200 pt-4 dark:border-gray-800">
                             <BaseButton variant="secondary" @click="clearFilters">
                                 <i class="fa-solid fa-rotate-left mr-2" />
-                                Reset
+                                Reset filters
                             </BaseButton>
-                        </template>
-                    </TableToolbar>
+                        </div>
+
+                        <div class="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                            <span class="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
+                                Report actions
+                            </span>
+
+                            <div class="flex flex-wrap gap-2 sm:justify-end">
+                                <a
+                                    :href="csvExportUrl"
+                                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <i class="fa-solid fa-file-csv mr-2" />
+                                    Export CSV
+                                </a>
+
+                                <BaseButton variant="secondary" @click="printReport">
+                                    <i class="fa-solid fa-print mr-2" />
+                                    Print / PDF
+                                </BaseButton>
+                            </div>
+                        </div>
+                    </div>
                 </SectionCard>
 
                 <SectionCard>

@@ -13,7 +13,6 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
-import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
 
 const props = defineProps({
     students: {
@@ -88,91 +87,120 @@ function clearFilters() {
 }
 
 function printReport() {
-    const printableRows = props.students.data.flatMap((student) =>
-        student.assignments.map((assignment) => `
-            <tr>
-                <td>
-                    <strong>${escapeHtml(student.name || "-")}</strong><br>
-                    <span>${escapeHtml(student.document || "-")} / ${escapeHtml(student.email || "-")}</span>
-                </td>
-                <td>${escapeHtml(student.program || "No program")}<br><span>Semester ${escapeHtml(student.semester || "-")}</span></td>
-                <td><strong>${escapeHtml(assignment.subject.code || "-")}</strong><br>${escapeHtml(assignment.subject.name || "-")}</td>
-                <td>${escapeHtml(assignment.professor.name || "Unassigned")}</td>
-                <td>${escapeHtml(assignment.group.code || "No group")}</td>
-                <td>${escapeHtml(assignment.period || "-")}</td>
-                <td>${escapeHtml(assignment.status_label || assignment.status || "-")}</td>
-            </tr>
-        `)
-    ).join("");
+    const iframe = document.createElement("iframe");
 
-    const printWindow = window.open("", "_blank", "width=1200,height=800");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
 
-    printWindow.document.write(`
-        <!doctype html>
-        <html>
-            <head>
-                <title>Student Assignment Report</title>
-                <style>
-                    body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }
-                    header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }
-                    h1 { font-size: 24px; margin: 0; }
-                    p { color: #4b5563; margin: 6px 0 0; }
-                    .summary { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }
-                    .metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }
-                    .metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }
-                    .metric strong { display: block; font-size: 22px; margin-top: 6px; }
-                    table { border-collapse: collapse; font-size: 12px; width: 100%; }
-                    th { background: #f3f4f6; text-align: left; }
-                    th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }
-                    td span { color: #6b7280; font-size: 11px; }
-                    @page { margin: 18mm; size: landscape; }
-                </style>
-            </head>
-            <body>
-                <header>
-                    <h1>Student Assignment Report</h1>
-                    <p>Students, enrolled subjects, class groups and responsible professors.</p>
-                    <p>Generated ${new Date().toLocaleString()}</p>
-                </header>
-                <section class="summary">
-                    <div class="metric"><span>Students</span><strong>${props.summary.students}</strong></div>
-                    <div class="metric"><span>Assignments</span><strong>${props.summary.assignments}</strong></div>
-                    <div class="metric"><span>Active credits</span><strong>${props.summary.active_credits}</strong></div>
-                    <div class="metric"><span>Minimum credits</span><strong>${props.summary.minimum_credits}</strong></div>
-                </section>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Program</th>
-                            <th>Subject</th>
-                            <th>Professor</th>
-                            <th>Group</th>
-                            <th>Period</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>${printableRows || '<tr><td colspan="7">No assignments found.</td></tr>'}</tbody>
-                </table>
-            </body>
-        </html>
-    `);
+    document.body.appendChild(iframe);
 
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.close();
+    doc.title = "Student Assignment Report";
+
+    const style = doc.createElement("style");
+    style.textContent = [
+        "body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }",
+        "header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }",
+        "h1 { font-size: 24px; margin: 0; }",
+        "p { color: #4b5563; margin: 6px 0 0; }",
+        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }",
+        ".metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }",
+        ".metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }",
+        ".metric strong { display: block; font-size: 22px; margin-top: 6px; }",
+        "table { border-collapse: collapse; font-size: 12px; width: 100%; }",
+        "th { background: #f3f4f6; text-align: left; }",
+        "th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }",
+        "@page { margin: 18mm; size: landscape; }",
+    ].join("\n");
+    doc.head.appendChild(style);
+
+    const header = doc.createElement("header");
+    const title = doc.createElement("h1");
+    title.textContent = "Student Assignment Report";
+    const subtitle = doc.createElement("p");
+    subtitle.textContent = "Students, enrolled subjects, class groups and responsible professors.";
+    const generated = doc.createElement("p");
+    generated.textContent = "Generated " + new Date().toLocaleString();
+    header.append(title, subtitle, generated);
+    doc.body.appendChild(header);
+
+    const summarySection = doc.createElement("section");
+    summarySection.className = "summary";
+    [
+        ["Students", props.summary.students],
+        ["Assignments", props.summary.assignments],
+        ["Active credits", props.summary.active_credits],
+        ["Minimum credits", props.summary.minimum_credits],
+    ].forEach(([label, value]) => {
+        const metric = doc.createElement("div");
+        metric.className = "metric";
+        const labelNode = doc.createElement("span");
+        labelNode.textContent = label;
+        const valueNode = doc.createElement("strong");
+        valueNode.textContent = value;
+        metric.append(labelNode, valueNode);
+        summarySection.appendChild(metric);
+    });
+    doc.body.appendChild(summarySection);
+
+    const table = doc.createElement("table");
+    const thead = doc.createElement("thead");
+    const headerRow = doc.createElement("tr");
+    ["Student", "Program", "Subject", "Professor", "Group", "Period", "Status"].forEach((label) => {
+        const th = doc.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = doc.createElement("tbody");
+    props.students.data.forEach((student) => {
+        student.assignments.forEach((assignment) => {
+            const row = doc.createElement("tr");
+            [
+                (student.name || "-") + " / " + (student.document || "-") + " / " + (student.email || "-"),
+                (student.program || "No program") + " / Semester " + (student.semester || "-"),
+                (assignment.subject.code || "-") + " - " + (assignment.subject.name || "-"),
+                assignment.professor.name || "Unassigned",
+                assignment.group.code || "No group",
+                assignment.period || "-",
+                assignment.status_label || assignment.status || "-",
+            ].forEach((value) => {
+                const td = doc.createElement("td");
+                td.textContent = value;
+                row.appendChild(td);
+            });
+            tbody.appendChild(row);
+        });
+    });
+
+    if (!tbody.children.length) {
+        const row = doc.createElement("tr");
+        const td = doc.createElement("td");
+        td.colSpan = 7;
+        td.textContent = "No assignments found.";
+        row.appendChild(td);
+        tbody.appendChild(row);
+    }
+
+    table.appendChild(tbody);
+    doc.body.appendChild(table);
+
+    iframe.onload = () => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 500);
+    };
 }
 
 const csvExportUrl = computed(() => route("reports.student-assignments.export", exportPayload()));
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
 
 function statusVariant(status) {
     return {
@@ -187,6 +215,14 @@ function statusVariant(status) {
 
 function creditVariant(student) {
     return student.active_credits >= student.minimum_credits ? "success" : "warning";
+}
+
+function creditLabel(student) {
+    return student.active_credits + "/" + student.minimum_credits + " credits";
+}
+
+function studentMeta(student) {
+    return [student.document, student.email, student.program || "No program", "Semester " + student.semester].join(" / ");
 }
 
 function formatSubjectType(assignment) {
@@ -215,68 +251,76 @@ const statusOptions = props.options.statuses.map((status) => ({
 </script>
 
 <template>
-    <CrudPageLayout
-        title="Student Assignment Report"
-        subtitle="Students, enrolled subjects, class groups and responsible professors"
-    >
+    <CrudPageLayout title="Student Assignment Report"
+        subtitle="Students, enrolled subjects, class groups and responsible professors">
+        <template v-slot:actions>
+            <Link :href="route('reports.index')"
+                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                <i class="fa-solid fa-arrow-left mr-2" />
+                Reports
+            </Link>
+        </template>
+
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-4 print:grid-cols-4">
                     <StatCard title="Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
                     <StatCard title="Assignments" :value="summary.assignments" icon="fa-solid fa-book-open" />
                     <StatCard title="Active Credits" :value="summary.active_credits" icon="fa-solid fa-layer-group" />
-                    <StatCard title="Minimum Credits" :value="summary.minimum_credits" icon="fa-solid fa-scale-balanced" />
+                    <StatCard title="Minimum Credits" :value="summary.minimum_credits"
+                        icon="fa-solid fa-scale-balanced" />
                 </section>
 
                 <SectionCard class="print:hidden">
-                    <TableToolbar>
-                        <template #search>
-                            <div class="w-full lg:max-w-sm">
-                                <TableSearch v-model="filterForm.search" placeholder="Search student, document or email..." />
+                    <div
+                        class="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
+                        <div class="grid gap-3 lg:grid-cols-[minmax(18rem,24rem)_1fr]">
+                            <TableSearch v-model="filterForm.search"
+                                placeholder="Search student, document or email..." />
+
+                            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period"
+                                    :options="periodOptions" />
+                                <BaseSelect v-model="filterForm.program_id" placeholder="Program"
+                                    :options="programOptions" />
+                                <BaseSelect v-model="filterForm.professor_id" placeholder="Professor"
+                                    :options="professorOptions" />
+                                <BaseSelect v-model="filterForm.status" placeholder="Enrollment status"
+                                    :options="statusOptions" />
                             </div>
-                        </template>
+                        </div>
 
-                        <template #filters>
-                            <div class="grid w-full gap-3 md:grid-cols-4">
-                                <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period" :options="periodOptions" />
-                                <BaseSelect v-model="filterForm.program_id" placeholder="Program" :options="programOptions" />
-                                <BaseSelect v-model="filterForm.professor_id" placeholder="Professor" :options="professorOptions" />
-                                <BaseSelect v-model="filterForm.status" placeholder="Enrollment status" :options="statusOptions" />
-                            </div>
-                        </template>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Exports use the current search and filter criteria.
+                        </p>
 
-                        <template #actions>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                Exports use current filters
-                            </span>
-
-                            <Link
-                                :href="route('reports.professor-load.index')"
-                                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                            >
-                                <i class="fa-solid fa-chalkboard-user mr-2" />
-                                Professor Load
-                            </Link>
-
-                            <a
-                                :href="csvExportUrl"
-                                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            >
-                                <i class="fa-solid fa-file-csv mr-2" />
-                                Export CSV
-                            </a>
-
-                            <BaseButton variant="secondary" @click="printReport">
-                                <i class="fa-solid fa-print mr-2" />
-                                Print / PDF
-                            </BaseButton>
-
+                        <div class="flex justify-start border-t border-gray-200 pt-4 dark:border-gray-800">
                             <BaseButton variant="secondary" @click="clearFilters">
                                 <i class="fa-solid fa-rotate-left mr-2" />
-                                Reset
+                                Reset filters
                             </BaseButton>
-                        </template>
-                    </TableToolbar>
+                        </div>
+
+                        <div
+                            class="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                            <span class="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
+                                Report actions
+                            </span>
+
+                            <div class="flex flex-wrap gap-2 sm:justify-end">
+                                <a :href="csvExportUrl"
+                                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <i class="fa-solid fa-file-csv mr-2" />
+                                    Export CSV
+                                </a>
+
+                                <BaseButton variant="secondary" @click="printReport">
+                                    <i class="fa-solid fa-print mr-2" />
+                                    Print / PDF
+                                </BaseButton>
+                            </div>
+                        </div>
+                    </div>
                 </SectionCard>
 
                 <SectionCard>
@@ -298,17 +342,17 @@ const statusOptions = props.options.statuses.map((status) => ({
                                             {{ student.name }}
                                         </h3>
                                         <StatusBadge
-                                            :label="`${student.active_credits}/${student.minimum_credits} credits`"
-                                            :variant="creditVariant(student)"
-                                        />
+                                            :label="creditLabel(student)"
+                                            :variant="creditVariant(student)" />
                                     </div>
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                        {{ student.document }} / {{ student.email }} / {{ student.program || "No program" }} / Semester {{ student.semester }}
+                                        {{ studentMeta(student) }}
                                     </p>
                                 </div>
 
                                 <div class="flex flex-wrap gap-2 text-sm">
-                                    <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                    <span
+                                        class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                                         {{ student.assignments_count }} assignments
                                     </span>
                                 </div>
@@ -316,7 +360,8 @@ const statusOptions = props.options.statuses.map((status) => ({
 
                             <div class="mt-5 overflow-x-auto">
                                 <table class="min-w-full text-sm">
-                                    <thead class="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                    <thead
+                                        class="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
                                         <tr>
                                             <th class="px-4 py-3 font-semibold">Subject</th>
                                             <th class="px-4 py-3 font-semibold">Professor</th>
@@ -332,14 +377,17 @@ const statusOptions = props.options.statuses.map((status) => ({
                                                     {{ assignment.subject.code }} - {{ assignment.subject.name }}
                                                 </p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                    {{ assignment.subject.credits }} credits / {{ assignment.subject.area || "No area" }} / {{ formatSubjectType(assignment) }}
+                                                    {{ assignment.subject.credits }} credits / {{
+                                                    assignment.subject.area || "No area" }} / {{
+                                                    formatSubjectType(assignment) }}
                                                 </p>
                                             </td>
                                             <td class="px-4 py-4">
                                                 <p class="font-medium text-gray-900 dark:text-white">
                                                     {{ assignment.professor.name }}
                                                 </p>
-                                                <p v-if="assignment.professor.email" class="text-xs text-gray-500 dark:text-gray-400">
+                                                <p v-if="assignment.professor.email"
+                                                    class="text-xs text-gray-500 dark:text-gray-400">
                                                     {{ assignment.professor.email }}
                                                 </p>
                                             </td>
@@ -350,7 +398,8 @@ const statusOptions = props.options.statuses.map((status) => ({
                                                 {{ assignment.period || "-" }}
                                             </td>
                                             <td class="px-4 py-4">
-                                                <StatusBadge :label="assignment.status_label || assignment.status" :variant="statusVariant(assignment.status)" />
+                                                <StatusBadge :label="assignment.status_label || assignment.status"
+                                                    :variant="statusVariant(assignment.status)" />
                                             </td>
                                         </tr>
                                     </tbody>
@@ -360,11 +409,9 @@ const statusOptions = props.options.statuses.map((status) => ({
                     </div>
 
                     <div v-else class="p-6">
-                        <EmptyState
-                            title="No assignments found"
+                        <EmptyState title="No assignments found"
                             description="Try adjusting the filters or wait until students have active academic assignments."
-                            icon="fa-solid fa-file-lines"
-                        />
+                            icon="fa-solid fa-file-lines" />
                     </div>
 
                     <TablePagination v-if="students.data.length" :data="students" class="print:hidden" />

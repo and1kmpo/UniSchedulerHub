@@ -115,6 +115,14 @@ class DemoSeedIntegrityTest extends TestCase
         $this->assertGreaterThan(0, $adminProps['academicDashboard']['capacity']['total_capacity']);
         $this->assertNotEmpty($adminProps['academicDashboard']['charts']['capacity_by_group']);
 
+        $reportsIndexResponse = $this->actingAs($admin)
+            ->get(route('reports.index'))
+            ->assertOk();
+
+        $reportsIndexProps = $reportsIndexResponse->viewData('page')['props'];
+
+        $this->assertCount(2, $reportsIndexProps['reports']);
+
         $reportResponse = $this->actingAs($admin)
             ->get(route('reports.student-assignments.index'))
             ->assertOk();

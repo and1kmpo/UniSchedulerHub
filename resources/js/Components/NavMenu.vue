@@ -28,7 +28,7 @@ const userRole = user?.roles?.[0]?.name ?? 'guest';
 
             <NavItem label="Class Groups" routeName="class-groups.index" :active="route().current('class-groups.*')" />
 
-            <NavItem label="Reports" routeName="reports.student-assignments.index" :active="route().current('reports.*')" />
+            <NavItem label="Reports" routeName="reports.index" :active="route().current('reports.*')" />
 
             <NavItem label="Admin Panel" routeName="users.index" :active="route().current('users.*')" />
         </template>

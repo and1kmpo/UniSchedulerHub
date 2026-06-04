@@ -112,6 +112,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/academic-periods/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('academic-periods.archive');
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
         Route::get('/academic-audit-logs', [AcademicAuditLogController::class, 'index'])->name('academic-audit-logs.index');
+        Route::get('/reports', [AcademicReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/student-assignments', [AcademicReportController::class, 'studentAssignments'])->name('reports.student-assignments.index');
         Route::get('/reports/student-assignments/export', [AcademicReportController::class, 'exportStudentAssignments'])->name('reports.student-assignments.export');
         Route::get('/reports/professor-load', [AcademicReportController::class, 'professorLoad'])->name('reports.professor-load.index');
