@@ -15,7 +15,7 @@ import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
 
 const props = defineProps({
-    classrooms: {
+    groups: {
         type: Object,
         required: true,
     },
@@ -31,23 +31,23 @@ const props = defineProps({
         type: Object,
         default: () => ({
             periods: [],
-            buildings: [],
             statuses: [],
+            alerts: [],
         }),
     },
 });
 
 const filterForm = reactive({
     search: props.filters.search || "",
-    building_id: props.filters.building_id || "",
     academic_period_id: props.filters.academic_period_id || "",
     status: props.filters.status || "",
+    alert: props.filters.alert || "",
 });
 
 watch(
     () => ({ ...filterForm }),
     () => {
-        router.get(route("reports.classroom-occupancy.index"), filterPayload(), {
+        router.get(route("reports.group-capacity-conflicts.index"), filterPayload(), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -59,9 +59,9 @@ watch(
 function filterPayload() {
     return {
         search: filterForm.search,
-        building_id: filterForm.building_id,
         academic_period_id: filterForm.academic_period_id,
         status: filterForm.status,
+        alert: filterForm.alert,
         page: 1,
     };
 }
@@ -77,17 +77,12 @@ function exportPayload() {
 
 function clearFilters() {
     filterForm.search = "";
-    filterForm.building_id = "";
     filterForm.academic_period_id = "";
     filterForm.status = "";
+    filterForm.alert = "";
 }
 
-const csvExportUrl = computed(() => route("reports.classroom-occupancy.export", exportPayload()));
-
-const buildingOptions = props.options.buildings.map((building) => ({
-    label: building.name,
-    value: building.id,
-}));
+const csvExportUrl = computed(() => route("reports.group-capacity-conflicts.export", exportPayload()));
 
 const periodOptions = props.options.periods.map((period) => ({
     label: period.name,
@@ -95,12 +90,14 @@ const periodOptions = props.options.periods.map((period) => ({
 }));
 
 const statusOptions = props.options.statuses;
+const alertOptions = props.options.alerts;
 
 function statusVariant(status) {
     return {
-        active: "success",
-        inactive: "gray",
-        maintenance: "warning",
+        draft: "gray",
+        published: "success",
+        cancelled: "danger",
+        closed: "gray",
     }[status] || "gray";
 }
 
@@ -108,6 +105,16 @@ function utilizationVariant(value) {
     if (value >= 100) return "danger";
     if (value >= 85) return "warning";
     return "success";
+}
+
+function alertVariant(alert) {
+    return {
+        "Schedule conflict": "danger",
+        Full: "danger",
+        "Near capacity": "warning",
+        "No schedule": "warning",
+        "No capacity": "danger",
+    }[alert] || "gray";
 }
 
 function printReport() {
@@ -125,7 +132,7 @@ function printReport() {
     const doc = iframe.contentWindow.document;
     doc.open();
     doc.close();
-    doc.title = "Classroom Occupancy Report";
+    doc.title = "Group Capacity And Conflict Report";
 
     const style = doc.createElement("style");
     style.textContent = [
@@ -133,7 +140,7 @@ function printReport() {
         "header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }",
         "h1 { font-size: 24px; margin: 0; }",
         "p { color: #4b5563; margin: 6px 0 0; }",
-        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(6, 1fr); margin-bottom: 24px; }",
+        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }",
         ".metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }",
         ".metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }",
         ".metric strong { display: block; font-size: 22px; margin-top: 6px; }",
@@ -146,9 +153,9 @@ function printReport() {
 
     const header = doc.createElement("header");
     const title = doc.createElement("h1");
-    title.textContent = "Classroom Occupancy Report";
+    title.textContent = "Group Capacity And Conflict Report";
     const subtitle = doc.createElement("p");
-    subtitle.textContent = "Classrooms, capacity, scheduled blocks, assigned groups and utilization.";
+    subtitle.textContent = "Class groups, seats, utilization, schedule conflicts and operational alerts.";
     const generated = doc.createElement("p");
     generated.textContent = "Generated " + new Date().toLocaleString();
     header.append(title, subtitle, generated);
@@ -157,12 +164,14 @@ function printReport() {
     const summarySection = doc.createElement("section");
     summarySection.className = "summary";
     [
-        ["Classrooms", props.summary.classrooms],
-        ["Capacity", props.summary.total_capacity],
-        ["Blocks", props.summary.scheduled_blocks],
-        ["Groups", props.summary.assigned_groups],
+        ["Groups", props.summary.groups],
+        ["Active students", props.summary.active_students],
+        ["Available seats", props.summary.available_seats],
+        ["Utilization", props.summary.utilization + "%"],
+        ["Full groups", props.summary.full_groups],
+        ["Near capacity", props.summary.near_capacity],
         ["Conflicts", props.summary.conflicts],
-        ["Utilization", props.summary.average_utilization + "%"],
+        ["Capacity", props.summary.total_capacity],
     ].forEach(([label, value]) => {
         const metric = doc.createElement("div");
         metric.className = "metric";
@@ -178,7 +187,7 @@ function printReport() {
     const table = doc.createElement("table");
     const thead = doc.createElement("thead");
     const headerRow = doc.createElement("tr");
-    ["Building", "Classroom", "Capacity", "Blocks", "Groups", "Conflicts", "Utilization"].forEach((label) => {
+    ["Group", "Subject", "Professor", "Period", "Capacity", "Students", "Utilization", "Alerts"].forEach((label) => {
         const th = doc.createElement("th");
         th.textContent = label;
         headerRow.appendChild(th);
@@ -187,16 +196,17 @@ function printReport() {
     table.appendChild(thead);
 
     const tbody = doc.createElement("tbody");
-    props.classrooms.data.forEach((classroom) => {
+    props.groups.data.forEach((group) => {
         const row = doc.createElement("tr");
         [
-            classroom.building,
-            classroom.name,
-            classroom.capacity,
-            classroom.scheduled_blocks,
-            classroom.assigned_groups,
-            classroom.conflicts,
-            classroom.average_utilization + "%",
+            group.code,
+            (group.subject.code || "-") + " - " + (group.subject.name || "-"),
+            group.professor,
+            group.period || "-",
+            group.capacity,
+            group.active_students,
+            group.utilization + "%",
+            group.alerts.join(", ") || "No alerts",
         ].forEach((value) => {
             const td = doc.createElement("td");
             td.textContent = value;
@@ -218,8 +228,8 @@ function printReport() {
 
 <template>
     <CrudPageLayout
-        title="Classroom Occupancy Report"
-        subtitle="Classrooms, capacity, scheduled blocks, assigned groups and utilization"
+        title="Group Capacity And Conflict Report"
+        subtitle="Class groups, seats, utilization, schedule conflicts and operational alerts"
     >
         <template v-slot:actions>
             <Link
@@ -233,24 +243,26 @@ function printReport() {
 
         <CrudContainer>
             <div class="space-y-6">
-                <section class="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-6">
-                    <StatCard title="Classrooms" :value="summary.classrooms" icon="fa-solid fa-door-open" />
-                    <StatCard title="Capacity" :value="summary.total_capacity" icon="fa-solid fa-users" />
-                    <StatCard title="Blocks" :value="summary.scheduled_blocks" icon="fa-solid fa-calendar-days" />
-                    <StatCard title="Groups" :value="summary.assigned_groups" icon="fa-solid fa-layer-group" />
+                <section class="grid grid-cols-1 gap-6 md:grid-cols-4 xl:grid-cols-8">
+                    <StatCard title="Groups" :value="summary.groups" icon="fa-solid fa-layer-group" />
+                    <StatCard title="Active Students" :value="summary.active_students" icon="fa-solid fa-users" />
+                    <StatCard title="Capacity" :value="summary.total_capacity" icon="fa-solid fa-chair" />
+                    <StatCard title="Available Seats" :value="summary.available_seats" icon="fa-solid fa-door-open" />
+                    <StatCard title="Full" :value="summary.full_groups" icon="fa-solid fa-circle-exclamation" />
+                    <StatCard title="Near Capacity" :value="summary.near_capacity" icon="fa-solid fa-gauge-high" />
                     <StatCard title="Conflicts" :value="summary.conflicts" icon="fa-solid fa-triangle-exclamation" />
-                    <StatCard title="Utilization" :value="summary.average_utilization + '%'" icon="fa-solid fa-chart-simple" />
+                    <StatCard title="Utilization" :value="summary.utilization + '%'" icon="fa-solid fa-chart-simple" />
                 </section>
 
                 <SectionCard>
                     <div class="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
                         <div class="grid gap-3 lg:grid-cols-[minmax(18rem,24rem)_1fr]">
-                            <TableSearch v-model="filterForm.search" placeholder="Search classroom or building..." />
+                            <TableSearch v-model="filterForm.search" placeholder="Search group, subject or professor..." />
 
                             <div class="grid gap-3 md:grid-cols-3">
-                                <BaseSelect v-model="filterForm.building_id" placeholder="Building" :options="buildingOptions" />
                                 <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period" :options="periodOptions" />
-                                <BaseSelect v-model="filterForm.status" placeholder="Classroom status" :options="statusOptions" />
+                                <BaseSelect v-model="filterForm.status" placeholder="Group status" :options="statusOptions" />
+                                <BaseSelect v-model="filterForm.alert" placeholder="Operational alert" :options="alertOptions" />
                             </div>
                         </div>
 
@@ -290,46 +302,55 @@ function printReport() {
                 <SectionCard>
                     <div class="border-b border-gray-200 p-6 dark:border-gray-800">
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Occupancy By Classroom
+                            Operational Status By Group
                         </h2>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Each classroom is grouped with its schedule blocks, groups, utilization and detected conflicts.
+                            Review seats, schedule blocks, conflicts and capacity alerts before enrollment or publication decisions.
                         </p>
                     </div>
 
-                    <div v-if="classrooms.data.length" class="divide-y divide-gray-100 dark:divide-gray-800">
-                        <article v-for="classroom in classrooms.data" :key="classroom.id" class="p-6">
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div v-if="groups.data.length" class="divide-y divide-gray-100 dark:divide-gray-800">
+                        <article v-for="group in groups.data" :key="group.id" class="p-6">
+                            <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div>
                                     <div class="flex flex-wrap items-center gap-3">
                                         <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                                            {{ classroom.name }}
+                                            {{ group.code }}
                                         </h3>
-                                        <StatusBadge :label="classroom.status" :variant="statusVariant(classroom.status)" />
-                                        <StatusBadge
-                                            :label="classroom.average_utilization + '% utilization'"
-                                            :variant="utilizationVariant(classroom.average_utilization)"
-                                        />
+                                        <StatusBadge :label="group.status" :variant="statusVariant(group.status)" />
+                                        <StatusBadge :label="group.utilization + '% utilization'" :variant="utilizationVariant(group.utilization)" />
                                     </div>
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                        {{ classroom.building }} / {{ classroom.capacity }} seats
+                                        {{ group.subject.code }} - {{ group.subject.name }} / {{ group.professor }} / {{ group.period || "-" }}
                                     </p>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
                                     <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                                        {{ classroom.scheduled_blocks }} blocks
+                                        {{ group.active_students }}/{{ group.capacity }} students
                                     </span>
                                     <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                                        {{ classroom.assigned_groups }} groups
+                                        {{ group.available_seats }} seats
                                     </span>
                                     <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                                        {{ classroom.active_students }} students
+                                        {{ group.scheduled_blocks }} blocks
                                     </span>
                                     <span class="rounded-lg bg-amber-50 px-3 py-2 font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                                        {{ classroom.conflicts }} conflicts
+                                        {{ group.conflict_blocks }} conflicts
                                     </span>
                                 </div>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <StatusBadge
+                                    v-for="alert in group.alerts"
+                                    :key="alert"
+                                    :label="alert"
+                                    :variant="alertVariant(alert)"
+                                />
+                                <span v-if="!group.alerts.length" class="text-sm text-gray-500 dark:text-gray-400">
+                                    No operational alerts.
+                                </span>
                             </div>
 
                             <div class="mt-5 overflow-x-auto">
@@ -337,15 +358,13 @@ function printReport() {
                                     <thead class="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
                                         <tr>
                                             <th class="px-4 py-3 font-semibold">Time block</th>
-                                            <th class="px-4 py-3 font-semibold">Group</th>
-                                            <th class="px-4 py-3 font-semibold">Subject</th>
-                                            <th class="px-4 py-3 font-semibold">Professor</th>
-                                            <th class="px-4 py-3 font-semibold">Period</th>
-                                            <th class="px-4 py-3 font-semibold">Utilization</th>
+                                            <th class="px-4 py-3 font-semibold">Classroom</th>
+                                            <th class="px-4 py-3 font-semibold">Building</th>
+                                            <th class="px-4 py-3 font-semibold">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                                        <tr v-for="schedule in classroom.schedules" :key="schedule.id">
+                                        <tr v-for="schedule in group.schedules" :key="schedule.id">
                                             <td class="px-4 py-4">
                                                 <p class="font-medium text-gray-900 dark:text-white">
                                                     {{ schedule.day }}
@@ -354,37 +373,24 @@ function printReport() {
                                                     {{ schedule.time }}
                                                 </p>
                                             </td>
-                                            <td class="px-4 py-4">
-                                                <p class="font-medium text-gray-900 dark:text-white">
-                                                    {{ schedule.group.code || 'No group' }}
-                                                </p>
-                                                <StatusBadge
-                                                    v-if="schedule.conflict"
-                                                    label="Conflict"
-                                                    variant="danger"
-                                                />
+                                            <td class="px-4 py-4 text-gray-700 dark:text-gray-300">
+                                                {{ schedule.classroom }}
                                             </td>
                                             <td class="px-4 py-4 text-gray-700 dark:text-gray-300">
-                                                {{ schedule.subject.code }} - {{ schedule.subject.name }}
-                                            </td>
-                                            <td class="px-4 py-4 text-gray-700 dark:text-gray-300">
-                                                {{ schedule.professor || '-' }}
-                                            </td>
-                                            <td class="px-4 py-4 text-gray-700 dark:text-gray-300">
-                                                {{ schedule.period || '-' }}
+                                                {{ schedule.building }}
                                             </td>
                                             <td class="px-4 py-4">
                                                 <StatusBadge
-                                                    :label="schedule.utilization + '%'"
-                                                    :variant="utilizationVariant(schedule.utilization)"
+                                                    :label="schedule.conflict ? 'Conflict' : 'Clear'"
+                                                    :variant="schedule.conflict ? 'danger' : 'success'"
                                                 />
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
 
-                                <p v-if="!classroom.schedules.length" class="py-4 text-sm text-gray-500 dark:text-gray-400">
-                                    No scheduled blocks for this classroom with the current filters.
+                                <p v-if="!group.schedules.length" class="py-4 text-sm text-gray-500 dark:text-gray-400">
+                                    No published schedule blocks for this group.
                                 </p>
                             </div>
                         </article>
@@ -392,13 +398,13 @@ function printReport() {
 
                     <div v-else class="p-6">
                         <EmptyState
-                            title="No classrooms found"
-                            description="Try adjusting the filters or create classrooms with valid building and capacity data."
-                            icon="fa-solid fa-door-open"
+                            title="No groups found"
+                            description="Try adjusting the filters or publish class groups with capacity and schedule data."
+                            icon="fa-solid fa-triangle-exclamation"
                         />
                     </div>
 
-                    <TablePagination v-if="classrooms.data.length" :data="classrooms" />
+                    <TablePagination v-if="groups.data.length" :data="groups" />
                 </SectionCard>
             </div>
         </CrudContainer>

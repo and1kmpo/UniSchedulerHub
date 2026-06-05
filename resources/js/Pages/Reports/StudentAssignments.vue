@@ -193,11 +193,11 @@ function printReport() {
     table.appendChild(tbody);
     doc.body.appendChild(table);
 
-    iframe.onload = () => {
+    setTimeout(() => {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
         setTimeout(() => document.body.removeChild(iframe), 500);
-    };
+    }, 100);
 }
 
 const csvExportUrl = computed(() => route("reports.student-assignments.export", exportPayload()));
@@ -290,11 +290,11 @@ const statusOptions = props.options.statuses.map((status) => ({
                             </div>
                         </div>
 
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Exports use the current search and filter criteria.
-                        </p>
-
-                        <div class="flex justify-start border-t border-gray-200 pt-4 dark:border-gray-800">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Exports use the current search and filter criteria.
+                            </p>
                             <BaseButton variant="secondary" @click="clearFilters">
                                 <i class="fa-solid fa-rotate-left mr-2" />
                                 Reset filters

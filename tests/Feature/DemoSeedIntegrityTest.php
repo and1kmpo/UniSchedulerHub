@@ -121,7 +121,7 @@ class DemoSeedIntegrityTest extends TestCase
 
         $reportsIndexProps = $reportsIndexResponse->viewData('page')['props'];
 
-        $this->assertCount(3, $reportsIndexProps['reports']);
+        $this->assertCount(4, $reportsIndexProps['reports']);
 
         $reportResponse = $this->actingAs($admin)
             ->get(route('reports.student-assignments.index'))
@@ -182,6 +182,27 @@ class DemoSeedIntegrityTest extends TestCase
 
         $this->assertStringContainsString('Classroom capacity', $classroomOccupancyCsv);
         $this->assertStringContainsString('Seat utilization %', $classroomOccupancyCsv);
+
+        $groupCapacityResponse = $this->actingAs($admin)
+            ->get(route('reports.group-capacity-conflicts.index'))
+            ->assertOk();
+
+        $groupCapacityProps = $groupCapacityResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $groupCapacityProps['summary']['groups']);
+        $this->assertGreaterThan(0, $groupCapacityProps['summary']['total_capacity']);
+        $this->assertNotEmpty($groupCapacityProps['groups']['data']);
+
+        $groupCapacityCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.group-capacity-conflicts.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $groupCapacityCsv = $groupCapacityCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Class group', $groupCapacityCsv);
+        $this->assertStringContainsString('Utilization %', $groupCapacityCsv);
+        $this->assertStringContainsString('Alerts', $groupCapacityCsv);
 
         $this->flushSession();
 

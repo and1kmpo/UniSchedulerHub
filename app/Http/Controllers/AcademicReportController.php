@@ -44,6 +44,13 @@ class AcademicReportController extends Controller
                     'icon' => 'fa-solid fa-door-open',
                     'category' => 'Space utilization',
                 ],
+                [
+                    'title' => 'Group Capacity And Conflict Report',
+                    'description' => 'Class groups, seats, utilization, schedule conflicts and operational alerts.',
+                    'route' => 'reports.group-capacity-conflicts.index',
+                    'icon' => 'fa-solid fa-triangle-exclamation',
+                    'category' => 'Academic operations',
+                ],
             ],
         ]);
     }
@@ -401,6 +408,103 @@ class AcademicReportController extends Controller
         ]);
     }
 
+    public function groupCapacityConflicts(Request $request)
+    {
+        $filters = $request->only([
+            'search',
+            'academic_period_id',
+            'status',
+            'alert',
+        ]);
+
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+        $conflictScheduleIds = $this->allConflictScheduleIds($request);
+
+        $groups = $this->groupCapacityConflictQuery($request, $activeStatusIds)
+            ->paginate(12)
+            ->withQueryString()
+            ->through(fn(ClassGroup $group) => $this->groupCapacityConflictPayload($group, $conflictScheduleIds));
+
+        return Inertia::render('Reports/GroupCapacityConflicts', [
+            'groups' => $groups,
+            'summary' => $this->groupCapacityConflictSummary($request, $activeStatusIds, $conflictScheduleIds),
+            'filters' => $filters,
+            'options' => [
+                'periods' => AcademicPeriod::query()
+                    ->select('id', 'name')
+                    ->latest('start_date')
+                    ->get(),
+                'statuses' => [
+                    ['label' => 'Draft', 'value' => ClassGroup::STATUS_DRAFT],
+                    ['label' => 'Published', 'value' => ClassGroup::STATUS_PUBLISHED],
+                    ['label' => 'Cancelled', 'value' => ClassGroup::STATUS_CANCELLED],
+                    ['label' => 'Closed', 'value' => ClassGroup::STATUS_CLOSED],
+                ],
+                'alerts' => [
+                    ['label' => 'Has conflicts', 'value' => 'conflicts'],
+                    ['label' => 'Full groups', 'value' => 'full'],
+                    ['label' => 'Near capacity', 'value' => 'near_capacity'],
+                    ['label' => 'No schedule', 'value' => 'no_schedule'],
+                    ['label' => 'No capacity', 'value' => 'no_capacity'],
+                ],
+            ],
+        ]);
+    }
+
+    public function exportGroupCapacityConflicts(Request $request): StreamedResponse
+    {
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+        $conflictScheduleIds = $this->allConflictScheduleIds($request);
+        $filename = 'group-capacity-conflict-report-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($request, $activeStatusIds, $conflictScheduleIds) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Class group',
+                'Subject',
+                'Professor',
+                'Academic period',
+                'Status',
+                'Capacity',
+                'Active students',
+                'Available seats',
+                'Utilization %',
+                'Schedule blocks',
+                'Conflict blocks',
+                'Alerts',
+            ]);
+
+            $this->groupCapacityConflictQuery($request, $activeStatusIds)
+                ->chunk(250, function ($groups) use ($handle, $conflictScheduleIds) {
+                    foreach ($groups as $group) {
+                        $payload = $this->groupCapacityConflictPayload($group, $conflictScheduleIds);
+
+                        fputcsv($handle, [
+                            $payload['code'],
+                            $payload['subject']['name'],
+                            $payload['professor'],
+                            $payload['period'],
+                            Str::headline($payload['status']),
+                            $payload['capacity'],
+                            $payload['active_students'],
+                            $payload['available_seats'],
+                            $payload['utilization'],
+                            $payload['scheduled_blocks'],
+                            $payload['conflict_blocks'],
+                            implode(', ', $payload['alerts']),
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function applyEnrollmentFilters($query, Request $request)
     {
         return $query
@@ -469,6 +573,46 @@ class AcademicReportController extends Controller
             ->when($request->filled('academic_period_id'), fn($query) => $query
                 ->whereHas('classGroup', fn($group) => $group
                     ->where('academic_period_id', $request->integer('academic_period_id'))));
+    }
+
+    private function applyGroupSearch($query, Request $request)
+    {
+        $search = $request->string('search')->toString();
+
+        return $query->where(function ($query) use ($search) {
+            $query
+                ->where('code', 'like', "%{$search}%")
+                ->orWhere('name', 'like', "%{$search}%")
+                ->orWhereHas('subject', fn($subject) => $subject
+                    ->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%"))
+                ->orWhereHas('professor', fn($professor) => $professor
+                    ->where('name', 'like', "%{$search}%"));
+        });
+    }
+
+    private function applyGroupAlertFilter($query, Request $request, $activeStatusIds)
+    {
+        return match ($request->string('alert')->toString()) {
+            'no_schedule' => $query->whereDoesntHave('schedules', fn($schedules) => $schedules
+                ->where('status', ClassSchedule::STATUS_PUBLISHED)),
+            'no_capacity' => $query->where(function ($query) {
+                $query->whereNull('capacity')->orWhere('capacity', '<=', 0);
+            }),
+            'full', 'near_capacity' => $query
+                ->whereNotNull('capacity')
+                ->where('capacity', '>', 0)
+                ->withCount([
+                    'subjectEnrollments as alert_active_students_count' => fn($enrollments) => $enrollments
+                        ->whereIn('status_id', $activeStatusIds),
+                ])
+                ->when($request->string('alert')->toString() === 'full', fn($query) => $query
+                    ->havingRaw('alert_active_students_count >= capacity'))
+                ->when($request->string('alert')->toString() === 'near_capacity', fn($query) => $query
+                    ->havingRaw('(alert_active_students_count / capacity) >= 0.85')
+                    ->havingRaw('alert_active_students_count < capacity')),
+            default => $query,
+        };
     }
 
     private function studentAssignmentExportQuery(Request $request)
@@ -555,6 +699,37 @@ class AcademicReportController extends Controller
             ->orderBy('classroom_id')
             ->orderBy('day')
             ->orderBy('start_time');
+    }
+
+    private function groupCapacityConflictQuery(Request $request, $activeStatusIds)
+    {
+        return ClassGroup::query()
+            ->with([
+                'academicPeriod:id,name',
+                'professor:id,name,email',
+                'subject:id,code,name',
+                'schedules' => fn($schedules) => $schedules
+                    ->where('status', ClassSchedule::STATUS_PUBLISHED)
+                    ->with('classroom:id,name,building_id'),
+                'schedules.classroom.building:id,code,name',
+            ])
+            ->withCount([
+                'subjectEnrollments as active_students_count' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds),
+                'schedules as published_schedules_count' => fn($schedules) => $schedules
+                    ->where('status', ClassSchedule::STATUS_PUBLISHED),
+            ])
+            ->when($request->filled('academic_period_id'), fn($query) => $query
+                ->where('academic_period_id', $request->integer('academic_period_id')))
+            ->when($request->filled('status'), fn($query) => $query
+                ->where('status', $request->string('status')->toString()))
+            ->when($request->filled('search'), fn($query) => $this->applyGroupSearch($query, $request))
+            ->when($request->string('alert')->toString() === 'conflicts', fn($query) => $query
+                ->whereHas('schedules', fn($schedules) => $schedules
+                    ->whereIn('id', $this->allConflictScheduleIds($request))))
+            ->when($request->filled('alert') && $request->string('alert')->toString() !== 'conflicts', fn($query) => $this
+                ->applyGroupAlertFilter($query, $request, $activeStatusIds))
+            ->orderBy('code');
     }
 
     private function studentReportPayload(Student $student, array $activeStatusCodes): array
@@ -671,6 +846,64 @@ class AcademicReportController extends Controller
         ];
     }
 
+    private function groupCapacityConflictPayload(ClassGroup $group, $conflictScheduleIds): array
+    {
+        $capacity = (int) ($group->capacity ?? 0);
+        $activeStudents = (int) ($group->active_students_count ?? 0);
+        $availableSeats = max(0, $capacity - $activeStudents);
+        $utilization = $capacity > 0 ? round(($activeStudents / $capacity) * 100, 1) : 0;
+        $conflictBlocks = $group->schedules
+            ->filter(fn($schedule) => $conflictScheduleIds->contains($schedule->id))
+            ->count();
+        $alerts = [];
+
+        if ($capacity <= 0) {
+            $alerts[] = 'No capacity';
+        } elseif ($activeStudents >= $capacity) {
+            $alerts[] = 'Full';
+        } elseif ($utilization >= 85) {
+            $alerts[] = 'Near capacity';
+        }
+
+        if ($group->schedules->isEmpty()) {
+            $alerts[] = 'No schedule';
+        }
+
+        if ($conflictBlocks > 0) {
+            $alerts[] = 'Schedule conflict';
+        }
+
+        return [
+            'id' => $group->id,
+            'code' => $group->code,
+            'name' => $group->name,
+            'status' => $group->status,
+            'period' => $group->academicPeriod?->name,
+            'professor' => $group->professor?->name ?? 'Unassigned',
+            'subject' => [
+                'code' => $group->subject?->code,
+                'name' => $group->subject?->name,
+            ],
+            'capacity' => $capacity,
+            'active_students' => $activeStudents,
+            'available_seats' => $availableSeats,
+            'utilization' => $utilization,
+            'scheduled_blocks' => (int) ($group->published_schedules_count ?? $group->schedules->count()),
+            'conflict_blocks' => $conflictBlocks,
+            'alerts' => $alerts,
+            'schedules' => $group->schedules->map(fn($schedule) => [
+                'id' => $schedule->id,
+                'day' => Str::headline($schedule->day),
+                'time' => "{$schedule->start_time} - {$schedule->end_time}",
+                'classroom' => $schedule->classroom?->name ?? 'No classroom',
+                'building' => $schedule->classroom?->building
+                    ? "{$schedule->classroom->building->code} - {$schedule->classroom->building->name}"
+                    : 'No building',
+                'conflict' => $conflictScheduleIds->contains($schedule->id),
+            ])->values(),
+        ];
+    }
+
     private function professorLoadSummary(Request $request, $activeStatusIds): array
     {
         $groups = ClassGroup::query()
@@ -729,6 +962,33 @@ class AcademicReportController extends Controller
         ];
     }
 
+    private function groupCapacityConflictSummary(Request $request, $activeStatusIds, $conflictScheduleIds): array
+    {
+        $groups = $this->groupCapacityConflictQuery($request, $activeStatusIds)->get();
+        $groupsWithPayload = $groups->map(fn($group) => $this->groupCapacityConflictPayload($group, $conflictScheduleIds));
+        $totalCapacity = $groupsWithPayload->sum('capacity');
+        $activeStudents = $groupsWithPayload->sum('active_students');
+
+        return [
+            'groups' => $groupsWithPayload->count(),
+            'active_students' => $activeStudents,
+            'total_capacity' => $totalCapacity,
+            'available_seats' => $groupsWithPayload->sum('available_seats'),
+            'full_groups' => $groupsWithPayload->filter(fn($group) => in_array('Full', $group['alerts'], true))->count(),
+            'near_capacity' => $groupsWithPayload->filter(fn($group) => in_array('Near capacity', $group['alerts'], true))->count(),
+            'conflicts' => $groupsWithPayload->filter(fn($group) => $group['conflict_blocks'] > 0)->count(),
+            'utilization' => $totalCapacity > 0 ? round(($activeStudents / $totalCapacity) * 100, 1) : 0,
+        ];
+    }
+
+    private function allConflictScheduleIds(Request $request)
+    {
+        return $this->classroomConflictScheduleIds($request)
+            ->merge($this->professorConflictScheduleIds($request))
+            ->unique()
+            ->values();
+    }
+
     private function classroomConflictScheduleIds(Request $request)
     {
         return ClassSchedule::query()
@@ -752,6 +1012,34 @@ class AcademicReportController extends Controller
             ->when($request->filled('building_id'), fn($query) => $query
                 ->join('classrooms as cr', 's1.classroom_id', '=', 'cr.id')
                 ->where('cr.building_id', $request->integer('building_id')))
+            ->selectRaw('s1.id as first_id, s2.id as second_id')
+            ->get()
+            ->flatMap(fn($row) => [(int) $row->first_id, (int) $row->second_id])
+            ->unique()
+            ->values();
+    }
+
+    private function professorConflictScheduleIds(Request $request)
+    {
+        return ClassSchedule::query()
+            ->from('class_schedules as s1')
+            ->join('class_schedules as s2', function ($join) {
+                $join->whereColumn('s1.id', '<', 's2.id')
+                    ->whereColumn('s1.day', 's2.day')
+                    ->whereColumn('s1.start_time', '<', 's2.end_time')
+                    ->whereColumn('s2.start_time', '<', 's1.end_time');
+            })
+            ->join('class_groups as cg1', 's1.class_group_id', '=', 'cg1.id')
+            ->join('class_groups as cg2', 's2.class_group_id', '=', 'cg2.id')
+            ->whereColumn('cg1.professor_id', 'cg2.professor_id')
+            ->whereNotNull('cg1.professor_id')
+            ->where('s1.status', ClassSchedule::STATUS_PUBLISHED)
+            ->where('s2.status', ClassSchedule::STATUS_PUBLISHED)
+            ->when($request->filled('academic_period_id'), function ($query) use ($request) {
+                $query
+                    ->where('cg1.academic_period_id', $request->integer('academic_period_id'))
+                    ->where('cg2.academic_period_id', $request->integer('academic_period_id'));
+            })
             ->selectRaw('s1.id as first_id, s2.id as second_id')
             ->get()
             ->flatMap(fn($row) => [(int) $row->first_id, (int) $row->second_id])

@@ -119,6 +119,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/reports/professor-load/export', [AcademicReportController::class, 'exportProfessorLoad'])->name('reports.professor-load.export');
         Route::get('/reports/classroom-occupancy', [AcademicReportController::class, 'classroomOccupancy'])->name('reports.classroom-occupancy.index');
         Route::get('/reports/classroom-occupancy/export', [AcademicReportController::class, 'exportClassroomOccupancy'])->name('reports.classroom-occupancy.export');
+        Route::get('/reports/group-capacity-conflicts', [AcademicReportController::class, 'groupCapacityConflicts'])->name('reports.group-capacity-conflicts.index');
+        Route::get('/reports/group-capacity-conflicts/export', [AcademicReportController::class, 'exportGroupCapacityConflicts'])->name('reports.group-capacity-conflicts.export');
 
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
