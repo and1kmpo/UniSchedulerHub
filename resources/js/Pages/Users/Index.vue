@@ -203,7 +203,7 @@ const saveUser = async () => {
     } catch (exception) {
         if (exception.response?.status === 422) {
             formErrors.value = exception.response.data.errors ?? {};
-            error("Please review the highlighted fields");
+            error(exception.response.data.message ?? "Please review the highlighted fields");
         } else {
             error("The user could not be saved");
         }
@@ -242,8 +242,8 @@ const deleteUser = async (user) => {
         await axios.delete(route("users.destroy", user.id));
         success("User deleted successfully");
         router.reload({ only: ["users"] });
-    } catch {
-        error("The user could not be deleted");
+    } catch (exception) {
+        error(exception.response?.data?.message ?? "The user could not be deleted");
     }
 };
 

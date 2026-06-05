@@ -97,6 +97,57 @@ class RoleAccessTest extends TestCase
         $this->assertNull($user->professor);
     }
 
+    public function test_admin_cannot_delete_or_reclassify_user_with_academic_history(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $professor = $this->userWithRole('professor');
+        $professor->professor()->create([
+            'document' => 'P-SEC-001',
+            'phone' => '3000000001',
+            'address' => 'Professor street',
+            'city' => 'Bogota',
+        ]);
+
+        $subject = Subject::create([
+            'code' => 'HIST101',
+            'name' => 'History Protected Subject',
+            'description' => 'Subject used to protect destructive user changes',
+            'credits' => 3,
+            'knowledge_area' => 'Engineering',
+            'elective' => false,
+        ]);
+
+        ClassGroup::create([
+            'subject_id' => $subject->id,
+            'professor_id' => $professor->id,
+            'semester' => '2026-I',
+            'modality' => 'In-person',
+            'shift' => 'Day',
+            'capacity' => 30,
+            'status' => ClassGroup::STATUS_PUBLISHED,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson(route('users.destroy', $professor))
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'This user has academic history. Deactivate the account instead of deleting it.');
+
+        $this->assertDatabaseHas('users', ['id' => $professor->id]);
+        $this->assertDatabaseHas('professors', ['user_id' => $professor->id]);
+
+        $this->actingAs($admin)
+            ->putJson(route('users.update', $professor), [
+                'name' => $professor->name,
+                'email' => $professor->email,
+                'role' => 'admin',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'This user has academic history. Deactivate the account instead of changing its academic role.');
+
+        $this->assertTrue($professor->fresh()->hasRole('professor'));
+        $this->assertDatabaseHas('professors', ['user_id' => $professor->id]);
+    }
+
     public function test_academic_coordinator_can_access_academic_operations_but_not_security_administration(): void
     {
         $coordinator = $this->userWithRole('academic_coordinator');

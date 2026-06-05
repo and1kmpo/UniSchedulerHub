@@ -202,6 +202,19 @@ class UserController extends Controller
             ]);
 
             $user = User::findOrFail($id);
+
+            if (
+                $this->academicProfileRole($user)
+                && $validated['role'] !== $this->academicProfileRole($user)
+                && $this->hasAcademicHistory($user)
+            ) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'This user has academic history. Deactivate the account instead of changing its academic role.',
+                ], 422);
+            }
+
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -262,10 +275,17 @@ class UserController extends Controller
         DB::beginTransaction(); // Inicia la transacción
 
         try {
-            // Encontrar al usuario
             $user = User::findOrFail($id);
 
-            User::destroy($id);
+            if ($this->hasAcademicHistory($user)) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'This user has academic history. Deactivate the account instead of deleting it.',
+                ], 422);
+            }
+
+            $user->delete();
 
             // Si todo está bien, se hace commit de la transacción
             DB::commit();
@@ -375,5 +395,37 @@ class UserController extends Controller
         }
 
         return response()->json(['error' => 'Role not supported'], 403);
+    }
+
+    private function academicProfileRole(User $user): ?string
+    {
+        $user->loadMissing(['student', 'professor']);
+
+        if ($user->student) {
+            return 'student';
+        }
+
+        if ($user->professor) {
+            return 'professor';
+        }
+
+        return null;
+    }
+
+    private function hasAcademicHistory(User $user): bool
+    {
+        $user->loadMissing(['student', 'professor']);
+
+        if ($user->student) {
+            return $user->student->enrollments()->exists()
+                || $user->student->enrollmentGrades()->exists();
+        }
+
+        if ($user->professor) {
+            return $user->professor->classGroups()->exists()
+                || $user->professor->grades()->exists();
+        }
+
+        return false;
     }
 }
