@@ -65,11 +65,11 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'role' => 'required|in:professor,student,admin',
-                'document' => 'required|string|unique:students,document|unique:professors,document',
-                'phone' => 'required|string|min:7|max:15',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:50',
+                'role' => 'required|in:professor,student,admin,academic_coordinator',
+                'document' => 'nullable|required_if:role,professor,student|string|unique:students,document|unique:professors,document',
+                'phone' => 'nullable|required_if:role,professor,student|string|min:7|max:15',
+                'address' => 'nullable|required_if:role,professor,student|string|max:255',
+                'city' => 'nullable|required_if:role,professor,student|string|max:50',
                 'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
                 'program_id' => 'nullable|required_if:role,student|exists:programs,id',
             ]);
@@ -142,16 +142,17 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'role' => 'required|in:professor,student,admin',
+                'role' => 'required|in:professor,student,admin,academic_coordinator',
                 'document' => [
-                    'required',
+                    'nullable',
+                    'required_if:role,professor,student',
                     'string',
                     Rule::unique('students', 'document')->ignore($id, 'user_id'),
                     Rule::unique('professors', 'document')->ignore($id, 'user_id'),
                 ],
-                'phone' => 'required|string|min:7|max:15',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:50',
+                'phone' => 'nullable|required_if:role,professor,student|string|min:7|max:15',
+                'address' => 'nullable|required_if:role,professor,student|string|max:255',
+                'city' => 'nullable|required_if:role,professor,student|string|max:50',
                 'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
                 'program_id' => 'nullable|required_if:role,student|exists:programs,id',
             ]);
@@ -187,6 +188,9 @@ class UserController extends Controller
                     ]
                 );
                 $user->professor()->delete();
+            } else {
+                $user->professor()->delete();
+                $user->student()->delete();
             }
 
             DB::commit();

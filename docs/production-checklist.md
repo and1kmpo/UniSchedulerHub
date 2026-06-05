@@ -95,6 +95,9 @@ Validate:
 - `academic_coordinator` can access academic operations, not security administration.
 - `professor` can access teaching workspace only.
 - `student` can access own subjects, enrollment, schedules, and grades only.
+- Role navigation shows only the actions each role can execute.
+- Admin and coordinator navigation is grouped by operational domain instead of one long flat list.
+- Desktop and mobile navigation use the same role-aware menu contract.
 
 Run:
 
@@ -108,6 +111,27 @@ Direct URL access must remain protected. Test at least:
 - Student cannot open grade management routes.
 - Professor cannot open reports or student CRUD routes.
 - Academic coordinator cannot open users, roles, or permissions.
+
+UI smoke checklist by role:
+
+- Admin: dashboard, Academics, People, Operations, Campus and Identity & Access are visible.
+- Academic coordinator: Academics, People, Operations and Campus are visible; Identity & Access is hidden and forbidden by direct URL.
+- Professor: dashboard, my subjects, my schedule and group enrollments are visible; reports/admin CRUDs are hidden and forbidden.
+- Student: my subjects, my schedule and subject enrollment are visible; dashboard/reports/admin routes are hidden and forbidden.
+- Menus match on desktop and mobile.
+- Blocked actions show a clear message instead of failing silently.
+
+## Identity And Access Policy
+
+- `/users` remains an admin-only Identity & Access module. It should not replace Students or Professors.
+- Students and Professors are academic/person records: document, contact data, program, semester, academic status and teaching profile.
+- Users are login/security records: email, password, status, roles and permissions.
+- In a production university flow, students and professors should usually be created or imported by an administrator/admissions/HR process, then linked to their academic profile.
+- Public self-registration should stay disabled for institutional users unless a controlled admissions workflow exists.
+- Coordinators should manage academic data, not global roles or permissions.
+- Admins can create operational users such as academic coordinators and security administrators.
+- Role assignment should be explicit, audited and limited to admins.
+- The next hardening pass for `/users` should standardize the UI as an enterprise CRUD and avoid destructive deletes for accounts with academic history.
 
 ## Enrollment Engine
 

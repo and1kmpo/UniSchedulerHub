@@ -18,9 +18,7 @@ const showingMenu = ref(false);
 const userDropdownOpen = ref(null);
 const dropdownOpen = ref(null);
 
-const userRole = computed(() => {
-    return page.props.auth?.user?.roles?.[0]?.name || null;
-});
+const navItems = computed(() => page.props.navigation?.main ?? []);
 
 const logout = () => {
     router.post(route("logout"));
@@ -157,84 +155,38 @@ onBeforeUnmount(() => {
                 <div class="hidden lg:block w-full lg:w-auto lg:order-1">
                     <ul
                         class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-                        <li v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
-                            <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
+                        <li v-for="item in navItems" :key="item.route ?? item.label" class="relative">
+                            <button
+                                v-if="item.children"
+                                type="button"
+                                class="dropdown-toggle nav-link inline-flex items-center gap-2"
+                                @click="toggleDropdown(item.label)"
+                            >
+                                {{ item.label }}
+                                <i class="fas fa-chevron-down text-[0.65rem]"></i>
+                            </button>
+
+                            <transition name="dropdown-fade">
+                                <ul
+                                    v-if="item.children && dropdownOpen === item.label"
+                                    class="dropdown-menu show"
+                                >
+                                    <li v-for="child in item.children" :key="child.route">
+                                        <Link
+                                            :href="route(child.route)"
+                                            class="dropdown-item"
+                                            @click="dropdownOpen = null"
+                                        >
+                                            {{ child.label }}
+                                        </Link>
+                                    </li>
+                                </ul>
+                            </transition>
+
+                            <Link v-if="!item.children" :href="route(item.route)" class="nav-link">
+                                {{ item.label }}
+                            </Link>
                         </li>
-
-                        <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
-                            <li>
-                                <Link :href="route('programs.index')" class="nav-link">Programs</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('students.index')" class="nav-link">Students</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
-                            </li>
-                            <li v-if="userRole === 'admin'">
-                                <Link :href="route('users.index')" class="nav-link">Admin</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('reports.index')" class="nav-link">Reports</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
-                            </li>
-                        </template>
-
-                        <template v-if="userRole === 'professor'">
-                            <li>
-                                <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('professor.schedule')" class="nav-link">My Schedule</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
-                                Enrollments</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                            </li>
-                        </template>
-
-                        <template v-if="userRole === 'student'">
-                            <li>
-                                <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('student.schedule')" class="nav-link">My Schedule</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
-                                Enrollment</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                            </li>
-                        </template>
-
                     </ul>
                 </div>
 
@@ -253,87 +205,26 @@ onBeforeUnmount(() => {
                         </button>
 
 
-                        <ul class="space-y-4 mt-10">
-                            <template v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
-                                <li>
-                                    <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
-                                </li>
-                            </template>
-
-                            <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
-                                <li>
-                                    <Link :href="route('programs.index')" class="nav-link">Programs</Link>
-                                </li>
-
-                                <li>
-                                    <Link :href="route('professors.index')" class="nav-link">Professors</Link>
-                                </li>
-
-                                <li>
-                                    <Link :href="route('students.index')" class="nav-link">Students</Link>
-                                </li>
-
-                                <li>
-                                    <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
-                                </li>
-                                <li v-if="userRole === 'admin'">
-                                    <Link :href="route('users.index')" class="nav-link">Admin</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('reports.index')" class="nav-link">Reports</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods
+                        <ul class="space-y-5 mt-10">
+                            <li v-for="item in navItems" :key="item.route ?? item.label">
+                                <div v-if="item.children" class="space-y-2">
+                                    <p class="px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                        {{ item.label }}
+                                    </p>
+                                    <Link
+                                        v-for="child in item.children"
+                                        :key="child.route"
+                                        :href="route(child.route)"
+                                        class="mobile-child-link"
+                                    >
+                                        {{ child.label }}
                                     </Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
-                                </li>
-                            </template>
+                                </div>
 
-                            <template v-if="userRole === 'professor'">
-                                <li>
-                                    <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('professor.schedule')" class="nav-link">My Schedule</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
-                                    Enrollments</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                                </li>
-                            </template>
-
-                            <template v-if="userRole === 'student'">
-                                <li>
-                                    <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('student.schedule')" class="nav-link">My Schedule</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
-                                    Enrollment</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                                </li>
-                            </template>
+                                <Link v-if="!item.children" :href="route(item.route)" class="nav-link">
+                                    {{ item.label }}
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </transition>
@@ -367,7 +258,7 @@ body {
     @apply mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600;
     position: absolute;
     top: 100%;
-    right: 0;
+    left: 0;
     z-index: 9999;
     visibility: hidden;
     /* Inicialmente oculto */
@@ -384,6 +275,10 @@ body {
 
 .dropdown-item {
     @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white;
+}
+
+.mobile-child-link {
+    @apply block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700;
 }
 
 .fade-enter-active,

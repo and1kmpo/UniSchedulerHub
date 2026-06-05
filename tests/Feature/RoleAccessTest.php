@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ClassGroup;
+use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
 use Database\Seeders\RolSeeder;
@@ -43,6 +44,26 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('reports.grade-operations.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.export'))->assertOk();
+    }
+
+    public function test_admin_can_create_operational_user_without_academic_profile(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson(route('users.store'), [
+                'name' => 'Academic Coordinator',
+                'email' => 'coordinator@example.test',
+                'role' => 'academic_coordinator',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'User created successfully');
+
+        $user = User::where('email', 'coordinator@example.test')->firstOrFail();
+
+        $this->assertTrue($user->hasRole('academic_coordinator'));
+        $this->assertNull($user->student);
+        $this->assertNull($user->professor);
     }
 
     public function test_academic_coordinator_can_access_academic_operations_but_not_security_administration(): void
@@ -191,6 +212,85 @@ class RoleAccessTest extends TestCase
             );
     }
 
+    public function test_role_navigation_contract_is_role_aware(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $coordinator = $this->userWithRole('academic_coordinator');
+        $professor = $this->userWithRole('professor');
+        $student = $this->userWithRole('student');
+
+        Student::factory()->create([
+            'user_id' => $student->id,
+        ]);
+
+        $this->assertNavigationFor($admin, route('dashboard'), [
+            'Dashboard',
+            'Academics',
+            'Programs',
+            'Subjects',
+            'Class Groups',
+            'Academic Periods',
+            'People',
+            'Professors',
+            'Students',
+            'Operations',
+            'Enrollment Management',
+            'Reports',
+            'Audit Logs',
+            'Campus',
+            'Buildings',
+            'Classrooms',
+            'Identity & Access',
+        ]);
+
+        $this->assertNavigationFor($coordinator, route('students.index'), [
+            'Dashboard',
+            'Academics',
+            'Programs',
+            'Subjects',
+            'Class Groups',
+            'Academic Periods',
+            'People',
+            'Professors',
+            'Students',
+            'Operations',
+            'Enrollment Management',
+            'Reports',
+            'Audit Logs',
+            'Campus',
+            'Buildings',
+            'Classrooms',
+        ], [
+            'Identity & Access',
+        ]);
+
+        $this->assertNavigationFor($professor, route('dashboard'), [
+            'Dashboard',
+            'My Subjects',
+            'My Schedule',
+            'Group Enrollments',
+            'Profile',
+        ], [
+            'Reports',
+            'Students',
+            'Identity & Access',
+            'Academic Periods',
+        ]);
+
+        $this->assertNavigationFor($student, route('student.subjects'), [
+            'My Subjects',
+            'My Schedule',
+            'Subject Enrollment',
+            'Profile',
+        ], [
+            'Dashboard',
+            'Reports',
+            'Students',
+            'Group Enrollments',
+            'Identity & Access',
+        ]);
+    }
+
     private function userWithRole(string $role): User
     {
         Role::findOrCreate($role);
@@ -199,5 +299,59 @@ class RoleAccessTest extends TestCase
         $user->assignRole($role);
 
         return $user;
+    }
+
+    private function assertNavigationFor(User $user, string $url, array $expectedLabels, array $unexpectedLabels = []): void
+    {
+        $this->flushSession();
+
+        $response = $this->actingAs($user)
+            ->get($url)
+            ->assertOk();
+
+        $navigation = collect($response->viewData('page')['props']['navigation']['main'] ?? []);
+        $labels = $this->navigationLabels($navigation->all());
+
+        $this->assertSame($expectedLabels, $labels);
+
+        foreach ($unexpectedLabels as $label) {
+            $this->assertNotContains($label, $labels);
+        }
+
+        $this->assertTrue($this->navigationLeavesHaveRoutes($navigation->all()));
+    }
+
+    private function navigationLabels(array $items): array
+    {
+        $labels = [];
+
+        foreach ($items as $item) {
+            $labels[] = $item['label'];
+
+            if (! empty($item['children'])) {
+                array_push($labels, ...$this->navigationLabels($item['children']));
+            }
+        }
+
+        return $labels;
+    }
+
+    private function navigationLeavesHaveRoutes(array $items): bool
+    {
+        foreach ($items as $item) {
+            if (! empty($item['children'])) {
+                if (! $this->navigationLeavesHaveRoutes($item['children'])) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (! filled($item['route'] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

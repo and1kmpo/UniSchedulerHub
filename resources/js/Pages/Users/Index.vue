@@ -4,7 +4,7 @@
             <aside
                 :class="[isSidebarOpen ? 'w-64' : 'w-16', 'bg-indigo-700 dark:bg-indigo-900 text-white flex flex-col items-center lg:items-stretch transition-all duration-300 h-screen sticky top-0']">
                 <div class="flex items-center justify-between p-4">
-                    <span v-if="isSidebarOpen" class="text-xl font-bold">Admin Panel</span>
+                    <span v-if="isSidebarOpen" class="text-xl font-bold">Identity & Access</span>
                     <button @click="toggleSidebar"
                         class="text-white hover:bg-indigo-600 dark:hover:bg-indigo-800 p-2 rounded">
                         <i :class="isSidebarOpen ? 'fas fa-chevron-left' : 'fas fa-bars'"></i>
@@ -24,8 +24,14 @@
             <div class="flex-1 flex flex-col">
                 <header
                     class="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center transition-all duration-300">
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ capitalizeSection(currentSection) }}
-                    </h1>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                            {{ capitalizeSection(currentSection) }}
+                        </h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Manage login accounts, roles, permissions and access status.
+                        </p>
+                    </div>
                     <button @click="toggleTheme"
                         class="p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full">
                         <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'" class="text-gray-700 dark:text-white"></i>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\RoleNavigation;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -40,6 +41,9 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'user.roles' => $request->user()?->roles->pluck('name') ?? [],
             'user.permissions' => $request->user()?->getPermissionsViaRoles()->pluck('name') ?? [],
+            'navigation' => [
+                'main' => RoleNavigation::for($request->user()),
+            ],
             'flash' => function () use ($request) {
                 return [
                     'success' => $request->session()->get('success'),

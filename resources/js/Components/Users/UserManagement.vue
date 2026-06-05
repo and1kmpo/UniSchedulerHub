@@ -125,24 +125,24 @@
                         <input v-model="form.email" type="email" id="email"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" required />
                     </div>
-                    <div class="mb-4">
+                    <div v-if="requiresAcademicProfile" class="mb-4">
                         <label for="document" class="block text-gray-700 dark:text-gray-300">Document:</label>
                         <input v-model="form.document" type="text" id="document"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
                             pattern="\d*" />
                     </div>
-                    <div class="mb-4">
+                    <div v-if="requiresAcademicProfile" class="mb-4">
                         <label for="phone" class="block text-gray-700 dark:text-gray-300">Phone:</label>
                         <input v-model="form.phone" type="text" id="phone"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
                             pattern="\d*" />
                     </div>
-                    <div class="mb-4">
+                    <div v-if="requiresAcademicProfile" class="mb-4">
                         <label for="address" class="block text-gray-700 dark:text-gray-300">Address:</label>
                         <input v-model="form.address" type="text" id="address"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
                     </div>
-                    <div class="mb-4">
+                    <div v-if="requiresAcademicProfile" class="mb-4">
                         <label for="city" class="block text-gray-700 dark:text-gray-300">City:</label>
                         <input v-model="form.city" type="text" id="city"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500" />
@@ -151,8 +151,10 @@
                         <label for="role" class="block text-gray-700 dark:text-gray-300">Role:</label>
                         <select v-model="form.role" id="role"
                             class="w-full border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500">
+                            <option disabled value="">Select a role</option>
                             <option value="student">Student</option>
                             <option value="professor">Professor</option>
+                            <option value="academic_coordinator">Academic Coordinator</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
@@ -176,6 +178,11 @@
                         </div>
                     </div>
 
+                    <p v-if="form.role === 'admin' || form.role === 'academic_coordinator'"
+                        class="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                        Operational users only need login and role data. Academic profiles are managed from Students or Professors.
+                    </p>
+
                     <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md">
                         {{ form.id ? "Update" : "Save" }}
                     </button>
@@ -192,6 +199,11 @@ import debounce from "lodash.debounce";
 export default {
     props: {
         users: Object
+    },
+    computed: {
+        requiresAcademicProfile() {
+            return ["student", "professor"].includes(this.form.role);
+        },
     },
     data() {
         return {
