@@ -13,6 +13,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import { printTableReport } from "@/Components/Composables/usePrintableReport";
 
 const props = defineProps({
     groups: {
@@ -117,112 +118,51 @@ function alertVariant(alert) {
     }[alert] || "gray";
 }
 
+function optionLabel(options, value) {
+    return options.find((option) => String(option.value) === String(value))?.label || value;
+}
+
 function printReport() {
-    const iframe = document.createElement("iframe");
-
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.close();
-    doc.title = "Group Capacity And Conflict Report";
-
-    const style = doc.createElement("style");
-    style.textContent = [
-        "body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }",
-        "header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }",
-        "h1 { font-size: 24px; margin: 0; }",
-        "p { color: #4b5563; margin: 6px 0 0; }",
-        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }",
-        ".metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }",
-        ".metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }",
-        ".metric strong { display: block; font-size: 22px; margin-top: 6px; }",
-        "table { border-collapse: collapse; font-size: 12px; width: 100%; }",
-        "th { background: #f3f4f6; text-align: left; }",
-        "th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }",
-        "@page { margin: 18mm; size: landscape; }",
-    ].join("\n");
-    doc.head.appendChild(style);
-
-    const header = doc.createElement("header");
-    const title = doc.createElement("h1");
-    title.textContent = "Group Capacity And Conflict Report";
-    const subtitle = doc.createElement("p");
-    subtitle.textContent = "Class groups, seats, utilization, schedule conflicts and operational alerts.";
-    const generated = doc.createElement("p");
-    generated.textContent = "Generated " + new Date().toLocaleString();
-    header.append(title, subtitle, generated);
-    doc.body.appendChild(header);
-
-    const summarySection = doc.createElement("section");
-    summarySection.className = "summary";
-    [
-        ["Groups", props.summary.groups],
-        ["Active students", props.summary.active_students],
-        ["Available seats", props.summary.available_seats],
-        ["Utilization", props.summary.utilization + "%"],
-        ["Full groups", props.summary.full_groups],
-        ["Near capacity", props.summary.near_capacity],
-        ["Conflicts", props.summary.conflicts],
-        ["Capacity", props.summary.total_capacity],
-    ].forEach(([label, value]) => {
-        const metric = doc.createElement("div");
-        metric.className = "metric";
-        const labelNode = doc.createElement("span");
-        labelNode.textContent = label;
-        const valueNode = doc.createElement("strong");
-        valueNode.textContent = value;
-        metric.append(labelNode, valueNode);
-        summarySection.appendChild(metric);
+    printTableReport({
+        title: "Group Capacity And Conflict Report",
+        subtitle: "Class groups, seats, utilization, schedule conflicts and operational alerts.",
+        filters: [
+            { label: "Search", value: filterForm.search },
+            { label: "Academic period", value: optionLabel(periodOptions, filterForm.academic_period_id) },
+            { label: "Group status", value: optionLabel(statusOptions, filterForm.status) },
+            { label: "Operational alert", value: optionLabel(alertOptions, filterForm.alert) },
+        ],
+        metrics: [
+            { label: "Groups", value: props.summary.groups },
+            { label: "Active students", value: props.summary.active_students },
+            { label: "Capacity", value: props.summary.total_capacity },
+            { label: "Available seats", value: props.summary.available_seats },
+            { label: "Full groups", value: props.summary.full_groups },
+            { label: "Near capacity", value: props.summary.near_capacity },
+            { label: "Conflicts", value: props.summary.conflicts },
+            { label: "Utilization", value: props.summary.utilization + "%" },
+        ],
+        columns: [
+            { key: "group", label: "Group" },
+            { key: "subject", label: "Subject" },
+            { key: "professor", label: "Professor" },
+            { key: "period", label: "Period" },
+            { key: "capacity", label: "Capacity" },
+            { key: "students", label: "Students" },
+            { key: "utilization", label: "Utilization" },
+            { key: "alerts", label: "Alerts" },
+        ],
+        rows: props.groups.data.map((group) => ({
+            group: group.code,
+            subject: (group.subject.code || "-") + " - " + (group.subject.name || "-"),
+            professor: group.professor,
+            period: group.period || "-",
+            capacity: group.capacity,
+            students: group.active_students,
+            utilization: group.utilization + "%",
+            alerts: group.alerts.join(", ") || "No alerts",
+        })),
     });
-    doc.body.appendChild(summarySection);
-
-    const table = doc.createElement("table");
-    const thead = doc.createElement("thead");
-    const headerRow = doc.createElement("tr");
-    ["Group", "Subject", "Professor", "Period", "Capacity", "Students", "Utilization", "Alerts"].forEach((label) => {
-        const th = doc.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = doc.createElement("tbody");
-    props.groups.data.forEach((group) => {
-        const row = doc.createElement("tr");
-        [
-            group.code,
-            (group.subject.code || "-") + " - " + (group.subject.name || "-"),
-            group.professor,
-            group.period || "-",
-            group.capacity,
-            group.active_students,
-            group.utilization + "%",
-            group.alerts.join(", ") || "No alerts",
-        ].forEach((value) => {
-            const td = doc.createElement("td");
-            td.textContent = value;
-            row.appendChild(td);
-        });
-        tbody.appendChild(row);
-    });
-
-    table.appendChild(tbody);
-    doc.body.appendChild(table);
-
-    setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 500);
-    }, 100);
 }
 </script>
 
@@ -243,7 +183,7 @@ function printReport() {
 
         <CrudContainer>
             <div class="space-y-6">
-                <section class="grid grid-cols-1 gap-6 md:grid-cols-4 xl:grid-cols-8">
+                <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <StatCard title="Groups" :value="summary.groups" icon="fa-solid fa-layer-group" />
                     <StatCard title="Active Students" :value="summary.active_students" icon="fa-solid fa-users" />
                     <StatCard title="Capacity" :value="summary.total_capacity" icon="fa-solid fa-chair" />

@@ -13,6 +13,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import { printTableReport } from "@/Components/Composables/usePrintableReport";
 
 const props = defineProps({
     classrooms: {
@@ -110,109 +111,47 @@ function utilizationVariant(value) {
     return "success";
 }
 
+function optionLabel(options, value) {
+    return options.find((option) => String(option.value) === String(value))?.label || value;
+}
+
 function printReport() {
-    const iframe = document.createElement("iframe");
-
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.close();
-    doc.title = "Classroom Occupancy Report";
-
-    const style = doc.createElement("style");
-    style.textContent = [
-        "body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }",
-        "header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }",
-        "h1 { font-size: 24px; margin: 0; }",
-        "p { color: #4b5563; margin: 6px 0 0; }",
-        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(6, 1fr); margin-bottom: 24px; }",
-        ".metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }",
-        ".metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }",
-        ".metric strong { display: block; font-size: 22px; margin-top: 6px; }",
-        "table { border-collapse: collapse; font-size: 12px; width: 100%; }",
-        "th { background: #f3f4f6; text-align: left; }",
-        "th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }",
-        "@page { margin: 18mm; size: landscape; }",
-    ].join("\n");
-    doc.head.appendChild(style);
-
-    const header = doc.createElement("header");
-    const title = doc.createElement("h1");
-    title.textContent = "Classroom Occupancy Report";
-    const subtitle = doc.createElement("p");
-    subtitle.textContent = "Classrooms, capacity, scheduled blocks, assigned groups and utilization.";
-    const generated = doc.createElement("p");
-    generated.textContent = "Generated " + new Date().toLocaleString();
-    header.append(title, subtitle, generated);
-    doc.body.appendChild(header);
-
-    const summarySection = doc.createElement("section");
-    summarySection.className = "summary";
-    [
-        ["Classrooms", props.summary.classrooms],
-        ["Capacity", props.summary.total_capacity],
-        ["Blocks", props.summary.scheduled_blocks],
-        ["Groups", props.summary.assigned_groups],
-        ["Conflicts", props.summary.conflicts],
-        ["Utilization", props.summary.average_utilization + "%"],
-    ].forEach(([label, value]) => {
-        const metric = doc.createElement("div");
-        metric.className = "metric";
-        const labelNode = doc.createElement("span");
-        labelNode.textContent = label;
-        const valueNode = doc.createElement("strong");
-        valueNode.textContent = value;
-        metric.append(labelNode, valueNode);
-        summarySection.appendChild(metric);
+    printTableReport({
+        title: "Classroom Occupancy Report",
+        subtitle: "Classrooms, capacity, scheduled blocks, assigned groups and utilization.",
+        filters: [
+            { label: "Search", value: filterForm.search },
+            { label: "Building", value: optionLabel(buildingOptions, filterForm.building_id) },
+            { label: "Academic period", value: optionLabel(periodOptions, filterForm.academic_period_id) },
+            { label: "Classroom status", value: optionLabel(statusOptions, filterForm.status) },
+        ],
+        metrics: [
+            { label: "Classrooms", value: props.summary.classrooms },
+            { label: "Capacity", value: props.summary.total_capacity },
+            { label: "Blocks", value: props.summary.scheduled_blocks },
+            { label: "Groups", value: props.summary.assigned_groups },
+            { label: "Conflicts", value: props.summary.conflicts },
+            { label: "Utilization", value: props.summary.average_utilization + "%" },
+        ],
+        columns: [
+            { key: "building", label: "Building" },
+            { key: "classroom", label: "Classroom" },
+            { key: "capacity", label: "Capacity" },
+            { key: "blocks", label: "Blocks" },
+            { key: "groups", label: "Groups" },
+            { key: "conflicts", label: "Conflicts" },
+            { key: "utilization", label: "Utilization" },
+        ],
+        rows: props.classrooms.data.map((classroom) => ({
+            building: classroom.building,
+            classroom: classroom.name,
+            capacity: classroom.capacity,
+            blocks: classroom.scheduled_blocks,
+            groups: classroom.assigned_groups,
+            conflicts: classroom.conflicts,
+            utilization: classroom.average_utilization + "%",
+        })),
     });
-    doc.body.appendChild(summarySection);
-
-    const table = doc.createElement("table");
-    const thead = doc.createElement("thead");
-    const headerRow = doc.createElement("tr");
-    ["Building", "Classroom", "Capacity", "Blocks", "Groups", "Conflicts", "Utilization"].forEach((label) => {
-        const th = doc.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = doc.createElement("tbody");
-    props.classrooms.data.forEach((classroom) => {
-        const row = doc.createElement("tr");
-        [
-            classroom.building,
-            classroom.name,
-            classroom.capacity,
-            classroom.scheduled_blocks,
-            classroom.assigned_groups,
-            classroom.conflicts,
-            classroom.average_utilization + "%",
-        ].forEach((value) => {
-            const td = doc.createElement("td");
-            td.textContent = value;
-            row.appendChild(td);
-        });
-        tbody.appendChild(row);
-    });
-
-    table.appendChild(tbody);
-    doc.body.appendChild(table);
-
-    setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 500);
-    }, 100);
 }
 </script>
 

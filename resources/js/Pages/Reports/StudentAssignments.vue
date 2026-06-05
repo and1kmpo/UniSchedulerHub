@@ -13,6 +13,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import { printTableReport } from "@/Components/Composables/usePrintableReport";
 
 const props = defineProps({
     students: {
@@ -86,118 +87,48 @@ function clearFilters() {
     filterForm.status = "";
 }
 
+function optionLabel(options, value) {
+    return options.find((option) => String(option.value) === String(value))?.label || value;
+}
+
 function printReport() {
-    const iframe = document.createElement("iframe");
-
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.close();
-    doc.title = "Student Assignment Report";
-
-    const style = doc.createElement("style");
-    style.textContent = [
-        "body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }",
-        "header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }",
-        "h1 { font-size: 24px; margin: 0; }",
-        "p { color: #4b5563; margin: 6px 0 0; }",
-        ".summary { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }",
-        ".metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }",
-        ".metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }",
-        ".metric strong { display: block; font-size: 22px; margin-top: 6px; }",
-        "table { border-collapse: collapse; font-size: 12px; width: 100%; }",
-        "th { background: #f3f4f6; text-align: left; }",
-        "th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }",
-        "@page { margin: 18mm; size: landscape; }",
-    ].join("\n");
-    doc.head.appendChild(style);
-
-    const header = doc.createElement("header");
-    const title = doc.createElement("h1");
-    title.textContent = "Student Assignment Report";
-    const subtitle = doc.createElement("p");
-    subtitle.textContent = "Students, enrolled subjects, class groups and responsible professors.";
-    const generated = doc.createElement("p");
-    generated.textContent = "Generated " + new Date().toLocaleString();
-    header.append(title, subtitle, generated);
-    doc.body.appendChild(header);
-
-    const summarySection = doc.createElement("section");
-    summarySection.className = "summary";
-    [
-        ["Students", props.summary.students],
-        ["Assignments", props.summary.assignments],
-        ["Active credits", props.summary.active_credits],
-        ["Minimum credits", props.summary.minimum_credits],
-    ].forEach(([label, value]) => {
-        const metric = doc.createElement("div");
-        metric.className = "metric";
-        const labelNode = doc.createElement("span");
-        labelNode.textContent = label;
-        const valueNode = doc.createElement("strong");
-        valueNode.textContent = value;
-        metric.append(labelNode, valueNode);
-        summarySection.appendChild(metric);
+    printTableReport({
+        title: "Student Assignment Report",
+        subtitle: "Students, enrolled subjects, class groups and responsible professors.",
+        filters: [
+            { label: "Search", value: filterForm.search },
+            { label: "Academic period", value: optionLabel(periodOptions, filterForm.academic_period_id) },
+            { label: "Program", value: optionLabel(programOptions, filterForm.program_id) },
+            { label: "Professor", value: optionLabel(professorOptions, filterForm.professor_id) },
+            { label: "Enrollment status", value: optionLabel(statusOptions, filterForm.status) },
+        ],
+        metrics: [
+            { label: "Students", value: props.summary.students },
+            { label: "Assignments", value: props.summary.assignments },
+            { label: "Active credits", value: props.summary.active_credits },
+            { label: "Minimum credits", value: props.summary.minimum_credits },
+        ],
+        columns: [
+            { key: "student", label: "Student" },
+            { key: "program", label: "Program" },
+            { key: "subject", label: "Subject" },
+            { key: "professor", label: "Professor" },
+            { key: "group", label: "Group" },
+            { key: "period", label: "Period" },
+            { key: "status", label: "Status" },
+        ],
+        rows: props.students.data.flatMap((student) =>
+            student.assignments.map((assignment) => ({
+                student: (student.name || "-") + " / " + (student.document || "-") + " / " + (student.email || "-"),
+                program: (student.program || "No program") + " / Semester " + (student.semester || "-"),
+                subject: (assignment.subject.code || "-") + " - " + (assignment.subject.name || "-"),
+                professor: assignment.professor.name || "Unassigned",
+                group: assignment.group.code || "No group",
+                period: assignment.period || "-",
+                status: assignment.status_label || assignment.status || "-",
+            }))
+        ),
     });
-    doc.body.appendChild(summarySection);
-
-    const table = doc.createElement("table");
-    const thead = doc.createElement("thead");
-    const headerRow = doc.createElement("tr");
-    ["Student", "Program", "Subject", "Professor", "Group", "Period", "Status"].forEach((label) => {
-        const th = doc.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = doc.createElement("tbody");
-    props.students.data.forEach((student) => {
-        student.assignments.forEach((assignment) => {
-            const row = doc.createElement("tr");
-            [
-                (student.name || "-") + " / " + (student.document || "-") + " / " + (student.email || "-"),
-                (student.program || "No program") + " / Semester " + (student.semester || "-"),
-                (assignment.subject.code || "-") + " - " + (assignment.subject.name || "-"),
-                assignment.professor.name || "Unassigned",
-                assignment.group.code || "No group",
-                assignment.period || "-",
-                assignment.status_label || assignment.status || "-",
-            ].forEach((value) => {
-                const td = doc.createElement("td");
-                td.textContent = value;
-                row.appendChild(td);
-            });
-            tbody.appendChild(row);
-        });
-    });
-
-    if (!tbody.children.length) {
-        const row = doc.createElement("tr");
-        const td = doc.createElement("td");
-        td.colSpan = 7;
-        td.textContent = "No assignments found.";
-        row.appendChild(td);
-        tbody.appendChild(row);
-    }
-
-    table.appendChild(tbody);
-    doc.body.appendChild(table);
-
-    setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 500);
-    }, 100);
 }
 
 const csvExportUrl = computed(() => route("reports.student-assignments.export", exportPayload()));

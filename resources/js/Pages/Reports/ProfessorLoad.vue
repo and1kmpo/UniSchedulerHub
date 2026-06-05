@@ -13,6 +13,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import { printTableReport } from "@/Components/Composables/usePrintableReport";
 
 const props = defineProps({
     professors: {
@@ -96,108 +97,47 @@ function statusVariant(status) {
     }[status] || "gray";
 }
 
+function optionLabel(options, value) {
+    return options.find((option) => String(option.value) === String(value))?.label || value;
+}
+
 function printReport() {
-    const printableRows = props.professors.data.flatMap((professor) =>
-        professor.groups.map((group) => `
-            <tr>
-                <td>
-                    <strong>${escapeHtml(professor.name || "-")}</strong><br>
-                    <span>${escapeHtml(professor.document || "-")} / ${escapeHtml(professor.email || "-")}</span>
-                </td>
-                <td><strong>${escapeHtml(group.code || "-")}</strong><br>${escapeHtml(group.subject.name || "-")}</td>
-                <td>${escapeHtml(group.period || "-")}</td>
-                <td>${escapeHtml(group.status || "-")}</td>
-                <td>${group.active_students}</td>
-                <td>${group.scheduled_blocks}</td>
-                <td>${group.pending_grades}</td>
-            </tr>
-        `)
-    ).join("");
-
-    printHtml(`
-        <!doctype html>
-        <html>
-            <head>
-                <title>Professor Load Report</title>
-                <style>
-                    body { color: #111827; font-family: Arial, sans-serif; margin: 32px; }
-                    header { border-bottom: 2px solid #111827; margin-bottom: 24px; padding-bottom: 16px; }
-                    h1 { font-size: 24px; margin: 0; }
-                    p { color: #4b5563; margin: 6px 0 0; }
-                    .summary { display: grid; gap: 12px; grid-template-columns: repeat(5, 1fr); margin-bottom: 24px; }
-                    .metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; }
-                    .metric span { color: #6b7280; display: block; font-size: 12px; text-transform: uppercase; }
-                    .metric strong { display: block; font-size: 22px; margin-top: 6px; }
-                    table { border-collapse: collapse; font-size: 12px; width: 100%; }
-                    th { background: #f3f4f6; text-align: left; }
-                    th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }
-                    td span { color: #6b7280; font-size: 11px; }
-                    @page { margin: 18mm; size: landscape; }
-                </style>
-            </head>
-            <body>
-                <header>
-                    <h1>Professor Load Report</h1>
-                    <p>Assigned groups, active students, scheduled blocks and pending grades.</p>
-                    <p>Generated ${new Date().toLocaleString()}</p>
-                </header>
-                <section class="summary">
-                    <div class="metric"><span>Professors</span><strong>${props.summary.professors}</strong></div>
-                    <div class="metric"><span>Groups</span><strong>${props.summary.groups}</strong></div>
-                    <div class="metric"><span>Active students</span><strong>${props.summary.active_students}</strong></div>
-                    <div class="metric"><span>Scheduled blocks</span><strong>${props.summary.scheduled_blocks}</strong></div>
-                    <div class="metric"><span>Pending grades</span><strong>${props.summary.pending_grades}</strong></div>
-                </section>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Professor</th>
-                            <th>Group / Subject</th>
-                            <th>Period</th>
-                            <th>Status</th>
-                            <th>Active students</th>
-                            <th>Blocks</th>
-                            <th>Pending grades</th>
-                        </tr>
-                    </thead>
-                    <tbody>${printableRows || '<tr><td colspan="7">No professor load found.</td></tr>'}</tbody>
-                </table>
-            </body>
-        </html>
-    `);
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-function printHtml(html) {
-    const iframe = document.createElement("iframe");
-
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-
-    document.body.appendChild(iframe);
-
-    const printDocument = iframe.contentWindow.document;
-    printDocument.open();
-    printDocument.write(html);
-    printDocument.close();
-
-    iframe.onload = () => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 500);
-    };
+    printTableReport({
+        title: "Professor Load Report",
+        subtitle: "Assigned groups, active students, scheduled blocks and pending grades.",
+        filters: [
+            { label: "Search", value: filterForm.search },
+            { label: "Academic period", value: optionLabel(periodOptions, filterForm.academic_period_id) },
+            { label: "Group status", value: optionLabel(statusOptions, filterForm.status) },
+        ],
+        metrics: [
+            { label: "Professors", value: props.summary.professors },
+            { label: "Groups", value: props.summary.groups },
+            { label: "Active students", value: props.summary.active_students },
+            { label: "Scheduled blocks", value: props.summary.scheduled_blocks },
+            { label: "Pending grades", value: props.summary.pending_grades },
+        ],
+        columns: [
+            { key: "professor", label: "Professor" },
+            { key: "group", label: "Group / Subject" },
+            { key: "period", label: "Period" },
+            { key: "status", label: "Status" },
+            { key: "students", label: "Active students" },
+            { key: "blocks", label: "Blocks" },
+            { key: "pending", label: "Pending grades" },
+        ],
+        rows: props.professors.data.flatMap((professor) =>
+            professor.groups.map((group) => ({
+                professor: (professor.name || "-") + " / " + (professor.document || "-") + " / " + (professor.email || "-"),
+                group: (group.code || "-") + " / " + (group.subject.name || "-"),
+                period: group.period || "-",
+                status: group.status || "-",
+                students: group.active_students,
+                blocks: group.scheduled_blocks,
+                pending: group.pending_grades,
+            }))
+        ),
+    });
 }
 </script>
 
