@@ -127,13 +127,24 @@ UI smoke checklist by role:
 - Students and Professors are academic/person records: document, contact data, program, semester, academic status and teaching profile.
 - Users are login/security records: email, password, status, roles and permissions.
 - In a production university flow, students and professors should usually be created or imported by an administrator/admissions/HR process, then linked to their academic profile.
-- Public self-registration should stay disabled for institutional users unless a controlled admissions workflow exists.
+- Public self-registration is disabled for institutional users unless a controlled admissions workflow exists.
 - Coordinators should manage academic data, not global roles or permissions.
 - Admins can create operational users such as academic coordinators and security administrators.
 - Role assignment should be explicit, audited and limited to admins.
 - `/users` uses the standard CRUD table, filters, status badges and modal-based user creation/editing.
-- The next hardening pass should convert `/roles` and `/permissions` from JSON endpoints into standard admin screens or keep them as backend-only seed/configuration resources.
+- Roles and permissions are managed by code through `PermissionCatalog` and `RolSeeder`.
+- `/roles` and `/permissions` are read-only admin inspection endpoints; permission mutation is not available from the UI/web routes.
+- Academic coordinators create Students and Professors through their academic CRUDs. Those flows create the linked user account and assign `student` or `professor` automatically.
+- Admins create Academic Coordinators and Admins through Identity & Access.
 - Destructive user deletes should be blocked or converted to deactivation for accounts with academic history.
+
+## Theme And Accessibility Smoke
+
+- Every updated screen must be checked in light and dark mode.
+- Text on dark backgrounds must include a `dark:text-*` class or inherit from a dark-safe parent.
+- White cards, modals and tables must include a dark background equivalent.
+- Legacy Jetstream/shared modal components must remain readable in dark mode.
+- Use color plus text/icon for status, not color alone.
 
 ## Enrollment Engine
 

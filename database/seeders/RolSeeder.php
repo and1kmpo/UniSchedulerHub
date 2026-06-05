@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\PermissionCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -24,22 +25,7 @@ class RolSeeder extends Seeder
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
 
-        $permissions = [
-            'manage users',
-            'manage roles',
-            'manage programs',
-            'manage subjects',
-            'manage professors',
-            'manage students',
-            'manage academic periods',
-            'manage infrastructure',
-            'manage class groups',
-            'manage enrollments',
-            'manage grades',
-            'view professor subjects',
-            'view student subjects',
-            'view reports',
-        ];
+        $permissions = PermissionCatalog::all();
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
@@ -48,34 +34,14 @@ class RolSeeder extends Seeder
         $permissionModels = Permission::query()
             ->whereIn('name', $permissions)
             ->get()
-            ->keyBy('name');
+            ->keyBy('name')
+            ->toBase();
 
-        Role::findByName('admin')->syncPermissions($permissionModels->values());
-
-        Role::findByName('academic_coordinator')->syncPermissions($permissionModels->only([
-            'manage programs',
-            'manage subjects',
-            'manage professors',
-            'manage students',
-            'manage academic periods',
-            'manage infrastructure',
-            'manage class groups',
-            'manage enrollments',
-            'view professor subjects',
-            'view student subjects',
-            'view reports',
-        ])->values());
-
-        Role::findByName('professor')->syncPermissions($permissionModels->only([
-            'manage grades',
-            'view professor subjects',
-            'view student subjects',
-            'view reports',
-        ])->values());
-
-        Role::findByName('student')->syncPermissions($permissionModels->only([
-            'view student subjects',
-        ])->values());
+        foreach (PermissionCatalog::byRole() as $role => $rolePermissions) {
+            Role::findByName($role)->syncPermissions(
+                $permissionModels->only($rolePermissions)->values()
+            );
+        }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

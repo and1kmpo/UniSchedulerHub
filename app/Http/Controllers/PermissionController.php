@@ -15,7 +15,7 @@ class PermissionController extends Controller
         if (request()->wantsJson()) {
             return response()->json($permissions);
         }
-        return response()->json($permissions, 201);
+        return response()->json($permissions);
     }
     // Crear un nuevo permiso
     public function store(Request $request)

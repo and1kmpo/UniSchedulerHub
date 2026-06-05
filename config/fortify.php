@@ -145,7 +145,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Institutional accounts are created through controlled admin/coordinator workflows.
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

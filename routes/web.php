@@ -82,9 +82,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
 
-        Route::resource('/roles', RoleController::class);
-        Route::resource('/permissions', PermissionController::class);
-        Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     });
 
     /*

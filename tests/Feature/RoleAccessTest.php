@@ -6,9 +6,11 @@ use App\Models\ClassGroup;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Database\Seeders\RolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -44,6 +46,35 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('reports.grade-operations.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.export'))->assertOk();
+        $this->actingAs($admin)->get(route('roles.index'))->assertOk();
+        $this->actingAs($admin)->get(route('permissions.index'))->assertOk();
+    }
+
+    public function test_role_permissions_are_managed_by_code_catalog(): void
+    {
+        foreach (PermissionCatalog::byRole() as $roleName => $expectedPermissions) {
+            $role = Role::findByName($roleName);
+
+            $this->assertSame(
+                collect($expectedPermissions)->sort()->values()->all(),
+                $role->permissions->pluck('name')->sort()->values()->all()
+            );
+        }
+
+        $this->assertSame(
+            collect(PermissionCatalog::all())->sort()->values()->all(),
+            Permission::query()->pluck('name')->sort()->values()->all()
+        );
+
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->post('/roles', ['name' => 'custom_role'])
+            ->assertStatus(405);
+
+        $this->actingAs($admin)
+            ->post('/permissions', ['name' => 'custom permission'])
+            ->assertStatus(405);
     }
 
     public function test_admin_can_create_operational_user_without_academic_profile(): void

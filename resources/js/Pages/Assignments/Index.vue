@@ -51,18 +51,18 @@ onMounted(() => {
 <template>
     <AppLayout>
         <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h1 class="font-semibold text-xl text-gray-800 leading-tight dark:text-white">
                 Assignments
             </h1>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="p-6 bg-white border-b border-gray-200">
+                <div class="p-6 bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
                     <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center">
+                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
                             <thead>
-                                <tr class="bg-blue-gray-100 text-gray-700">
+                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                                     <th class="py-3 px-4 hidden sm:table-cell">#</th>
                                     <th class="py-3 px-4">Subject ID</th>
                                     <th class="py-3 px-4">Subject Name</th>
@@ -73,7 +73,7 @@ onMounted(() => {
                                     <th v-if="role === 'professor'" class="py-3 px-4">Enrolled Students</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-blue-gray-900 divide-y divide-blue-gray-200">
+                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
                                 <tr v-for="(assignment, index) in assignments" :key="assignment.subject_id">
                                     <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
                                     <td class="py-3 px-4">{{ assignment.subject_id }}</td>
@@ -98,9 +98,9 @@ onMounted(() => {
 
                     <!-- Contenedor para el total de créditos -->
                     <div v-if="role === 'student'"
-                        class="mt-4 flex justify-center items-center bg-gray-100 px-4 py-2 rounded-md shadow-sm">
-                        <span class="font-semibold text-gray-800">Total credits assigned:</span>
-                        <span class="ml-2 font-semibold text-indigo-700">{{ totalCredits }}</span>
+                        class="mt-4 flex justify-center items-center bg-gray-100 px-4 py-2 rounded-md shadow-sm dark:bg-gray-800">
+                        <span class="font-semibold text-gray-800 dark:text-gray-100">Total credits assigned:</span>
+                        <span class="ml-2 font-semibold text-indigo-700 dark:text-indigo-300">{{ totalCredits }}</span>
                     </div>
 
                 </div>
@@ -110,26 +110,26 @@ onMounted(() => {
             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeStudentsModal">
                 <div class="p-6 min-h-[600px] flex flex-col items-center">
                     <div class="flex justify-between items-center w-full mb-4">
-                        <h2 class="text-2xl font-semibold">Students Enrolled in <span class="capitalize underline">{{
+                        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Students Enrolled in <span class="capitalize underline">{{
                             selectedAssignment.subject_name
                                 }}</span>
                         </h2>
                         <span class="cursor-pointer" @click="closeStudentsModal">
-                            <i class="fas fa-times text-gray-400 hover:text-black"></i>
+                            <i class="fas fa-times text-gray-400 hover:text-black dark:hover:text-white"></i>
                         </span>
                     </div>
 
                     <div v-if="selectedAssignment?.students?.length" class="overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center">
+                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
                             <thead>
-                                <tr class="bg-blue-gray-100 text-gray-700">
+                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                                     <th class="py-3 px-4 hidden sm:table-cell">#</th>
                                     <th class="py-3 px-4">ID</th>
                                     <th class="py-3 px-4">Name</th>
                                     <th class="py-3 px-4">Email</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-blue-gray-900 divide-y divide-blue-gray-200">
+                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
                                 <tr v-for="(student, index) in selectedAssignment.students" :key="student.student_id">
                                     <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
                                     <td class="py-3 px-4">{{ student.student_id }}</td>
@@ -139,7 +139,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <p v-else class="text-gray-500">No students enrolled in this subject.</p>
+                    <p v-else class="text-gray-500 dark:text-gray-400">No students enrolled in this subject.</p>
                 </div>
             </Modal>
         </div>
