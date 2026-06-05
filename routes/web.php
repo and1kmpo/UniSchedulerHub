@@ -123,6 +123,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/reports/group-capacity-conflicts/export', [AcademicReportController::class, 'exportGroupCapacityConflicts'])->name('reports.group-capacity-conflicts.export');
         Route::get('/reports/grade-operations', [AcademicReportController::class, 'gradeOperations'])->name('reports.grade-operations.index');
         Route::get('/reports/grade-operations/export', [AcademicReportController::class, 'exportGradeOperations'])->name('reports.grade-operations.export');
+        Route::get('/reports/academic-events', [AcademicReportController::class, 'academicEvents'])->name('reports.academic-events.index');
+        Route::get('/reports/academic-events/export', [AcademicReportController::class, 'exportAcademicEvents'])->name('reports.academic-events.export');
 
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');

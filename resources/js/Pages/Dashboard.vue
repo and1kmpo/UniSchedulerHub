@@ -14,6 +14,7 @@ import {
     Tooltip,
 } from "chart.js";
 import { Bar, Doughnut, Line } from "vue-chartjs";
+import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
 
 ChartJS.register(
     ArcElement,
@@ -461,7 +462,7 @@ function gradingProgressData(items) {
                         <div v-for="event in academicDashboard.recentEvents || []" :key="event.id" class="grid gap-2 py-4 sm:grid-cols-[10rem_1fr_10rem] sm:items-center">
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ event.action }}</p>
                             <p class="text-sm text-gray-600 dark:text-gray-300">{{ event.summary || "No summary available" }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 sm:text-right">{{ event.created_at }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 sm:text-right">{{ formatDateTime(event.created_at) }}</p>
                         </div>
                         <p v-if="!(academicDashboard.recentEvents || []).length" class="py-4 text-sm text-gray-500 dark:text-gray-400">
                             No audited events yet.

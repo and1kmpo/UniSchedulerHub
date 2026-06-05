@@ -12,6 +12,7 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
+import { formatDate, toDateInput } from "@/Components/Composables/useDateTimeFormatter";
 
 const { confirm, toastSuccess, toastError } = useAlert();
 
@@ -209,23 +210,6 @@ function statusVariant(period) {
 
 function statusLabel(period) {
     return period.status?.name || period.status?.code || "No status";
-}
-
-function formatDate(value) {
-    if (!value) {
-        return "-";
-    }
-
-    return new Date(value).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-    });
-}
-
-function toDateInput(value) {
-    return value ? String(value).slice(0, 10) : "";
 }
 
 function firstError(field) {

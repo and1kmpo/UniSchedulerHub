@@ -13,6 +13,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     logs: {
@@ -220,6 +221,12 @@ function changeRows(metadata) {
             </TableToolbar>
 
             <DataTable v-if="logs.data.length" :columns="columns" :rows="logs.data" :filters="filters" sortable>
+                <template #cell-created_at="{ value }">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                        {{ formatDateTime(value) }}
+                    </span>
+                </template>
+
                 <template #cell-action="{ row }">
                     <StatusBadge :label="row.action_label" :variant="actionVariant(row.action)" />
                 </template>
@@ -290,7 +297,7 @@ function changeRows(metadata) {
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
                             <StatusBadge :label="selectedLog.action_label" :variant="actionVariant(selectedLog.action)" />
-                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ selectedLog.created_at }}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ formatDateTime(selectedLog.created_at) }}</span>
                         </div>
                         <h2 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">
                             {{ selectedLog.summary || "Audit event details" }}

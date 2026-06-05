@@ -9,6 +9,8 @@ Run:
 ```bash
 composer install
 npm install
+cp .env.example .env
+php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan check:seed-integrity
 npm run dev

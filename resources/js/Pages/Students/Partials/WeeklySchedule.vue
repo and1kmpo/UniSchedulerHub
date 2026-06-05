@@ -5,6 +5,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import { formatTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     schedules: {
@@ -118,17 +119,6 @@ function normalizeTime(time) {
     const [hours = "00", minutes = "00"] = String(time || "").split(":");
 
     return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
-}
-
-function formatTime(time) {
-    const [hours = "0", minutes = "0"] = normalizeTime(time).split(":");
-    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
-
-    return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: Number(minutes) === 0 ? undefined : "2-digit",
-        hour12: true,
-    }).format(date);
 }
 
 function formatDay(day) {

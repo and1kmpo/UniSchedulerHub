@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
 import { useAlert } from "@/Components/Composables/useAlert";
+import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const { confirm, error, info, loading, close, toastSuccess } = useAlert();
 
@@ -214,7 +215,7 @@ function formatAudit(grade) {
         return "Not updated yet";
     }
 
-    return [grade.updated_by, grade.updated_at].filter(Boolean).join(" - ");
+    return [grade.updated_by, formatDateTime(grade.updated_at, "")].filter(Boolean).join(" - ");
 }
 
 function finalGradeClass(value) {

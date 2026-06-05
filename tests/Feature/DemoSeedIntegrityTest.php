@@ -121,7 +121,7 @@ class DemoSeedIntegrityTest extends TestCase
 
         $reportsIndexProps = $reportsIndexResponse->viewData('page')['props'];
 
-        $this->assertCount(5, $reportsIndexProps['reports']);
+        $this->assertCount(6, $reportsIndexProps['reports']);
 
         $reportResponse = $this->actingAs($admin)
             ->get(route('reports.student-assignments.index'))
@@ -224,6 +224,27 @@ class DemoSeedIntegrityTest extends TestCase
         $this->assertStringContainsString('Grade progress %', $gradeOperationsCsv);
         $this->assertStringContainsString('Grade editing', $gradeOperationsCsv);
         $this->assertStringContainsString('Lock reason', $gradeOperationsCsv);
+
+        $academicEventsResponse = $this->actingAs($admin)
+            ->get(route('reports.academic-events.index'))
+            ->assertOk();
+
+        $academicEventsProps = $academicEventsResponse->viewData('page')['props'];
+
+        $this->assertArrayHasKey('events', $academicEventsProps['summary']);
+        $this->assertArrayHasKey('actors', $academicEventsProps['summary']);
+        $this->assertNotEmpty($academicEventsProps['events']['data']);
+
+        $academicEventsCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.academic-events.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $academicEventsCsv = $academicEventsCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Event type', $academicEventsCsv);
+        $this->assertStringContainsString('Actor email', $academicEventsCsv);
+        $this->assertStringContainsString('Context', $academicEventsCsv);
 
         $this->flushSession();
 

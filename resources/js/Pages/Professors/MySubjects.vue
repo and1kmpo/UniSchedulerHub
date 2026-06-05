@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import { formatTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     groups: {
@@ -72,18 +73,6 @@ function formatStatus(status) {
 
 function formatLabel(value) {
     return value ? value.replaceAll("_", " ").toUpperCase() : "TBD";
-}
-
-function formatTime(time) {
-    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
-    const date = new Date();
-    date.setHours(Number(hours), Number(minutes), 0, 0);
-
-    return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: Number(minutes) === 0 ? undefined : "2-digit",
-        hour12: true,
-    }).format(date);
 }
 
 function formatSchedules(schedules = []) {

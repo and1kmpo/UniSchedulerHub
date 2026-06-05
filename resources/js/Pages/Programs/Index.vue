@@ -9,6 +9,7 @@ import {
 import { route } from "ziggy-js";
 
 import { useAlert } from "@/Components/Composables/useAlert";
+import { formatDate } from "@/Components/Composables/useDateTimeFormatter";
 
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
@@ -179,7 +180,7 @@ const deleteProgram = async (program) => {
             <DataTable v-if="programs.data.length" :columns="columns" :rows="programs.data" :filters="filters" sortable>
                 <template #cell-created_at="{ value }">
 
-                    <StatusBadge :label="new Date(value).toLocaleDateString()" variant="gray" />
+                    <StatusBadge :label="formatDate(value)" variant="gray" />
 
                 </template>
 

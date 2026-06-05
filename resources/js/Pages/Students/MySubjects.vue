@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import { formatDate, formatTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     subjects: {
@@ -84,29 +85,6 @@ function formatStatus(status) {
 
 function formatDay(day) {
     return day ? day.charAt(0).toUpperCase() + day.slice(1) : "";
-}
-
-function formatDate(date) {
-    if (!date) {
-        return "Not defined";
-    }
-
-    return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    }).format(new Date(date));
-}
-
-function formatTime(time) {
-    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
-    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
-
-    return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: Number(minutes) === 0 ? undefined : "2-digit",
-        hour12: true,
-    }).format(date);
 }
 
 function formatSchedules(schedules = []) {
@@ -212,7 +190,7 @@ const handleOpenSummary = async () => {
                             </p>
 
                             <p class="mt-1 text-gray-900 dark:text-white">
-                                {{ formatDate(currentPeriod.enrollment_deadline) }}
+                            {{ formatDate(currentPeriod.enrollment_deadline, "Not defined") }}
                             </p>
                         </div>
 
@@ -222,7 +200,7 @@ const handleOpenSummary = async () => {
                             </p>
 
                             <p class="mt-1 text-gray-900 dark:text-white">
-                                {{ formatDate(currentPeriod.unenrollment_deadline) }}
+                                {{ formatDate(currentPeriod.unenrollment_deadline, "Not defined") }}
                             </p>
                         </div>
                     </div>

@@ -10,6 +10,7 @@ Required production values:
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.example
+APP_TIMEZONE=America/Bogota
 ```
 
 Validate:
@@ -19,6 +20,10 @@ Validate:
 - `.env.example` documents required variables without secrets.
 - Database credentials use a non-root database user.
 - `LOG_LEVEL` is appropriate for the environment.
+- `APP_TIMEZONE` matches the institution's operating timezone.
+- User-facing dates render as `04 Jun 2026`.
+- User-facing date-times render as `04 Jun 2026, 11:36 AM`.
+- FullCalendar time-grid labels may keep their own calendar-specific formatting.
 
 ## Build And Cache
 
@@ -39,7 +44,7 @@ After deploy smoke check:
 
 ```bash
 php artisan about
-php artisan check:seed-integrity
+php artisan route:list
 ```
 
 Use `check:seed-integrity` only in demo/seeded environments.
@@ -97,6 +102,13 @@ Run:
 php artisan test tests/Feature/RoleAccessTest.php
 ```
 
+Direct URL access must remain protected. Test at least:
+
+- Student cannot open admin CRUD routes.
+- Student cannot open grade management routes.
+- Professor cannot open reports or student CRUD routes.
+- Academic coordinator cannot open users, roles, or permissions.
+
 ## Enrollment Engine
 
 Validate:
@@ -144,6 +156,8 @@ Validate:
 - CRUD tables are searchable/filterable/sortable where expected.
 - Main pages work on desktop and mobile.
 - Error states are understandable.
+- Dates and times follow the shared display format.
+- Report print/PDF templates include institutional header, filters, metrics and readable tables.
 
 Known non-blocking warnings:
 
@@ -159,6 +173,7 @@ Run:
 
 ```bash
 php artisan test tests/Feature/DemoSeedIntegrityTest.php
+php artisan check:seed-integrity
 ```
 
 Then manually follow:
@@ -177,6 +192,7 @@ Demo should prove:
 - Capacity and schedule conflict validation.
 - Role-based access.
 - Dashboards with real data.
+- Reports bank with student assignments, professor load, classroom occupancy, group capacity/conflicts, grade operations, and academic events.
 - REST API support.
 
 ## Monitoring And Logs
@@ -187,6 +203,7 @@ Validate:
 - Log rotation is configured on the server.
 - Scheduler/queue logs are monitored if queues are enabled.
 - Critical academic operations are recorded in `academic_audit_logs`.
+- Academic Events Report shows enrollment, schedule, grade and academic period audit events in seeded demo data.
 
 Recommended:
 
@@ -214,3 +231,10 @@ Ready for demo/pilot when:
 - Roles are validated.
 - Database diagram and API docs are available.
 - Branch, commit, PR, and database safety workflow is documented.
+
+Recommended final validation command set:
+
+```bash
+npm run build
+php artisan test tests/Feature/DemoSeedIntegrityTest.php tests/Feature/RoleAccessTest.php tests/Feature/ApiAcademicResourcesTest.php tests/Feature/EnrollmentApiTest.php tests/Feature/AcademicFlowTest.php
+```

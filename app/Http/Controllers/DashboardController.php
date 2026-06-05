@@ -419,7 +419,7 @@ class DashboardController extends Controller
                 'action' => Str::headline(str_replace('.', ' ', $event->action)),
                 'summary' => $event->summary,
                 'user' => $event->user?->name ?? 'System',
-                'created_at' => $event->created_at?->format('Y-m-d H:i'),
+                'created_at' => $event->created_at?->toISOString(),
             ]);
     }
 

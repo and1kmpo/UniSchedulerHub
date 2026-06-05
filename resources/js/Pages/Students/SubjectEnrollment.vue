@@ -13,6 +13,7 @@ import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
+import { formatDate, formatTime } from "@/Components/Composables/useDateTimeFormatter";
 import WeeklySchedule from "@/Pages/Students/Partials/WeeklySchedule.vue";
 
 const props = defineProps({
@@ -141,31 +142,8 @@ const filteredSelectedGroups = computed(() => {
     );
 });
 
-function formatDate(date) {
-    if (!date) {
-        return "Not defined";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-    }).format(new Date(date));
-}
-
 function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
-}
-
-function formatTime(time) {
-    const [hours = "0", minutes = "0"] = String(time || "00:00").split(":");
-    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
-
-    return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: Number(minutes) === 0 ? undefined : "2-digit",
-        hour12: true,
-    }).format(date);
 }
 
 function statusVariant(status) {
@@ -459,11 +437,11 @@ async function confirmPeriodEnrollment() {
                     <div class="grid gap-4 border-t border-gray-200 p-6 text-sm dark:border-gray-800 md:grid-cols-2">
                         <div>
                             <p class="font-medium text-gray-500 dark:text-gray-400">Enrollment deadline</p>
-                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(enrollmentDeadline) }}</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(enrollmentDeadline, "Not defined") }}</p>
                         </div>
                         <div>
                             <p class="font-medium text-gray-500 dark:text-gray-400">Unenrollment deadline</p>
-                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(unenrollmentDeadline) }}</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(unenrollmentDeadline, "Not defined") }}</p>
                         </div>
                     </div>
 

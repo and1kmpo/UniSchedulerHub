@@ -41,6 +41,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('reports.group-capacity-conflicts.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.grade-operations.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.grade-operations.export'))->assertOk();
+        $this->actingAs($admin)->get(route('reports.academic-events.index'))->assertOk();
+        $this->actingAs($admin)->get(route('reports.academic-events.export'))->assertOk();
     }
 
     public function test_academic_coordinator_can_access_academic_operations_but_not_security_administration(): void
@@ -62,6 +64,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($coordinator)->get(route('reports.group-capacity-conflicts.export'))->assertOk();
         $this->actingAs($coordinator)->get(route('reports.grade-operations.index'))->assertOk();
         $this->actingAs($coordinator)->get(route('reports.grade-operations.export'))->assertOk();
+        $this->actingAs($coordinator)->get(route('reports.academic-events.index'))->assertOk();
+        $this->actingAs($coordinator)->get(route('reports.academic-events.export'))->assertOk();
 
         $this->actingAs($coordinator)->get(route('users.index'))->assertForbidden();
         $this->actingAs($coordinator)->get(route('roles.index'))->assertForbidden();
@@ -88,6 +92,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($professor)->get(route('reports.group-capacity-conflicts.export'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.grade-operations.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.grade-operations.export'))->assertForbidden();
+        $this->actingAs($professor)->get(route('reports.academic-events.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('reports.academic-events.export'))->assertForbidden();
         $this->actingAs($professor)->get(route('users.index'))->assertForbidden();
     }
 
@@ -110,6 +116,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('reports.group-capacity-conflicts.export'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.grade-operations.index'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.grade-operations.export'))->assertForbidden();
+        $this->actingAs($student)->get(route('reports.academic-events.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('reports.academic-events.export'))->assertForbidden();
         $this->actingAs($student)->get(route('users.index'))->assertForbidden();
     }
 

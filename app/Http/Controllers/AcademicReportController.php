@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
+use App\Models\AcademicAuditLog;
 use App\Models\Building;
 use App\Models\ClassGroup;
 use App\Models\ClassSchedule;
@@ -57,6 +58,13 @@ class AcademicReportController extends Controller
                     'route' => 'reports.grade-operations.index',
                     'icon' => 'fa-solid fa-clipboard-check',
                     'category' => 'Academic evaluation',
+                ],
+                [
+                    'title' => 'Academic Events Report',
+                    'description' => 'Critical academic events, actors, affected records and audit context.',
+                    'route' => 'reports.academic-events.index',
+                    'icon' => 'fa-solid fa-shield-halved',
+                    'category' => 'Academic audit',
                 ],
             ],
         ]);
@@ -606,6 +614,80 @@ class AcademicReportController extends Controller
         ]);
     }
 
+    public function academicEvents(Request $request)
+    {
+        $filters = $request->only([
+            'search',
+            'action',
+            'event_type',
+            'user_id',
+            'auditable_type',
+            'date_from',
+            'date_to',
+        ]);
+
+        $events = $this->academicEventsQuery($request)
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn(AcademicAuditLog $event) => $this->academicEventPayload($event));
+
+        return Inertia::render('Reports/AcademicEvents', [
+            'events' => $events,
+            'summary' => $this->academicEventsSummary($request),
+            'filters' => $filters,
+            'options' => [
+                'actions' => $this->academicEventActionOptions(),
+                'eventTypes' => $this->academicEventTypeOptions(),
+                'users' => $this->academicEventUserOptions(),
+                'entities' => $this->academicEventEntityOptions(),
+            ],
+        ]);
+    }
+
+    public function exportAcademicEvents(Request $request): StreamedResponse
+    {
+        $filename = 'academic-events-report-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($request) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Date',
+                'Event type',
+                'Action',
+                'Actor',
+                'Actor email',
+                'Entity',
+                'Entity ID',
+                'Summary',
+                'Context',
+            ]);
+
+            $this->academicEventsQuery($request)
+                ->chunk(250, function ($events) use ($handle) {
+                    foreach ($events as $event) {
+                        $payload = $this->academicEventPayload($event);
+
+                        fputcsv($handle, [
+                            $event->created_at?->format('d M Y, h:i A'),
+                            $payload['event_type_label'],
+                            $payload['action_label'],
+                            $payload['user']['name'] ?? 'System',
+                            $payload['user']['email'] ?? '',
+                            $payload['entity'],
+                            $payload['entity_id'],
+                            $payload['summary'],
+                            $payload['context'],
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function applyEnrollmentFilters($query, Request $request)
     {
         return $query
@@ -880,6 +962,108 @@ class AcademicReportController extends Controller
             ->orderBy('code');
     }
 
+    private function academicEventsQuery(Request $request)
+    {
+        return AcademicAuditLog::query()
+            ->with('user:id,name,email')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->toString();
+
+                $query->where(function ($query) use ($search) {
+                    $query
+                        ->where('action', 'like', "%{$search}%")
+                        ->orWhere('summary', 'like', "%{$search}%")
+                        ->orWhere('auditable_type', 'like', "%{$search}%")
+                        ->orWhere('auditable_id', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($user) use ($search) {
+                            $user
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when($request->filled('action'), fn($query) => $query
+                ->where('action', $request->string('action')->toString()))
+            ->when($request->filled('event_type'), fn($query) => $this->applyAcademicEventTypeFilter($query, $request))
+            ->when($request->filled('user_id'), fn($query) => $query
+                ->where('user_id', $request->integer('user_id')))
+            ->when($request->filled('auditable_type'), fn($query) => $query
+                ->where('auditable_type', $request->string('auditable_type')->toString()))
+            ->when($request->filled('date_from'), fn($query) => $query
+                ->whereDate('created_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn($query) => $query
+                ->whereDate('created_at', '<=', $request->date('date_to')))
+            ->latest('created_at');
+    }
+
+    private function applyAcademicEventTypeFilter($query, Request $request)
+    {
+        return match ($request->string('event_type')->toString()) {
+            'enrollment' => $query->where('action', 'like', 'enrollment.%'),
+            'schedule' => $query->where('action', 'like', 'schedule.%'),
+            'grade' => $query->where('action', 'like', 'grade.%'),
+            'academic_period' => $query->where('action', 'like', 'academic_period.%'),
+            default => $query,
+        };
+    }
+
+    private function academicEventActionOptions()
+    {
+        return AcademicAuditLog::query()
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->map(fn($action) => [
+                'value' => $action,
+                'label' => Str::headline(str_replace('.', ' ', $action)),
+            ])
+            ->values();
+    }
+
+    private function academicEventTypeOptions(): array
+    {
+        return [
+            ['label' => 'Enrollment events', 'value' => 'enrollment'],
+            ['label' => 'Schedule events', 'value' => 'schedule'],
+            ['label' => 'Grade events', 'value' => 'grade'],
+            ['label' => 'Academic period events', 'value' => 'academic_period'],
+        ];
+    }
+
+    private function academicEventUserOptions()
+    {
+        return AcademicAuditLog::query()
+            ->with('user:id,name,email')
+            ->whereNotNull('user_id')
+            ->select('user_id')
+            ->distinct()
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->sortBy('name')
+            ->map(fn($user) => [
+                'value' => $user->id,
+                'label' => "{$user->name} ({$user->email})",
+            ])
+            ->values();
+    }
+
+    private function academicEventEntityOptions()
+    {
+        return AcademicAuditLog::query()
+            ->whereNotNull('auditable_type')
+            ->select('auditable_type')
+            ->distinct()
+            ->orderBy('auditable_type')
+            ->pluck('auditable_type')
+            ->map(fn($type) => [
+                'value' => $type,
+                'label' => class_basename($type),
+            ])
+            ->values();
+    }
+
     private function studentReportPayload(Student $student, array $activeStatusCodes): array
     {
         return [
@@ -1082,6 +1266,82 @@ class AcademicReportController extends Controller
         ];
     }
 
+    private function academicEventPayload(AcademicAuditLog $event): array
+    {
+        $metadata = $event->metadata ?? [];
+
+        return [
+            'id' => $event->id,
+            'created_at' => $event->created_at?->toISOString(),
+            'action' => $event->action,
+            'action_label' => Str::headline(str_replace('.', ' ', $event->action)),
+            'event_type' => $this->academicEventType($event->action),
+            'event_type_label' => $this->academicEventTypeLabel($event->action),
+            'summary' => $event->summary ?: 'No summary available',
+            'entity' => $event->auditable_type ? class_basename($event->auditable_type) : 'System',
+            'entity_id' => $event->auditable_id,
+            'user' => $event->user ? [
+                'id' => $event->user->id,
+                'name' => $event->user->name,
+                'email' => $event->user->email,
+            ] : null,
+            'metadata' => $metadata,
+            'context' => $this->academicEventContext($metadata),
+            'change_count' => $this->academicEventChangeCount($metadata),
+        ];
+    }
+
+    private function academicEventContext(array $metadata): string
+    {
+        $context = collect($metadata)
+            ->except(['before', 'after'])
+            ->map(fn($value, $key) => Str::headline($key) . ': ' . $this->academicEventValue($value))
+            ->implode(' | ');
+
+        return $context ?: 'No additional context recorded.';
+    }
+
+    private function academicEventValue($value): string
+    {
+        if ($value === null || $value === '') {
+            return '-';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if (is_array($value)) {
+            return json_encode($value);
+        }
+
+        return (string) $value;
+    }
+
+    private function academicEventChangeCount(array $metadata): int
+    {
+        $before = $metadata['before'] ?? [];
+        $after = $metadata['after'] ?? [];
+
+        if (! is_array($before) || ! is_array($after)) {
+            return 0;
+        }
+
+        return collect(array_unique(array_merge(array_keys($before), array_keys($after))))
+            ->filter(fn($key) => json_encode($before[$key] ?? null) !== json_encode($after[$key] ?? null))
+            ->count();
+    }
+
+    private function academicEventType(?string $action): string
+    {
+        return Str::before($action ?? 'system', '.');
+    }
+
+    private function academicEventTypeLabel(?string $action): string
+    {
+        return Str::headline($this->academicEventType($action));
+    }
+
     private function canEditGradesOperationally(ClassGroup $group): bool
     {
         return $group->academicPeriod?->canEditGrades()
@@ -1201,6 +1461,21 @@ class AcademicReportController extends Controller
             'locked_groups' => $payloads->filter(fn($group) => ! $group['can_edit_grades'])->count(),
             'completed_groups' => $payloads->filter(fn($group) => $group['active_students'] > 0 && $group['pending_grades'] === 0)->count(),
             'progress' => $activeStudents > 0 ? round(($gradedStudents / $activeStudents) * 100, 1) : 0,
+        ];
+    }
+
+    private function academicEventsSummary(Request $request): array
+    {
+        $events = $this->academicEventsQuery($request)->get();
+
+        return [
+            'events' => $events->count(),
+            'today' => $events->filter(fn($event) => $event->created_at?->isToday())->count(),
+            'enrollment_events' => $events->filter(fn($event) => str_starts_with($event->action, 'enrollment.'))->count(),
+            'schedule_events' => $events->filter(fn($event) => str_starts_with($event->action, 'schedule.'))->count(),
+            'grade_events' => $events->filter(fn($event) => str_starts_with($event->action, 'grade.'))->count(),
+            'period_events' => $events->filter(fn($event) => str_starts_with($event->action, 'academic_period.'))->count(),
+            'actors' => $events->pluck('user_id')->filter()->unique()->count(),
         ];
     }
 
