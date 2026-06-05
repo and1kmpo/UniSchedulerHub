@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
+use App\Models\Building;
 use App\Models\ClassGroup;
 use App\Models\ClassSchedule;
+use App\Models\Classroom;
 use App\Models\Professor;
 use App\Models\Program;
 use App\Models\Student;
@@ -34,6 +36,13 @@ class AcademicReportController extends Controller
                     'route' => 'reports.professor-load.index',
                     'icon' => 'fa-solid fa-chalkboard-user',
                     'category' => 'Teaching operations',
+                ],
+                [
+                    'title' => 'Classroom Occupancy Report',
+                    'description' => 'Classrooms, capacity, scheduled blocks, assigned groups and utilization.',
+                    'route' => 'reports.classroom-occupancy.index',
+                    'icon' => 'fa-solid fa-door-open',
+                    'category' => 'Space utilization',
                 ],
             ],
         ]);
@@ -264,6 +273,134 @@ class AcademicReportController extends Controller
         ]);
     }
 
+    public function classroomOccupancy(Request $request)
+    {
+        $filters = $request->only([
+            'search',
+            'building_id',
+            'academic_period_id',
+            'status',
+        ]);
+
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+
+        $classrooms = Classroom::query()
+            ->with('building:id,code,name')
+            ->with([
+                'schedules' => fn($query) => $this->applyClassroomScheduleFilters($query, $request)
+                    ->with([
+                        'classGroup' => fn($group) => $group
+                            ->with(['subject:id,code,name', 'professor:id,name,email', 'academicPeriod:id,name'])
+                            ->withCount([
+                                'subjectEnrollments as active_students_count' => fn($enrollments) => $enrollments
+                                    ->whereIn('status_id', $activeStatusIds),
+                            ]),
+                    ])
+                    ->orderBy('day')
+                    ->orderBy('start_time'),
+            ])
+            ->when($request->filled('building_id'), fn($query) => $query
+                ->where('building_id', $request->integer('building_id')))
+            ->when($request->filled('status'), fn($query) => $query
+                ->where('status', $request->string('status')->toString()))
+            ->when($request->filled('search'), fn($query) => $this->applyClassroomSearch($query, $request))
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString()
+            ->through(fn(Classroom $classroom) => $this->classroomOccupancyPayload($classroom, $request));
+
+        return Inertia::render('Reports/ClassroomOccupancy', [
+            'classrooms' => $classrooms,
+            'summary' => $this->classroomOccupancySummary($request, $activeStatusIds),
+            'filters' => $filters,
+            'options' => [
+                'periods' => AcademicPeriod::query()
+                    ->select('id', 'name')
+                    ->latest('start_date')
+                    ->get(),
+                'buildings' => Building::query()
+                    ->select('id', 'code', 'name')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn($building) => [
+                        'id' => $building->id,
+                        'name' => "{$building->code} - {$building->name}",
+                    ]),
+                'statuses' => Classroom::query()
+                    ->select('status')
+                    ->whereNotNull('status')
+                    ->distinct()
+                    ->orderBy('status')
+                    ->get()
+                    ->map(fn($classroom) => [
+                        'label' => Str::headline($classroom->status),
+                        'value' => $classroom->status,
+                    ])
+                    ->values(),
+            ],
+        ]);
+    }
+
+    public function exportClassroomOccupancy(Request $request): StreamedResponse
+    {
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+        $filename = 'classroom-occupancy-report-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($request, $activeStatusIds) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Building',
+                'Classroom',
+                'Classroom status',
+                'Classroom capacity',
+                'Day',
+                'Start time',
+                'End time',
+                'Class group',
+                'Subject',
+                'Professor',
+                'Academic period',
+                'Active students',
+                'Seat utilization %',
+                'Conflict',
+            ]);
+
+            $conflicts = $this->classroomConflictScheduleIds($request);
+
+            $this->classroomOccupancyExportQuery($request, $activeStatusIds)
+                ->chunk(250, function ($schedules) use ($handle, $conflicts) {
+                    foreach ($schedules as $schedule) {
+                        $capacity = (int) ($schedule->classroom?->capacity ?? 0);
+                        $activeStudents = (int) ($schedule->classGroup?->active_students_count ?? 0);
+
+                        fputcsv($handle, [
+                            $schedule->classroom?->building?->name,
+                            $schedule->classroom?->name,
+                            Str::headline($schedule->classroom?->status ?? ''),
+                            $capacity,
+                            Str::headline($schedule->day),
+                            $schedule->start_time,
+                            $schedule->end_time,
+                            $schedule->classGroup?->code,
+                            $schedule->classGroup?->subject?->name,
+                            $schedule->classGroup?->professor?->name,
+                            $schedule->classGroup?->academicPeriod?->name,
+                            $activeStudents,
+                            $capacity > 0 ? round(($activeStudents / $capacity) * 100, 1) : 0,
+                            $conflicts->contains($schedule->id) ? 'Yes' : 'No',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function applyEnrollmentFilters($query, Request $request)
     {
         return $query
@@ -310,6 +447,28 @@ class AcademicReportController extends Controller
                 ->where('academic_period_id', $request->integer('academic_period_id')))
             ->when($request->filled('status'), fn($query) => $query
                 ->where('status', $request->string('status')->toString()));
+    }
+
+    private function applyClassroomSearch($query, Request $request)
+    {
+        $search = $request->string('search')->toString();
+
+        return $query->where(function ($query) use ($search) {
+            $query
+                ->where('name', 'like', "%{$search}%")
+                ->orWhereHas('building', fn($building) => $building
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%"));
+        });
+    }
+
+    private function applyClassroomScheduleFilters($query, Request $request)
+    {
+        return $query
+            ->where('status', ClassSchedule::STATUS_PUBLISHED)
+            ->when($request->filled('academic_period_id'), fn($query) => $query
+                ->whereHas('classGroup', fn($group) => $group
+                    ->where('academic_period_id', $request->integer('academic_period_id'))));
     }
 
     private function studentAssignmentExportQuery(Request $request)
@@ -369,6 +528,33 @@ class AcademicReportController extends Controller
                 ->where('status', $request->string('status')->toString()))
             ->orderBy('professor_id')
             ->orderBy('code');
+    }
+
+    private function classroomOccupancyExportQuery(Request $request, $activeStatusIds)
+    {
+        return ClassSchedule::query()
+            ->with([
+                'classroom:id,name,building_id,capacity,status',
+                'classroom.building:id,code,name',
+                'classGroup' => fn($group) => $group
+                    ->with(['subject:id,code,name', 'professor:id,name,email', 'academicPeriod:id,name'])
+                    ->withCount([
+                        'subjectEnrollments as active_students_count' => fn($enrollments) => $enrollments
+                            ->whereIn('status_id', $activeStatusIds),
+                    ]),
+            ])
+            ->whereHas('classroom', function ($classroom) use ($request) {
+                $classroom
+                    ->when($request->filled('building_id'), fn($query) => $query
+                        ->where('building_id', $request->integer('building_id')))
+                    ->when($request->filled('status'), fn($query) => $query
+                        ->where('status', $request->string('status')->toString()))
+                    ->when($request->filled('search'), fn($query) => $this->applyClassroomSearch($query, $request));
+            })
+            ->tap(fn($query) => $this->applyClassroomScheduleFilters($query, $request))
+            ->orderBy('classroom_id')
+            ->orderBy('day')
+            ->orderBy('start_time');
     }
 
     private function studentReportPayload(Student $student, array $activeStatusCodes): array
@@ -440,6 +626,51 @@ class AcademicReportController extends Controller
         ];
     }
 
+    private function classroomOccupancyPayload(Classroom $classroom, Request $request): array
+    {
+        $conflicts = $this->classroomConflictScheduleIds($request);
+        $schedules = $classroom->schedules;
+        $capacity = (int) ($classroom->capacity ?? 0);
+        $activeStudents = $schedules->sum(fn($schedule) => (int) ($schedule->classGroup?->active_students_count ?? 0));
+        $scheduledBlocks = $schedules->count();
+        $averageUtilization = $scheduledBlocks > 0 && $capacity > 0
+            ? round($schedules->avg(fn($schedule) => ((int) ($schedule->classGroup?->active_students_count ?? 0) / $capacity) * 100), 1)
+            : 0;
+
+        return [
+            'id' => $classroom->id,
+            'name' => $classroom->name,
+            'status' => $classroom->status,
+            'capacity' => $capacity,
+            'building' => $classroom->building ? "{$classroom->building->code} - {$classroom->building->name}" : 'No building',
+            'scheduled_blocks' => $scheduledBlocks,
+            'assigned_groups' => $schedules->pluck('class_group_id')->unique()->count(),
+            'active_students' => $activeStudents,
+            'average_utilization' => $averageUtilization,
+            'conflicts' => $schedules->filter(fn($schedule) => $conflicts->contains($schedule->id))->count(),
+            'schedules' => $schedules->map(fn($schedule) => [
+                'id' => $schedule->id,
+                'day' => Str::headline($schedule->day),
+                'time' => "{$schedule->start_time} - {$schedule->end_time}",
+                'conflict' => $conflicts->contains($schedule->id),
+                'group' => [
+                    'code' => $schedule->classGroup?->code,
+                    'status' => $schedule->classGroup?->status,
+                    'active_students' => (int) ($schedule->classGroup?->active_students_count ?? 0),
+                ],
+                'subject' => [
+                    'code' => $schedule->classGroup?->subject?->code,
+                    'name' => $schedule->classGroup?->subject?->name,
+                ],
+                'professor' => $schedule->classGroup?->professor?->name,
+                'period' => $schedule->classGroup?->academicPeriod?->name,
+                'utilization' => $capacity > 0
+                    ? round(((int) ($schedule->classGroup?->active_students_count ?? 0) / $capacity) * 100, 1)
+                    : 0,
+            ])->values(),
+        ];
+    }
+
     private function professorLoadSummary(Request $request, $activeStatusIds): array
     {
         $groups = ClassGroup::query()
@@ -468,6 +699,64 @@ class AcademicReportController extends Controller
             'scheduled_blocks' => $groups->sum('published_schedules_count'),
             'pending_grades' => $groups->sum(fn($group) => max(0, (int) $group->active_students_count - (int) $group->graded_students_count)),
         ];
+    }
+
+    private function classroomOccupancySummary(Request $request, $activeStatusIds): array
+    {
+        $classrooms = Classroom::query()
+            ->when($request->filled('building_id'), fn($query) => $query
+                ->where('building_id', $request->integer('building_id')))
+            ->when($request->filled('status'), fn($query) => $query
+                ->where('status', $request->string('status')->toString()))
+            ->when($request->filled('search'), fn($query) => $this->applyClassroomSearch($query, $request))
+            ->get();
+
+        $schedules = $this->classroomOccupancyExportQuery($request, $activeStatusIds)->get();
+        $conflicts = $this->classroomConflictScheduleIds($request);
+        $totalCapacity = $classrooms->sum(fn($classroom) => (int) ($classroom->capacity ?? 0));
+        $scheduledCapacity = $schedules->sum(fn($schedule) => (int) ($schedule->classroom?->capacity ?? 0));
+        $activeStudents = $schedules->sum(fn($schedule) => (int) ($schedule->classGroup?->active_students_count ?? 0));
+
+        return [
+            'classrooms' => $classrooms->count(),
+            'total_capacity' => $totalCapacity,
+            'scheduled_blocks' => $schedules->count(),
+            'assigned_groups' => $schedules->pluck('class_group_id')->unique()->count(),
+            'conflicts' => $conflicts->count(),
+            'average_utilization' => $scheduledCapacity > 0
+                ? round(($activeStudents / $scheduledCapacity) * 100, 1)
+                : 0,
+        ];
+    }
+
+    private function classroomConflictScheduleIds(Request $request)
+    {
+        return ClassSchedule::query()
+            ->from('class_schedules as s1')
+            ->join('class_schedules as s2', function ($join) {
+                $join->on('s1.classroom_id', '=', 's2.classroom_id')
+                    ->whereColumn('s1.id', '<', 's2.id')
+                    ->whereColumn('s1.day', 's2.day')
+                    ->whereColumn('s1.start_time', '<', 's2.end_time')
+                    ->whereColumn('s2.start_time', '<', 's1.end_time');
+            })
+            ->join('class_groups as cg1', 's1.class_group_id', '=', 'cg1.id')
+            ->join('class_groups as cg2', 's2.class_group_id', '=', 'cg2.id')
+            ->where('s1.status', ClassSchedule::STATUS_PUBLISHED)
+            ->where('s2.status', ClassSchedule::STATUS_PUBLISHED)
+            ->when($request->filled('academic_period_id'), function ($query) use ($request) {
+                $query
+                    ->where('cg1.academic_period_id', $request->integer('academic_period_id'))
+                    ->where('cg2.academic_period_id', $request->integer('academic_period_id'));
+            })
+            ->when($request->filled('building_id'), fn($query) => $query
+                ->join('classrooms as cr', 's1.classroom_id', '=', 'cr.id')
+                ->where('cr.building_id', $request->integer('building_id')))
+            ->selectRaw('s1.id as first_id, s2.id as second_id')
+            ->get()
+            ->flatMap(fn($row) => [(int) $row->first_id, (int) $row->second_id])
+            ->unique()
+            ->values();
     }
 
     private function summary(Request $request, array $activeStatusCodes): array

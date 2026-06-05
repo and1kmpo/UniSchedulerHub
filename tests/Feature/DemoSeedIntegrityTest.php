@@ -121,7 +121,7 @@ class DemoSeedIntegrityTest extends TestCase
 
         $reportsIndexProps = $reportsIndexResponse->viewData('page')['props'];
 
-        $this->assertCount(2, $reportsIndexProps['reports']);
+        $this->assertCount(3, $reportsIndexProps['reports']);
 
         $reportResponse = $this->actingAs($admin)
             ->get(route('reports.student-assignments.index'))
@@ -162,6 +162,26 @@ class DemoSeedIntegrityTest extends TestCase
 
         $this->assertStringContainsString('Professor document', $professorLoadCsv);
         $this->assertStringContainsString('Pending grades', $professorLoadCsv);
+
+        $classroomOccupancyResponse = $this->actingAs($admin)
+            ->get(route('reports.classroom-occupancy.index'))
+            ->assertOk();
+
+        $classroomOccupancyProps = $classroomOccupancyResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $classroomOccupancyProps['summary']['classrooms']);
+        $this->assertGreaterThan(0, $classroomOccupancyProps['summary']['scheduled_blocks']);
+        $this->assertNotEmpty($classroomOccupancyProps['classrooms']['data']);
+
+        $classroomOccupancyCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.classroom-occupancy.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $classroomOccupancyCsv = $classroomOccupancyCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Classroom capacity', $classroomOccupancyCsv);
+        $this->assertStringContainsString('Seat utilization %', $classroomOccupancyCsv);
 
         $this->flushSession();
 
