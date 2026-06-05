@@ -51,6 +51,13 @@ class AcademicReportController extends Controller
                     'icon' => 'fa-solid fa-triangle-exclamation',
                     'category' => 'Academic operations',
                 ],
+                [
+                    'title' => 'Grade Operations Report',
+                    'description' => 'Class groups, grade progress, pending grades and grade editing locks.',
+                    'route' => 'reports.grade-operations.index',
+                    'icon' => 'fa-solid fa-clipboard-check',
+                    'category' => 'Academic evaluation',
+                ],
             ],
         ]);
     }
@@ -505,6 +512,100 @@ class AcademicReportController extends Controller
         ]);
     }
 
+    public function gradeOperations(Request $request)
+    {
+        $filters = $request->only([
+            'search',
+            'academic_period_id',
+            'status',
+            'grade_state',
+        ]);
+
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+
+        $groups = $this->gradeOperationsQuery($request, $activeStatusIds)
+            ->paginate(12)
+            ->withQueryString()
+            ->through(fn(ClassGroup $group) => $this->gradeOperationsPayload($group));
+
+        return Inertia::render('Reports/GradeOperations', [
+            'groups' => $groups,
+            'summary' => $this->gradeOperationsSummary($request, $activeStatusIds),
+            'filters' => $filters,
+            'options' => [
+                'periods' => AcademicPeriod::query()
+                    ->select('id', 'name')
+                    ->latest('start_date')
+                    ->get(),
+                'statuses' => [
+                    ['label' => 'Draft', 'value' => ClassGroup::STATUS_DRAFT],
+                    ['label' => 'Published', 'value' => ClassGroup::STATUS_PUBLISHED],
+                    ['label' => 'Cancelled', 'value' => ClassGroup::STATUS_CANCELLED],
+                    ['label' => 'Closed', 'value' => ClassGroup::STATUS_CLOSED],
+                ],
+                'gradeStates' => [
+                    ['label' => 'Pending grades', 'value' => 'pending'],
+                    ['label' => 'Completed grading', 'value' => 'completed'],
+                    ['label' => 'Grade editing open', 'value' => 'open'],
+                    ['label' => 'Grade editing locked', 'value' => 'locked'],
+                ],
+            ],
+        ]);
+    }
+
+    public function exportGradeOperations(Request $request): StreamedResponse
+    {
+        $activeStatusIds = SubjectEnrollmentStatus::whereIn('code', config('enrollment.active_status_codes', ['pre_enrolled', 'enrolled']))
+            ->pluck('id');
+        $filename = 'grade-operations-report-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($request, $activeStatusIds) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Class group',
+                'Subject',
+                'Professor',
+                'Academic period',
+                'Period status',
+                'Group status',
+                'Active students',
+                'Graded students',
+                'Pending grades',
+                'Grade progress %',
+                'Grade editing',
+                'Lock reason',
+            ]);
+
+            $this->gradeOperationsQuery($request, $activeStatusIds)
+                ->chunk(250, function ($groups) use ($handle) {
+                    foreach ($groups as $group) {
+                        $payload = $this->gradeOperationsPayload($group);
+
+                        fputcsv($handle, [
+                            $payload['code'],
+                            $payload['subject']['name'],
+                            $payload['professor'],
+                            $payload['period'],
+                            $payload['period_status'],
+                            Str::headline($payload['status']),
+                            $payload['active_students'],
+                            $payload['graded_students'],
+                            $payload['pending_grades'],
+                            $payload['progress'],
+                            $payload['can_edit_grades'] ? 'Open' : 'Locked',
+                            $payload['lock_reason'] ?? '',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function applyEnrollmentFilters($query, Request $request)
     {
         return $query
@@ -611,6 +712,29 @@ class AcademicReportController extends Controller
                 ->when($request->string('alert')->toString() === 'near_capacity', fn($query) => $query
                     ->havingRaw('(alert_active_students_count / capacity) >= 0.85')
                     ->havingRaw('alert_active_students_count < capacity')),
+            default => $query,
+        };
+    }
+
+    private function applyGradeStateFilter($query, Request $request)
+    {
+        return match ($request->string('grade_state')->toString()) {
+            'pending' => $query
+                ->havingRaw('active_students_count > graded_students_count'),
+            'completed' => $query
+                ->havingRaw('active_students_count > 0')
+                ->havingRaw('graded_students_count >= active_students_count'),
+            'open' => $query
+                ->whereNotIn('status', [ClassGroup::STATUS_CANCELLED, ClassGroup::STATUS_CLOSED])
+                ->whereHas('academicPeriod', fn($period) => $period
+                    ->whereHas('status', fn($status) => $status->where('code', 'in_progress'))),
+            'locked' => $query
+                ->where(function ($query) {
+                    $query
+                        ->whereIn('status', [ClassGroup::STATUS_CANCELLED, ClassGroup::STATUS_CLOSED])
+                        ->orWhereDoesntHave('academicPeriod', fn($period) => $period
+                            ->whereHas('status', fn($status) => $status->where('code', 'in_progress')));
+                }),
             default => $query,
         };
     }
@@ -729,6 +853,30 @@ class AcademicReportController extends Controller
                     ->whereIn('id', $this->allConflictScheduleIds($request))))
             ->when($request->filled('alert') && $request->string('alert')->toString() !== 'conflicts', fn($query) => $this
                 ->applyGroupAlertFilter($query, $request, $activeStatusIds))
+            ->orderBy('code');
+    }
+
+    private function gradeOperationsQuery(Request $request, $activeStatusIds)
+    {
+        return ClassGroup::query()
+            ->with([
+                'academicPeriod.status:id,code,name',
+                'professor:id,name,email',
+                'subject:id,code,name',
+            ])
+            ->withCount([
+                'subjectEnrollments as active_students_count' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds),
+                'subjectEnrollments as graded_students_count' => fn($enrollments) => $enrollments
+                    ->whereIn('status_id', $activeStatusIds)
+                    ->whereHas('grade'),
+            ])
+            ->when($request->filled('academic_period_id'), fn($query) => $query
+                ->where('academic_period_id', $request->integer('academic_period_id')))
+            ->when($request->filled('status'), fn($query) => $query
+                ->where('status', $request->string('status')->toString()))
+            ->when($request->filled('search'), fn($query) => $this->applyGroupSearch($query, $request))
+            ->when($request->filled('grade_state'), fn($query) => $this->applyGradeStateFilter($query, $request))
             ->orderBy('code');
     }
 
@@ -904,6 +1052,63 @@ class AcademicReportController extends Controller
         ];
     }
 
+    private function gradeOperationsPayload(ClassGroup $group): array
+    {
+        $activeStudents = (int) ($group->active_students_count ?? 0);
+        $gradedStudents = (int) ($group->graded_students_count ?? 0);
+        $pendingGrades = max(0, $activeStudents - $gradedStudents);
+        $canEditGrades = $this->canEditGradesOperationally($group);
+
+        return [
+            'id' => $group->id,
+            'code' => $group->code,
+            'name' => $group->name,
+            'status' => $group->status,
+            'period' => $group->academicPeriod?->name,
+            'period_status' => $group->academicPeriod?->status?->label
+                ?? $group->academicPeriod?->status?->name
+                ?? Str::headline($group->academicPeriod?->status?->code ?? 'No period'),
+            'professor' => $group->professor?->name ?? 'Unassigned',
+            'subject' => [
+                'code' => $group->subject?->code,
+                'name' => $group->subject?->name,
+            ],
+            'active_students' => $activeStudents,
+            'graded_students' => $gradedStudents,
+            'pending_grades' => $pendingGrades,
+            'progress' => $activeStudents > 0 ? round(($gradedStudents / $activeStudents) * 100, 1) : 0,
+            'can_edit_grades' => $canEditGrades,
+            'lock_reason' => $canEditGrades ? null : $this->gradeLockReason($group),
+        ];
+    }
+
+    private function canEditGradesOperationally(ClassGroup $group): bool
+    {
+        return $group->academicPeriod?->canEditGrades()
+            && ! in_array($group->status, [ClassGroup::STATUS_CANCELLED, ClassGroup::STATUS_CLOSED], true);
+    }
+
+    private function gradeLockReason(ClassGroup $group): string
+    {
+        if (! $group->academicPeriod) {
+            return 'No academic period assigned.';
+        }
+
+        if (! $group->academicPeriod->canEditGrades()) {
+            $status = $group->academicPeriod->status?->label
+                ?? $group->academicPeriod->status?->name
+                ?? Str::headline($group->academicPeriod->status?->code ?? 'not editable');
+
+            return "Grades can only be edited while the period is in progress. Current status: {$status}.";
+        }
+
+        if (in_array($group->status, [ClassGroup::STATUS_CANCELLED, ClassGroup::STATUS_CLOSED], true)) {
+            return 'Group is closed or cancelled.';
+        }
+
+        return 'Grade editing is locked.';
+    }
+
     private function professorLoadSummary(Request $request, $activeStatusIds): array
     {
         $groups = ClassGroup::query()
@@ -978,6 +1183,24 @@ class AcademicReportController extends Controller
             'near_capacity' => $groupsWithPayload->filter(fn($group) => in_array('Near capacity', $group['alerts'], true))->count(),
             'conflicts' => $groupsWithPayload->filter(fn($group) => $group['conflict_blocks'] > 0)->count(),
             'utilization' => $totalCapacity > 0 ? round(($activeStudents / $totalCapacity) * 100, 1) : 0,
+        ];
+    }
+
+    private function gradeOperationsSummary(Request $request, $activeStatusIds): array
+    {
+        $groups = $this->gradeOperationsQuery($request, $activeStatusIds)->get();
+        $payloads = $groups->map(fn($group) => $this->gradeOperationsPayload($group));
+        $activeStudents = $payloads->sum('active_students');
+        $gradedStudents = $payloads->sum('graded_students');
+
+        return [
+            'groups' => $payloads->count(),
+            'active_students' => $activeStudents,
+            'graded_students' => $gradedStudents,
+            'pending_grades' => $payloads->sum('pending_grades'),
+            'locked_groups' => $payloads->filter(fn($group) => ! $group['can_edit_grades'])->count(),
+            'completed_groups' => $payloads->filter(fn($group) => $group['active_students'] > 0 && $group['pending_grades'] === 0)->count(),
+            'progress' => $activeStudents > 0 ? round(($gradedStudents / $activeStudents) * 100, 1) : 0,
         ];
     }
 

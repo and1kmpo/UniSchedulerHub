@@ -1,17 +1,54 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
 import { route } from "ziggy-js";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+import TableSearch from "@/Components/UI/Table/TableSearch.vue";
 
-defineProps({
+const props = defineProps({
     reports: {
         type: Array,
         default: () => [],
     },
 });
+
+const search = ref("");
+const selectedCategory = ref("");
+
+const categoryOptions = computed(() => {
+    const categories = [...new Set(props.reports.map((report) => report.category).filter(Boolean))];
+
+    return categories.map((category) => ({
+        label: category,
+        value: category,
+    }));
+});
+
+const filteredReports = computed(() => {
+    const term = search.value.trim().toLowerCase();
+
+    return props.reports.filter((report) => {
+        const matchesCategory = !selectedCategory.value || report.category === selectedCategory.value;
+        const searchableText = [
+            report.title,
+            report.description,
+            report.category,
+        ].join(" ").toLowerCase();
+
+        return matchesCategory && (!term || searchableText.includes(term));
+    });
+});
+
+function resetFilters() {
+    search.value = "";
+    selectedCategory.value = "";
+}
 </script>
 
 <template>
@@ -20,14 +57,63 @@ defineProps({
         subtitle="Select an academic report to analyze, export or print operational data"
     >
         <CrudContainer>
+            <SectionCard class="mb-6">
+                <div class="space-y-5 p-5">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+                                Report Bank
+                            </h2>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Search by operational goal, category, actor or report name.
+                            </p>
+                        </div>
+
+                        <span class="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200">
+                            <i class="fa-solid fa-chart-line" />
+                            {{ reports.length }} reports available
+                        </span>
+                    </div>
+
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-end">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Search
+                            </label>
+                            <TableSearch
+                                v-model="search"
+                                placeholder="Search reports..."
+                            />
+                        </div>
+
+                        <BaseSelect
+                            v-model="selectedCategory"
+                            label="Category"
+                            placeholder="All categories"
+                            :options="categoryOptions"
+                        />
+
+                        <BaseButton
+                            variant="secondary"
+                            class="w-full lg:w-auto"
+                            :disabled="!search && !selectedCategory"
+                            @click="resetFilters"
+                        >
+                            <i class="fa-solid fa-rotate-left mr-2" />
+                            Reset
+                        </BaseButton>
+                    </div>
+                </div>
+            </SectionCard>
+
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <SectionCard v-for="report in reports" :key="report.route">
+                <SectionCard v-for="report in filteredReports" :key="report.route">
                     <div class="flex h-full flex-col p-6">
                         <div class="flex items-start justify-between gap-4">
-                            <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+                            <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
                                 <i :class="report.icon" />
                             </span>
-                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            <span class="rounded-full bg-gray-100 px-3 py-1 text-right text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                                 {{ report.category }}
                             </span>
                         </div>
@@ -53,6 +139,13 @@ defineProps({
                     </div>
                 </SectionCard>
             </div>
+
+            <EmptyState
+                v-if="filteredReports.length === 0"
+                title="No reports found"
+                description="Adjust the search or category filters to find an available academic report."
+                icon="fa-solid fa-file-circle-question"
+            />
         </CrudContainer>
     </CrudPageLayout>
 </template>
