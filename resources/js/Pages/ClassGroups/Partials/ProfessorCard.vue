@@ -18,11 +18,11 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
             <div>
 
-                <p class="text-sm text-gray-500">
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Professor
                 </p>
 
-                <h3 class="text-lg font-semibold">
+                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">
                     {{
                         professor.name
                     }}

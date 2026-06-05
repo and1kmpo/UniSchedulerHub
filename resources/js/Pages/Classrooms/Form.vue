@@ -92,7 +92,7 @@ watch(
                 <BaseSelect v-model="form.building_id" label="Building" placeholder="Select building"
                     :options="buildingOptions" :error="form.errors.building_id" required />
 
-                <BaseInput v-model="form.floor" type="number" label="Floor" placeholder="2"
+                <BaseInput v-model="form.floor" type="number" label="Floor" placeholder="2" min="-5"
                     :error="form.errors.floor" required />
 
                 <BaseInput v-model="form.capacity" type="number" label="Capacity" placeholder="35"

@@ -7,6 +7,7 @@ import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import BaseInput from "@/Components/UI/Base/BaseInput.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
@@ -314,9 +315,15 @@ function firstError(field) {
 
                     <template #actions="{ row }">
                         <div class="flex flex-wrap justify-center gap-2">
-                            <BaseButton v-if="!row.is_active && !['academically_closed', 'archived'].includes(row.status?.code)"
-                                type="button" size="sm" variant="secondary" @click="activate(row)">
-                                Activate
+                            <BaseButton
+                                v-if="!row.is_active && !['academically_closed', 'archived'].includes(row.status?.code)"
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                @click="activate(row)"
+                            >
+                                <i class="fa-solid fa-toggle-on mr-2 text-sky-600 dark:text-sky-300" />
+                                Set Active
                             </BaseButton>
 
                             <BaseButton v-for="action in actionsFor(row)" :key="action.key" type="button" size="sm"
@@ -324,15 +331,20 @@ function firstError(field) {
                                 {{ action.label }}
                             </BaseButton>
 
-                            <BaseButton type="button" size="sm" variant="secondary" @click="edit(row)">
-                                Edit
-                            </BaseButton>
+                            <TableActionButton
+                                icon="fa-solid fa-pen"
+                                label="Edit period"
+                                color="indigo"
+                                @click="edit(row)"
+                            />
 
-                            <BaseButton type="button" size="sm" variant="danger"
+                            <TableActionButton
+                                icon="fa-solid fa-trash"
+                                label="Delete period"
+                                color="red"
                                 :disabled="(row.class_groups_count ?? 0) > 0 || (row.subject_enrollments_count ?? 0) > 0"
-                                @click="destroy(row)">
-                                Delete
-                            </BaseButton>
+                                @click="destroy(row)"
+                            />
                         </div>
                     </template>
                 </DataTable>

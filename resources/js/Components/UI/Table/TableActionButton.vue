@@ -19,6 +19,11 @@ defineProps({
         type: String,
         default: "button",
     },
+
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const colors = {
@@ -57,8 +62,9 @@ const colors = {
 </script>
 
 <template>
-    <button :type="type" :title="label" :aria-label="label" :class="[
+    <button :type="type" :title="label" :aria-label="label" :disabled="disabled" :class="[
         'inline-flex h-9 w-9 items-center justify-center rounded-lg transition',
+        disabled ? 'cursor-not-allowed opacity-40' : '',
         colors[color],
     ]">
         <i :class="icon" aria-hidden="true"></i>

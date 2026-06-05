@@ -230,31 +230,31 @@ const totalStudents = computed(() => {
             <div class="mb-6 grid gap-4 md:grid-cols-3">
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Total Groups
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold">
+                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
                         {{ classGroups.total }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Total Students
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold">
+                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
                         {{ totalStudents }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Average Occupancy
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold">
+                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
                         {{
                             Math.round(
                                 totalStudents /
@@ -374,13 +374,13 @@ const totalStudents = computed(() => {
 
                     <div>
 
-                        <p class="font-medium">
+                        <p class="font-medium text-gray-900 dark:text-white">
                             {{
                                 row.subject.name
                             }}
                         </p>
 
-                        <p class="text-xs text-gray-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
                             {{
                                 row.subject.code
                             }}
@@ -394,7 +394,7 @@ const totalStudents = computed(() => {
 
                 <template #cell-professor="{ row }">
 
-                    <span>
+                    <span class="text-gray-700 dark:text-gray-300">
 
                         {{
                             row.professor?.name ||
@@ -443,7 +443,7 @@ const totalStudents = computed(() => {
 
                     <div class="w-44">
 
-                        <div class="mb-1 flex items-center justify-between text-xs">
+                        <div class="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
 
                             <span>
                                 {{

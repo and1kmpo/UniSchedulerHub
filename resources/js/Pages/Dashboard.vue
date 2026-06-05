@@ -499,10 +499,10 @@ function gradingProgressData(items) {
                                     <td class="px-4 py-4 text-gray-600 dark:text-gray-300">{{ student.document }}</td>
                                     <td class="px-4 py-4">
                                         <span :class="[
-                                            'rounded-full px-3 py-1 text-xs font-semibold',
+                                            'inline-flex rounded-full border px-3 py-1 text-xs font-semibold',
                                             student.credits >= 7
-                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                                : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                                                ? 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
+                                                : 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300'
                                         ]">
                                             {{ student.credits }} credits
                                         </span>
@@ -510,7 +510,7 @@ function gradingProgressData(items) {
                                     <td class="px-4 py-4">
                                         <div class="space-y-2">
                                             <div v-for="assignment in student.subjects.slice(0, 3)" :key="`${student.id}-${assignment.code}-${assignment.group}`"
-                                                class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                                class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                                                 <p class="font-medium text-gray-900 dark:text-white">
                                                     {{ assignment.code }} - {{ assignment.subject }}
                                                 </p>
@@ -519,14 +519,14 @@ function gradingProgressData(items) {
                                                 </p>
                                             </div>
                                             <details v-if="student.subjects.length > 3"
-                                                class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+                                                class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                                                 <summary class="cursor-pointer text-xs font-semibold text-indigo-600 dark:text-indigo-300">
                                                     {{ student.subjects.length - 3 }} more in full report
                                                 </summary>
                                                 <div class="mt-2 space-y-2">
                                                     <div v-for="assignment in student.subjects.slice(3)"
                                                         :key="`${student.id}-${assignment.code}-${assignment.group}-extra`"
-                                                        class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                                        class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
                                                         <p class="font-medium text-gray-900 dark:text-white">
                                                             {{ assignment.code }} - {{ assignment.subject }}
                                                         </p>

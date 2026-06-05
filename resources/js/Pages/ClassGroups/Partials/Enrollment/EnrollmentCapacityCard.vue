@@ -24,17 +24,17 @@ const percentage = Math.min(
 
             <div>
 
-                <h3 class="text-lg font-semibold">
+                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">
                     Enrollment Capacity
                 </h3>
 
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
                     Real-time occupancy monitoring
                 </p>
 
             </div>
 
-            <div class="text-2xl font-bold">
+            <div class="text-2xl font-bold text-gray-950 dark:text-white">
                 {{ percentage }}%
             </div>
 

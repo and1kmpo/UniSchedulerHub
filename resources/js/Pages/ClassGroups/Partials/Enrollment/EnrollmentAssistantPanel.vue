@@ -35,7 +35,7 @@ defineEmits(["enroll"]);
 
             <div>
 
-                <h3 class="text-lg font-semibold">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Smart Enrollment Assistant
                 </h3>
 

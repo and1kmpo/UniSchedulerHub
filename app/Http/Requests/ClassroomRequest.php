@@ -16,7 +16,7 @@ class ClassroomRequest extends FormRequest
     {
         return [
             'building_id' => ['required', 'exists:buildings,id'],
-            'floor' => ['required', 'integer', 'min:0'],
+            'floor' => ['required', 'integer', 'min:-5'],
             'capacity' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:1000'],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],

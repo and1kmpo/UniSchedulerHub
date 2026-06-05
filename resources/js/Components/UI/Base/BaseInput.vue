@@ -1,4 +1,8 @@
 <script setup>
+defineOptions({
+    inheritAttrs: false,
+});
+
 defineProps({
     modelValue: {
         type: [String, Number],
@@ -49,9 +53,9 @@ defineEmits(["update:modelValue"]);
             </span>
         </label>
 
-        <input :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
+        <input v-bind="$attrs" :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
             @input="$emit('update:modelValue', $event.target.value)"
-            class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-indigo-400"
+            class="base-input w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-indigo-400"
             :class="{
                 'border-red-500 focus:border-red-500 focus:ring-red-500/20':
                     error,
@@ -62,3 +66,14 @@ defineEmits(["update:modelValue"]);
         </p>
     </div>
 </template>
+
+<style scoped>
+.base-input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.75;
+}
+
+.dark .base-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.85;
+}
+</style>
