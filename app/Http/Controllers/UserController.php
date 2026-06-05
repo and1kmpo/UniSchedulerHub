@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Subject;
 use App\Models\SubjectEnrollmentStatus;
 use App\Models\User;
 use App\Models\Program;
@@ -10,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -21,7 +21,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $query = User::with(['professor', 'student', 'roles']);
-    
+
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
@@ -29,17 +29,61 @@ class UserController extends Controller
                   ->orWhere('email', 'LIKE', "%$search%");
             });
         }
-    
+
+        if ($request->filled('role')) {
+            $query->whereHas('roles', fn($roles) => $roles->where('name', $request->role));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc') === 'desc' ? 'desc' : 'asc';
+        $sortable = ['name', 'email', 'status', 'created_at'];
+
+        if (! in_array($sort, $sortable, true)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
         $users = $query->paginate(10);
-    
+
         if ($request->wantsJson()) {
             return response()->json([
                 'users' => $users
             ]);
         }
-    
+
         return inertia('Users/Index', [
-            'users' => $users
+            'users' => $users,
+            'filters' => $request->only(['search', 'role', 'status', 'sort', 'direction']),
+            'roles' => Role::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($role) => [
+                    'label' => str($role->name)->replace('_', ' ')->title()->toString(),
+                    'value' => $role->name,
+                ])
+                ->values(),
+            'programs' => Program::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($program) => [
+                    'label' => $program->name,
+                    'value' => $program->id,
+                ])
+                ->values(),
+            'statusOptions' => [
+                ['label' => 'Active', 'value' => User::STATUS_ACTIVE],
+                ['label' => 'Inactive', 'value' => User::STATUS_INACTIVE],
+            ],
+            'metrics' => [
+                'users' => User::count(),
+                'active' => User::where('status', User::STATUS_ACTIVE)->count(),
+                'roles' => Role::count(),
+            ],
         ]);
     }
     

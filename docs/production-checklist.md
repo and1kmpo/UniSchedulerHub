@@ -131,7 +131,9 @@ UI smoke checklist by role:
 - Coordinators should manage academic data, not global roles or permissions.
 - Admins can create operational users such as academic coordinators and security administrators.
 - Role assignment should be explicit, audited and limited to admins.
-- The next hardening pass for `/users` should standardize the UI as an enterprise CRUD and avoid destructive deletes for accounts with academic history.
+- `/users` uses the standard CRUD table, filters, status badges and modal-based user creation/editing.
+- The next hardening pass should convert `/roles` and `/permissions` from JSON endpoints into standard admin screens or keep them as backend-only seed/configuration resources.
+- Destructive user deletes should be blocked or converted to deactivation for accounts with academic history.
 
 ## Enrollment Engine
 
