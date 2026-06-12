@@ -1,6 +1,6 @@
 # Demo Testing Guide
 
-This guide explains how to validate UniSchedulerHub after installing it from scratch. It is meant for demos, interviews, QA passes, and functional reviews.
+This guide explains how to validate TARRAYA after installing it from scratch. It is meant for demos, interviews, QA passes, and functional reviews.
 
 ## 1. Fresh Setup
 

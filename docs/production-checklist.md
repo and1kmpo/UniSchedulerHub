@@ -1,6 +1,6 @@
 # Production Readiness Checklist
 
-This checklist is for preparing UniSchedulerHub for a demo deploy, interview presentation, or controlled pilot environment.
+This checklist is for preparing TARRAYA for a demo deploy, interview presentation, or controlled pilot environment.
 
 ## Environment
 

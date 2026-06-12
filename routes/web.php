@@ -26,7 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
-Route::get('/favicon.ico', fn() => redirect('/favicon.svg'));
+Route::get('/favicon.ico', fn() => redirect('/favicon.svg?v=tarraya-20260612'));
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 

@@ -1,6 +1,6 @@
 # Functional Scope
 
-This document summarizes the core academic capabilities currently covered by UniSchedulerHub. It is intended as a portfolio and project reference, not as an internal planning log.
+This document summarizes the core academic capabilities currently covered by TARRAYA. It is intended as a portfolio and project reference, not as an internal planning log.
 
 ## Academic Resource Management
 

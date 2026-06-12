@@ -1,4 +1,4 @@
-# UniSchedulerHub Academic REST API
+# TARRAYA Academic REST API
 
 This document describes the current REST API surface for the academic assignment flow. The web UI is built with Inertia/Vue, but these endpoints expose the core academic resources and enrollment operations as JSON APIs.
 

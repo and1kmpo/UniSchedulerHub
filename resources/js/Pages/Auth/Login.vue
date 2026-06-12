@@ -39,11 +39,11 @@ const submit = () => {
             <AuthenticationCardLogo />
         </template>
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
+        <div v-if="status" class="mb-4 text-sm font-medium text-emerald-600 dark:text-emerald-400">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form @submit.prevent="submit" class="text-slate-900 dark:text-zinc-100">
             <div>
                 <InputLabel for="email" value="Email" />
                 <TextInput id="email" v-model="form.email" type="email" class="mt-1 block w-full" required autofocus
@@ -61,14 +61,14 @@ const submit = () => {
             <div class="block mt-4">
                 <label class="flex items-center">
                     <Checkbox v-model:checked="form.remember" name="remember" />
-                    <span class="ms-2 text-sm text-gray-600">Remember me</span>
+                    <span class="ms-2 font-mono text-xs text-slate-600 dark:text-zinc-400">Remember me</span>
                 </label>
             </div>
 
             <div class="flex items-center justify-end mt-4">
                 <Link v-if="canResetPassword" :href="route('password.request')"
-                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Forgot your password?
+                    class="rounded-md font-mono text-xs text-slate-600 underline hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 dark:text-zinc-400 dark:hover:text-white dark:focus:ring-offset-[#09090B]">
+                    Forgot your password?
                 </Link>
 
                 <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">

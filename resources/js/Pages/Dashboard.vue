@@ -225,7 +225,7 @@ function gradingProgressData(items) {
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p class="text-sm font-medium text-indigo-600 dark:text-indigo-300">
-                        UniSchedulerHub
+                        TARRAYA
                     </p>
                     <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
                         {{ dashboardType === "professor" ? "Teaching Dashboard" : "Academic Operations Dashboard" }}

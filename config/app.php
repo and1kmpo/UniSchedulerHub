@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'UniSchedulerHub'),
+    'name' => env('APP_NAME', 'TARRAYA'),
 
     /*
     |--------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-# UniSchedulerHub
+# TARRAYA
 
-UniSchedulerHub is an academic scheduling and enrollment management system built with Laravel, Inertia, Vue, and Tailwind CSS.
+TARRAYA is an academic operating system for scheduling, enrollment and institutional academic operations, built with Laravel, Inertia, Vue, and Tailwind CSS.
 
 ## Current Scope
 

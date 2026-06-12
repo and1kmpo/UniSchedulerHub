@@ -92,8 +92,8 @@ onBeforeUnmount(() => {
             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <Link href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
                     <ApplicationMark class="h-9 w-9" />
-                    <span class="hidden text-sm font-bold text-slate-900 dark:text-white sm:block">
-                        UniSchedulerHub
+                    <span class="hidden text-sm font-bold tracking-tight text-slate-900 dark:text-white sm:block">
+                        TARRAYA
                     </span>
                 </Link>
 
