@@ -13,14 +13,14 @@ defineProps({
 
 <template>
     <span :class="[
-        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize',
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize',
         {
-            'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100': color === 'green',
-            'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100': color === 'red',
-            'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100': color === 'yellow',
-            'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100': color === 'blue',
-            'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100': color === 'purple',
-            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100': color === 'gray',
+            'bg-success/10 text-emerald-700 dark:text-emerald-300': color === 'green' || color === 'success',
+            'bg-danger/10 text-danger dark:text-red-300': color === 'red' || color === 'danger',
+            'bg-warning/10 text-amber-700 dark:text-amber-300': color === 'yellow' || color === 'warning',
+            'bg-brand/10 text-brand dark:text-brand': color === 'blue' || color === 'brand',
+            'bg-accent/10 text-cyan-700 dark:text-accent': color === 'purple' || color === 'accent',
+            'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200': color === 'gray',
         }
     ]">
         {{ text }}

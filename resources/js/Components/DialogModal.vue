@@ -31,16 +31,16 @@ const close = () => {
         @close="close"
     >
         <div class="px-6 py-4">
-            <div class="text-lg font-medium text-gray-900 dark:text-white">
+            <div class="text-lg font-semibold text-ink dark:text-white">
                 <slot name="title" />
             </div>
 
-            <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+            <div class="mt-4 text-sm text-slate-600 dark:text-zinc-300">
                 <slot name="content" />
             </div>
         </div>
 
-        <div class="flex flex-row justify-end px-6 py-4 bg-gray-100 text-end dark:bg-gray-800">
+        <div class="flex flex-row justify-end border-t border-border-light bg-slate-50 px-6 py-4 text-end dark:border-border-dark dark:bg-zinc-950">
             <slot name="footer" />
         </div>
     </Modal>

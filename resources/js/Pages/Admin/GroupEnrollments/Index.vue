@@ -112,16 +112,16 @@ function countVariant(value) {
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
                                 What This View Is For
                             </h2>
 
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 {{ canManageEnrollments
                                     ? "Use this view to operate enrollment after groups are created: monitor capacity, review pending confirmations, detect incomplete credit loads and manage assisted enrollment by group."
                                     : "Use this view to review rosters for your assigned groups. Academic setup and scheduling stay in Class Groups." }}
                             </p>
-                            <p class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                            <p class="mt-2 font-mono text-xs font-medium text-slate-500 dark:text-zinc-400">
                                 Active period: {{ period?.name ?? "No active academic period" }}
                             </p>
                         </div>
@@ -132,12 +132,12 @@ function countVariant(value) {
                 </SectionCard>
 
                 <SectionCard v-if="canManageEnrollments && incompleteLoads.length">
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Students Below Minimum Load
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Students with active selections below {{ summary.min_credits }} credits require follow-up before enrollment confirmation.
                         </p>
                     </div>
@@ -148,7 +148,7 @@ function countVariant(value) {
                             :key="load.student_id"
                             class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10"
                         >
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                            <p class="text-sm font-semibold text-ink dark:text-white">
                                 {{ load.student_name ?? "Student" }}
                             </p>
 
@@ -160,12 +160,12 @@ function countVariant(value) {
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             {{ canManageEnrollments ? "Enrollment Operations" : "Assigned Rosters" }}
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             {{ canManageEnrollments
                                 ? "Open a group to review its roster, assist enrollment and process withdrawals. Group setup remains in Class Groups."
                                 : "Open a group to review enrolled students and current grade status." }}

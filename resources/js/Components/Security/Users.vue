@@ -1,9 +1,9 @@
 <template>
-    <h1>Users</h1>
-    <div class="overflow-x-auto shadow-md sm:rounded-lg m-4">
-        <table class="w-full text-gray-500 dark:text-gray-400 text-center divide-y divide-gray-200 dark:divide-gray-700">
+    <h1 class="text-lg font-semibold text-ink dark:text-white">Users</h1>
+    <div class="m-4 overflow-x-auto rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+        <table class="w-full divide-y divide-border-light text-center text-slate-500 dark:divide-border-dark dark:text-zinc-400">
             <thead
-                class="text-xs sm:text-sm md:text-sm text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                class="bg-slate-50 text-xs uppercase text-slate-700 dark:bg-zinc-950 dark:text-zinc-400 sm:text-sm md:text-sm">
                 <tr>
                     <th scope="col" class="px-1 sm:px-1 md:px-2 py-2">
                         User
@@ -20,8 +20,8 @@
                 </tr>
             </thead>
             <tbody class="text-xs sm:text-sm md:text-sm">
-                <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-600">
-                    <th scope="row" class="px-1 sm:px-1 md:px-2 py-2 font-medium text-gray-900 dark:text-white">
+                <tr class="bg-surface hover:bg-slate-50 dark:bg-surface-dark dark:hover:bg-zinc-900">
+                    <th scope="row" class="px-1 py-2 font-medium text-ink dark:text-white sm:px-1 md:px-2">
                         Julio Rodriguez
                     </th>
                     <td class="px-1 sm:px-1 md:px-2 py-2">
@@ -29,11 +29,11 @@
                     </td>
                     <td class="px-1 sm:px-1 md:px-2 py-2">
                         <span
-                            class="bg-red-100 text-red-800 font-medium me-1 px-1.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Admin</span>
+                            class="me-1 rounded-full bg-danger/10 px-1.5 py-0.5 font-medium text-danger dark:text-red-300">Admin</span>
                     </td>
                     <td class="px-1 sm:px-1 md:px-2 py-2">
                         <a href="#"
-                            class="text-xxs sm:text-xs md:text-xs bg-blue-700 hover:bg-blue-400 hover:text-black rounded p-1 px-2.5 text-white">
+                            class="text-xxs rounded-lg bg-brand p-1 px-2.5 text-white transition hover:bg-brand-dark sm:text-xs md:text-xs">
                             <i class="fas fa-edit"></i>
                         </a>
                     </td>

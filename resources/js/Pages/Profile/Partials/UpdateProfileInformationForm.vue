@@ -163,14 +163,14 @@ const clearPhotoFileInput = () => {
                             :href="route('verification.send')"
                             method="post"
                             as="button"
-                            class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            class="rounded-lg text-sm text-brand underline transition hover:text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 dark:focus:ring-offset-dark-bg"
                             @click.prevent="sendEmailVerification"
                         >
                             Click here to re-send the verification email.
                         </Link>
                     </p>
 
-                    <div v-show="verificationLinkSent" class="mt-2 font-medium text-sm text-green-600">
+                    <div v-show="verificationLinkSent" class="mt-2 text-sm font-medium text-success">
                         A new verification link has been sent to your email address.
                     </div>
                 </div>

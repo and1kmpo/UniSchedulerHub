@@ -47,7 +47,7 @@ const colors = {
         text-brand
         hover:bg-brand/10
         hover:text-brand-dark
-        dark:text-blue-300
+        dark:text-brand
         dark:hover:bg-brand/15
     `,
 
@@ -55,7 +55,7 @@ const colors = {
         text-brand
         hover:bg-brand/10
         hover:text-brand-dark
-        dark:text-blue-300
+        dark:text-brand
         dark:hover:bg-brand/15
     `,
 

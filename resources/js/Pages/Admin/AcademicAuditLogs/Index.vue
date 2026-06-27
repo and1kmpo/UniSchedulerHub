@@ -11,6 +11,7 @@ import DataTable from "@/Components/UI/Table/DataTable.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
@@ -147,25 +148,25 @@ function changeRows(metadata) {
 <template>
     <CrudPageLayout title="Academic Audit Logs" subtitle="Trace critical academic operations across enrollments, schedules, grades and periods">
         <CrudContainer>
-            <div class="grid gap-3 border-b border-gray-100 p-4 dark:border-gray-800 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Total events</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.total }}</p>
+            <div class="grid gap-3 border-b border-border-light p-4 dark:border-border-dark sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Total events</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ stats.total }}</p>
                 </div>
 
-                <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Today</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.today }}</p>
+                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Today</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ stats.today }}</p>
                 </div>
 
-                <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Grade events</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.grade_events }}</p>
+                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Grade events</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ stats.grade_events }}</p>
                 </div>
 
-                <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Enrollment events</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.enrollment_events }}</p>
+                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Enrollment events</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ stats.enrollment_events }}</p>
                 </div>
             </div>
 
@@ -196,17 +197,17 @@ function changeRows(metadata) {
                             placeholder="All entities"
                         />
 
-                        <input
+                        <BaseInput
                             v-model="filterForm.date_from"
                             type="date"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                            label="Date from"
                             aria-label="Date from"
                         />
 
-                        <input
+                        <BaseInput
                             v-model="filterForm.date_to"
                             type="date"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                            label="Date to"
                             aria-label="Date to"
                         />
                     </div>
@@ -222,7 +223,7 @@ function changeRows(metadata) {
 
             <DataTable v-if="logs.data.length" :columns="columns" :rows="logs.data" :filters="filters" sortable>
                 <template #cell-created_at="{ value }">
-                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                    <span class="font-mono text-sm text-slate-700 dark:text-zinc-300">
                         {{ formatDateTime(value) }}
                     </span>
                 </template>
@@ -233,10 +234,10 @@ function changeRows(metadata) {
 
                 <template #cell-entity="{ row }">
                     <div class="space-y-1">
-                        <p class="font-medium text-gray-900 dark:text-white">
+                        <p class="font-medium text-ink dark:text-white">
                             {{ row.entity }}
                         </p>
-                        <p v-if="row.entity_id" class="text-xs text-gray-500 dark:text-gray-400">
+                        <p v-if="row.entity_id" class="font-mono text-xs text-slate-500 dark:text-zinc-400">
                             ID {{ row.entity_id }}
                         </p>
                     </div>
@@ -244,21 +245,21 @@ function changeRows(metadata) {
 
                 <template #cell-user="{ row }">
                     <div v-if="row.user" class="space-y-1">
-                        <p class="font-medium text-gray-900 dark:text-white">
+                        <p class="font-medium text-ink dark:text-white">
                             {{ row.user.name }}
                         </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <p class="text-xs text-slate-500 dark:text-zinc-400">
                             {{ row.user.email }}
                         </p>
                     </div>
 
-                    <span v-else class="text-gray-500 dark:text-gray-400">
+                    <span v-else class="text-slate-500 dark:text-zinc-400">
                         System
                     </span>
                 </template>
 
                 <template #cell-summary="{ row }">
-                    <span class="line-clamp-2 text-gray-700 dark:text-gray-300">
+                    <span class="line-clamp-2 text-slate-700 dark:text-zinc-300">
                         {{ row.summary || "No summary available" }}
                     </span>
                 </template>
@@ -266,7 +267,7 @@ function changeRows(metadata) {
                 <template #actions="{ row }">
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-300"
+                        class="inline-flex items-center justify-center rounded-lg border border-border-light px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-brand/40 hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand dark:border-border-dark dark:text-zinc-300 dark:hover:border-brand dark:hover:text-brand"
                         @click="openDetails(row)"
                     >
                         <i class="fa-solid fa-eye mr-2 text-xs"></i>
@@ -287,29 +288,29 @@ function changeRows(metadata) {
 
         <div
             v-if="selectedLog"
-            class="fixed inset-0 z-50 flex items-end bg-black/40 px-4 py-6 sm:items-center sm:justify-center"
+            class="fixed inset-0 z-50 flex items-end bg-ink/60 px-4 py-6 sm:items-center sm:justify-center"
             role="dialog"
             aria-modal="true"
             @click.self="closeDetails"
         >
-            <section class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl dark:bg-gray-900">
-                <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+            <section class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <header class="flex items-start justify-between gap-4 border-b border-border-light px-6 py-5 dark:border-border-dark">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
                             <StatusBadge :label="selectedLog.action_label" :variant="actionVariant(selectedLog.action)" />
-                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ formatDateTime(selectedLog.created_at) }}</span>
+                            <span class="font-mono text-sm text-slate-500 dark:text-zinc-400">{{ formatDateTime(selectedLog.created_at) }}</span>
                         </div>
-                        <h2 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">
+                        <h2 class="mt-3 text-lg font-semibold text-ink dark:text-white">
                             {{ selectedLog.summary || "Audit event details" }}
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             {{ selectedLog.entity }}<span v-if="selectedLog.entity_id"> ID {{ selectedLog.entity_id }}</span>
                         </p>
                     </div>
 
                     <button
                         type="button"
-                        class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:hover:bg-gray-800 dark:hover:text-white"
+                        class="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
                         aria-label="Close details"
                         @click="closeDetails"
                     >
@@ -319,52 +320,52 @@ function changeRows(metadata) {
 
                 <div class="grid gap-6 px-6 py-5 lg:grid-cols-[1fr_1.4fr]">
                     <section class="space-y-4">
-                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Actor</h3>
+                        <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                            <h3 class="text-sm font-semibold text-ink dark:text-white">Actor</h3>
                             <div v-if="selectedLog.user" class="mt-3 space-y-1 text-sm">
-                                <p class="font-medium text-gray-900 dark:text-white">{{ selectedLog.user.name }}</p>
-                                <p class="text-gray-500 dark:text-gray-400">{{ selectedLog.user.email }}</p>
+                                <p class="font-medium text-ink dark:text-white">{{ selectedLog.user.name }}</p>
+                                <p class="text-slate-500 dark:text-zinc-400">{{ selectedLog.user.email }}</p>
                             </div>
-                            <p v-else class="mt-3 text-sm text-gray-500 dark:text-gray-400">System</p>
+                            <p v-else class="mt-3 text-sm text-slate-500 dark:text-zinc-400">System</p>
                         </div>
 
-                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Context</h3>
+                        <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                            <h3 class="text-sm font-semibold text-ink dark:text-white">Context</h3>
                             <dl class="mt-3 space-y-2 text-sm">
                                 <div v-for="[key, value] in metadataEntries(selectedLog.metadata)" :key="key" class="grid grid-cols-[9rem_1fr] gap-3">
-                                    <dt class="font-medium text-gray-500 dark:text-gray-400">{{ formatKey(key) }}</dt>
-                                    <dd class="break-words text-gray-800 dark:text-gray-200">{{ formatValue(value) }}</dd>
+                                    <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ formatKey(key) }}</dt>
+                                    <dd class="break-words text-slate-800 dark:text-zinc-200">{{ formatValue(value) }}</dd>
                                 </div>
-                                <div v-if="!metadataEntries(selectedLog.metadata).length" class="text-gray-500 dark:text-gray-400">
+                                <div v-if="!metadataEntries(selectedLog.metadata).length" class="text-slate-500 dark:text-zinc-400">
                                     No additional context recorded.
                                 </div>
                             </dl>
                         </div>
                     </section>
 
-                    <section class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Changes</h3>
+                    <section class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                        <h3 class="text-sm font-semibold text-ink dark:text-white">Changes</h3>
 
                         <div v-if="changeRows(selectedLog.metadata).length" class="mt-4 overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                <thead class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-zinc-400">
                                     <tr>
                                         <th class="py-2 pr-4 font-semibold">Field</th>
                                         <th class="px-4 py-2 font-semibold">Before</th>
                                         <th class="px-4 py-2 font-semibold">After</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tbody class="divide-y divide-border-light dark:divide-border-dark">
                                     <tr v-for="change in changeRows(selectedLog.metadata)" :key="change.key">
-                                        <td class="py-3 pr-4 font-medium text-gray-700 dark:text-gray-300">{{ formatKey(change.key) }}</td>
-                                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ formatValue(change.before) }}</td>
-                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ formatValue(change.after) }}</td>
+                                        <td class="py-3 pr-4 font-medium text-slate-700 dark:text-zinc-300">{{ formatKey(change.key) }}</td>
+                                        <td class="px-4 py-3 text-slate-500 dark:text-zinc-400">{{ formatValue(change.before) }}</td>
+                                        <td class="px-4 py-3 font-medium text-ink dark:text-white">{{ formatValue(change.after) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <p v-else class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                        <p v-else class="mt-4 text-sm text-slate-500 dark:text-zinc-400">
                             This event did not record before/after field changes.
                         </p>
                     </section>
