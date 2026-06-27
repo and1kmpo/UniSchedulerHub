@@ -9,7 +9,7 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
         <div class="flex items-center gap-4">
 
             <div
-                class="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-xl font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                class="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
                 {{
                     professor.name
                         ?.charAt(0)
@@ -18,11 +18,11 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
             <div>
 
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                     Professor
                 </p>
 
-                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">
+                <h3 class="text-lg font-semibold text-ink dark:text-white">
                     {{
                         professor.name
                     }}

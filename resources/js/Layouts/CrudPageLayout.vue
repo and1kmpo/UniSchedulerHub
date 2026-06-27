@@ -27,7 +27,6 @@ defineProps({
 
 <template>
     <AppLayout :title="title">
-        <!-- Header -->
         <template #header>
             <PageHeader :title="title" :subtitle="subtitle">
                 <template v-if="$slots.actions" #actions>
@@ -36,9 +35,8 @@ defineProps({
             </PageHeader>
         </template>
 
-        <!-- Page Content -->
         <div :class="[
-            'min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300',
+            'min-h-screen bg-slate-50 transition-colors duration-300 dark:bg-dark-bg',
             padded ? 'py-8 sm:py-10' : '',
         ]">
             <div :class="[

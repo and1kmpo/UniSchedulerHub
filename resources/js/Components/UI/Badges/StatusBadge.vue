@@ -13,28 +13,42 @@ defineProps({
 
 const variants = {
     gray: `
-        bg-gray-100
-        text-gray-700
-        dark:bg-gray-800
-        dark:text-gray-300
+        bg-slate-100
+        text-slate-700
+        dark:bg-zinc-800
+        dark:text-zinc-300
+    `,
+
+    brand: `
+        bg-brand-50
+        text-brand-700
+        dark:bg-brand-500/15
+        dark:text-brand-300
+    `,
+
+    info: `
+        bg-cyan-50
+        text-cyan-700
+        dark:bg-cyan-500/15
+        dark:text-cyan-300
     `,
 
     success: `
-        bg-emerald-100
-        text-emerald-700
+        bg-success/10
+        text-success
         dark:bg-emerald-500/15
         dark:text-emerald-300
     `,
 
     danger: `
-        bg-red-100
-        text-red-700
+        bg-danger/10
+        text-danger
         dark:bg-red-500/15
         dark:text-red-300
     `,
 
     warning: `
-        bg-amber-100
+        bg-warning/10
         text-amber-700
         dark:bg-amber-500/15
         dark:text-amber-300
@@ -44,7 +58,7 @@ const variants = {
 
 <template>
     <span :class="[
-        'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+        'inline-flex items-center rounded-full border border-current/10 px-3 py-1 text-xs font-semibold',
         variants[variant],
     ]">
         {{ label }}

@@ -40,7 +40,7 @@ const columns = [
 
         <template #actions="{ row }">
             <button type="button"
-                class="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+                class="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger/10 dark:text-danger dark:hover:bg-danger/10"
                 @click="$emit('unenroll', row)">
                 <i class="fa-solid fa-user-minus" />
             </button>

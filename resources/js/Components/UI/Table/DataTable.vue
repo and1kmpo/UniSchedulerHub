@@ -66,13 +66,13 @@ const sortBy = (column) => {
 <template>
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/80">
+            <thead class="border-b border-border-light bg-slate-50 dark:border-border-dark dark:bg-zinc-900/80">
                 <tr>
                     <th v-for="column in columns" :key="column.key" @click="sortBy(column)" :class="[
                         'whitespace-nowrap px-4 py-3 text-left font-semibold sm:px-6 sm:py-4',
                         column.sortable
-                            ? 'cursor-pointer select-none text-gray-700 hover:text-indigo-600 dark:text-gray-200'
-                            : 'text-gray-700 dark:text-gray-200'
+                            ? 'cursor-pointer select-none text-slate-700 hover:text-brand-600 dark:text-zinc-200'
+                            : 'text-slate-700 dark:text-zinc-200'
                     ]">
 
                         <div class="flex items-center gap-2">
@@ -89,18 +89,18 @@ const sortBy = (column) => {
                     </th>
 
                     <th v-if="$slots.actions"
-                        class="whitespace-nowrap px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-200 sm:px-6 sm:py-4">
+                        class="whitespace-nowrap px-4 py-3 text-center font-semibold text-slate-700 dark:text-zinc-200 sm:px-6 sm:py-4">
                         Actions
                     </th>
 
                 </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900">
+            <tbody class="divide-y divide-slate-100 bg-surface dark:divide-border-dark dark:bg-surface-dark">
                 <tr v-for="(row, index) in rows" :key="row[rowKey] ?? index"
-                    class="transition hover:bg-gray-50 dark:hover:bg-gray-800/70">
+                    class="transition hover:bg-slate-50 dark:hover:bg-zinc-800/70">
                     <td v-for="column in columns" :key="column.key"
-                        class="max-w-[18rem] px-4 py-4 align-middle text-gray-700 dark:text-gray-300 sm:px-6">
+                        class="max-w-[18rem] px-4 py-4 align-middle text-slate-700 dark:text-zinc-300 sm:px-6">
                         <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :column="column">
                             {{ row[column.key] ?? "-" }}
                         </slot>

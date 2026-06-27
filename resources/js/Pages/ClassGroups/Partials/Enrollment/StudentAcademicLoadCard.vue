@@ -16,24 +16,24 @@ defineProps({
 
 <template>
     <div class="
-            rounded-2xl
+            rounded-lg
             border
-            border-gray-200
-            bg-white
+            border-border-light
+            bg-surface
             p-6
             shadow-sm
-            dark:border-gray-800
-            dark:bg-gray-900
+            dark:border-border-dark
+            dark:bg-surface-dark
         ">
         <div class="flex items-center justify-between">
 
             <div>
 
-                <p class="text-sm text-gray-500 dark:text-gray-400">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
                     Academic Load
                 </p>
 
-                <h3 class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                <h3 class="mt-1 text-2xl font-bold text-ink dark:text-white">
                     {{ load.credits }} Credits
                 </h3>
 
@@ -45,20 +45,20 @@ defineProps({
                     w-14
                     items-center
                     justify-center
-                    rounded-2xl
-                    bg-indigo-100
-                    text-indigo-600
-                    dark:bg-indigo-500/10
-                    dark:text-indigo-300
+                    rounded-lg
+                    bg-brand-100
+                    text-brand-600
+                    dark:bg-brand-500/10
+                    dark:text-brand-300
                 ">
                 <i class="fa-solid fa-graduation-cap text-xl"></i>
             </div>
 
         </div>
 
-        <div class="mt-4 rounded-xl px-4 py-3 text-sm" :class="load.meets_minimum
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-            : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">
+        <div class="mt-4 rounded-lg px-4 py-3 text-sm" :class="load.meets_minimum
+            ? 'bg-success/10 text-success dark:bg-success/10 dark:text-success'
+            : 'bg-warning/10 text-amber-700 dark:bg-warning/10 dark:text-warning'">
             <i :class="load.meets_minimum ? 'fa-solid fa-circle-check mr-2' : 'fa-solid fa-triangle-exclamation mr-2'"></i>
             <span v-if="load.meets_minimum">
                 Meets minimum load of {{ load.min_credits }} credits
@@ -71,28 +71,28 @@ defineProps({
         <div class="mt-6 grid grid-cols-2 gap-4">
 
             <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
                     Groups
                 </p>
 
-                <p class="font-semibold text-gray-900 dark:text-white">
+                <p class="font-semibold text-ink dark:text-white">
                     {{ load.groups }}
                 </p>
             </div>
 
             <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
                     Weekly Hours
                 </p>
 
-                <p class="font-semibold text-gray-900 dark:text-white">
+                <p class="font-semibold text-ink dark:text-white">
                     {{ load.weekly_hours }}
                 </p>
             </div>
 
         </div>
 
-        <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+        <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
             Regular range: {{ load.min_credits }}-{{ load.max_credits }} credits
         </p>
     </div>

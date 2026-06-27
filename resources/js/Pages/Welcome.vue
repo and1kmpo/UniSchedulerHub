@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from "@inertiajs/vue3";
+import ApplicationLogo from "@/Components/ApplicationLogo.vue";
 
 defineProps({
     canLogin: Boolean,
@@ -10,54 +11,48 @@ defineProps({
 </script>
 
 <template>
-
     <Head title="Welcome" />
 
-    <div
-        class="relative min-h-screen flex flex-col justify-center items-center bg-gray-100 dark:bg-gray-900 selection:bg-red-500 selection:text-white">
+    <main class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-ink dark:bg-dark-bg">
+        <section
+            class="w-full max-w-xl rounded-lg border border-border-light bg-surface p-8 shadow-sm dark:border-border-dark dark:bg-surface-dark"
+        >
+            <ApplicationLogo />
 
-
-        <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg flex flex-col items-center text-center">
-            <div class="flex items-center mb-4">
-
-                <div
-                    class="w-20 h-20 bg-blue-500 text-white font-bold rounded-full flex items-center justify-center shadow-md text-4xl">
-                    Uni
-                </div>
-
-                <span class="text-5xl font-bold text-gray-800 tracking-tight">
-                    Scheduler<span class="text-blue-500">Hub</span>
-                </span>
+            <div class="mt-8 border-l-2 border-brand-600 pl-5">
+                <h1 class="text-2xl font-semibold tracking-tight text-ink dark:text-white">
+                    The operational network for the modern university.
+                </h1>
+                <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">
+                    TARRAYA connects students, professors, schedules, rooms, programs, grades and institutional data in one synchronized academic operating system.
+                </p>
             </div>
 
-
-            <p class="text-center text-sm text-gray-600 mt-4 max-w-sm">
-                Organize and manage your university courses effortlessly.
-            </p>
-
-
-            <div class="mt-6 flex space-x-4">
-                <Link v-if="!$page.props.auth.user" :href="route('login')"
-                    class="bg-indigo-600 text-white px-6 py-3 rounded-full hover:bg-indigo-500 transition">
-                Log in
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                    v-if="!$page.props.auth.user"
+                    :href="route('login')"
+                    class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 dark:focus:ring-offset-dark-bg"
+                >
+                    Log in
                 </Link>
-                <Link v-if="canRegister" :href="route('register')"
-                    class="bg-gray-600 text-white px-6 py-3 rounded-full hover:bg-gray-500 transition">
-                Register
+
+                <Link
+                    v-if="canRegister"
+                    :href="route('register')"
+                    class="inline-flex items-center justify-center rounded-lg border border-border-light bg-surface px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200 dark:hover:bg-zinc-800 dark:focus:ring-offset-dark-bg"
+                >
+                    Register
+                </Link>
+
+                <Link
+                    v-if="$page.props.auth.user"
+                    :href="route('dashboard')"
+                    class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 dark:focus:ring-offset-dark-bg"
+                >
+                    Open dashboard
                 </Link>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 </template>
-
-<style>
-.bg-dots-darker {
-    background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.22676 0C1.91374 0 2.45351 0.539773 2.45351 1.22676C2.45351 1.91374 1.91374 2.45351 1.22676 2.45351C0.539773 2.45351 0 1.91374 0 1.22676C0 0.539773 0.539773 0 1.22676 0Z' fill='rgba(0,0,0,0.07)'/%3E%3C/svg%3E");
-}
-
-@media (prefers-color-scheme: dark) {
-    .dark\:bg-dots-lighter {
-        background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.22676 0C1.91374 0 2.45351 0.539773 2.45351 1.22676C2.45351 1.91374 1.91374 2.45351 1.22676 2.45351C0.539773 2.45351 0 1.91374 0 1.22676C0 0.539773 0.539773 0 1.22676 0Z' fill='rgba(255,255,255,0.07)'/%3E%3C/svg%3E");
-    }
-}
-</style>

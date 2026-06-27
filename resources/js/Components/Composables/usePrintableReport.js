@@ -107,13 +107,13 @@ export function printTableReport({
                 <style>
                     * { box-sizing: border-box; }
                     body {
-                        color: #111827;
-                        font-family: Arial, sans-serif;
+                        color: #0F172A;
+                        font-family: "Geist", "Inter", Arial, sans-serif;
                         margin: 28px;
                         padding-bottom: 36px;
                     }
                     header {
-                        border-bottom: 2px solid #111827;
+                        border-bottom: 2px solid #0F172A;
                         display: flex;
                         justify-content: space-between;
                         gap: 24px;
@@ -121,7 +121,7 @@ export function printTableReport({
                         padding-bottom: 16px;
                     }
                     .brand {
-                        color: #4f46e5;
+                        color: #2563EB;
                         font-size: 12px;
                         font-weight: 700;
                         letter-spacing: 0.08em;
@@ -129,9 +129,10 @@ export function printTableReport({
                         text-transform: uppercase;
                     }
                     h1 { font-size: 24px; margin: 0; }
-                    p { color: #4b5563; margin: 6px 0 0; }
+                    p { color: #5C6B73; margin: 6px 0 0; }
                     .generated {
-                        color: #4b5563;
+                        color: #5C6B73;
+                        font-family: "Geist Mono", "JetBrains Mono", monospace;
                         font-size: 12px;
                         min-width: 180px;
                         text-align: right;
@@ -188,8 +189,8 @@ export function printTableReport({
                         width: 100%;
                     }
                     th {
-                        background: #eef2ff;
-                        color: #1f2937;
+                        background: #eff6ff;
+                        color: #0F172A;
                         text-align: left;
                     }
                     th, td {
@@ -217,7 +218,7 @@ export function printTableReport({
             <body>
                 <header>
                     <div>
-                        <div class="brand">UniSchedulerHub</div>
+                        <div class="brand">TARRAYA</div>
                         <h1>${escapeHtml(title)}</h1>
                         <p>${escapeHtml(subtitle)}</p>
                     </div>
@@ -248,7 +249,7 @@ export function printTableReport({
                 </table>
 
                 <footer>
-                    <span>UniSchedulerHub Academic Operations</span>
+                    <span>TARRAYA Academic Operations</span>
                     <span>Page <span class="page-number"></span></span>
                 </footer>
             </body>

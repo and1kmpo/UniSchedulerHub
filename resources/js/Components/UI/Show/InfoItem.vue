@@ -14,11 +14,11 @@ defineProps({
 
 <template>
     <div class="space-y-1">
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
             {{ label }}
         </p>
 
-        <div class="text-base font-semibold text-gray-900 dark:text-white">
+        <div class="text-base font-semibold text-ink dark:text-white">
             <slot>
                 {{ value || "-" }}
             </slot>

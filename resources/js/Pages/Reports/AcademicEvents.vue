@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import FilterPanel from "@/Components/UI/Filters/FilterPanel.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
 import { formatDate, formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
@@ -177,7 +178,7 @@ function printReport() {
         <template v-slot:actions>
             <Link
                 :href="route('reports.index')"
-                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                class="inline-flex items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition-all duration-200 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-600"
             >
                 <i class="fa-solid fa-arrow-left mr-2" />
                 Reports
@@ -197,72 +198,60 @@ function printReport() {
                 </section>
 
                 <SectionCard>
-                    <div class="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
-                        <div class="grid gap-3 lg:grid-cols-[minmax(18rem,24rem)_1fr]">
+                    <FilterPanel>
+                        <template #search>
                             <TableSearch v-model="filterForm.search" placeholder="Search action, summary, actor or entity..." />
+                        </template>
 
-                            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <BaseSelect v-model="filterForm.event_type" placeholder="Event type" :options="options.eventTypes" />
-                                <BaseSelect v-model="filterForm.action" placeholder="Action" :options="options.actions" />
-                                <BaseSelect v-model="filterForm.user_id" placeholder="Actor" :options="options.users" />
-                                <BaseSelect v-model="filterForm.auditable_type" placeholder="Entity" :options="options.entities" />
-                            </div>
-                        </div>
-
-                        <div class="grid gap-3 sm:grid-cols-2 xl:max-w-xl">
+                        <template #filters>
+                            <BaseSelect v-model="filterForm.event_type" placeholder="Event type" :options="options.eventTypes" />
+                            <BaseSelect v-model="filterForm.action" placeholder="Action" :options="options.actions" />
+                            <BaseSelect v-model="filterForm.user_id" placeholder="Actor" :options="options.users" />
+                            <BaseSelect v-model="filterForm.auditable_type" placeholder="Entity" :options="options.entities" />
                             <input
                                 v-model="filterForm.date_from"
                                 type="date"
-                                class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                class="w-full rounded-lg border border-border-light bg-surface px-4 py-2 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-zinc-900 dark:text-white"
                                 aria-label="Date from"
                             />
                             <input
                                 v-model="filterForm.date_to"
                                 type="date"
-                                class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                class="w-full rounded-lg border border-border-light bg-surface px-4 py-2 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-zinc-900 dark:text-white"
                                 aria-label="Date to"
                             />
-                        </div>
+                        </template>
 
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                Exports use the current search and filter criteria.
-                            </p>
+                        <template #reset>
                             <BaseButton variant="secondary" @click="clearFilters">
                                 <i class="fa-solid fa-rotate-left mr-2" />
                                 Reset filters
                             </BaseButton>
-                        </div>
+                        </template>
 
-                        <div class="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
-                            <span class="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
-                                Report actions
-                            </span>
+                        <template #actions>
+                            <a
+                                :href="csvExportUrl"
+                                class="inline-flex items-center justify-center rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-success"
+                            >
+                                <i class="fa-solid fa-file-csv mr-2" />
+                                Export CSV
+                            </a>
 
-                            <div class="flex flex-wrap gap-2 sm:justify-end">
-                                <a
-                                    :href="csvExportUrl"
-                                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                >
-                                    <i class="fa-solid fa-file-csv mr-2" />
-                                    Export CSV
-                                </a>
-
-                                <BaseButton variant="secondary" @click="printReport">
-                                    <i class="fa-solid fa-print mr-2" />
-                                    Print / PDF
-                                </BaseButton>
-                            </div>
-                        </div>
-                    </div>
+                            <BaseButton variant="secondary" @click="printReport">
+                                <i class="fa-solid fa-print mr-2" />
+                                Print / PDF
+                            </BaseButton>
+                        </template>
+                    </FilterPanel>
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Audited Academic Events
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Use this report to review who performed critical academic operations and what records were affected.
                         </p>
                     </div>
@@ -273,60 +262,60 @@ function printReport() {
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-3">
                                         <StatusBadge :label="event.event_type_label" :variant="eventVariant(event.event_type)" />
-                                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">
                                             {{ formatDateTime(event.created_at) }}
                                         </span>
                                     </div>
 
-                                    <h3 class="mt-3 text-base font-semibold text-gray-900 dark:text-white">
+                                    <h3 class="mt-3 text-base font-semibold text-ink dark:text-white">
                                         {{ event.action_label }}
                                     </h3>
-                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                    <p class="mt-1 text-sm text-slate-600 dark:text-zinc-300">
                                         {{ event.summary }}
                                     </p>
                                 </div>
 
-                                <div class="rounded-lg border border-gray-200 px-4 py-3 text-sm dark:border-gray-800 xl:min-w-72">
-                                    <p class="font-semibold text-gray-900 dark:text-white">
+                                <div class="rounded-lg border border-border-light px-4 py-3 text-sm dark:border-border-dark xl:min-w-72">
+                                    <p class="font-semibold text-ink dark:text-white">
                                         {{ event.user?.name || "System" }}
                                     </p>
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                         {{ event.user?.email || "Automated operation" }}
                                     </p>
                                 </div>
                             </div>
 
                             <div class="mt-5 grid gap-4 lg:grid-cols-[16rem_1fr]">
-                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-900/60">
-                                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <div class="rounded-lg bg-slate-50 p-4 dark:bg-surface-dark/60">
+                                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Affected record
                                     </p>
-                                    <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                                    <p class="mt-2 text-sm font-semibold text-ink dark:text-white">
                                         {{ event.entity }}
                                     </p>
-                                    <p v-if="event.entity_id" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <p v-if="event.entity_id" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                         ID {{ event.entity_id }}
                                     </p>
-                                    <p v-if="event.change_count" class="mt-3 text-xs font-semibold text-amber-600 dark:text-amber-300">
+                                    <p v-if="event.change_count" class="mt-3 text-xs font-semibold text-warning dark:text-warning">
                                         {{ event.change_count }} changed field(s)
                                     </p>
                                 </div>
 
-                                <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-900/60">
-                                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <div class="rounded-lg bg-slate-50 p-4 dark:bg-surface-dark/60">
+                                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Context
                                     </p>
                                     <dl v-if="metadataEntries(event.metadata).length" class="mt-3 grid gap-3 sm:grid-cols-2">
                                         <div v-for="[key, value] in metadataEntries(event.metadata)" :key="key">
-                                            <dt class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                            <dt class="text-xs font-semibold text-slate-500 dark:text-slate-400">
                                                 {{ formatKey(key) }}
                                             </dt>
-                                            <dd class="mt-1 break-words text-sm text-gray-900 dark:text-white">
+                                            <dd class="mt-1 break-words text-sm text-ink dark:text-white">
                                                 {{ formatValue(value) }}
                                             </dd>
                                         </div>
                                     </dl>
-                                    <p v-else class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <p v-else class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                                         No additional context recorded.
                                     </p>
                                 </div>

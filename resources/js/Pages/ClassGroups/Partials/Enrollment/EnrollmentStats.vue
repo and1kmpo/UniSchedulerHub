@@ -26,11 +26,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Enrolled
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ enrolled }}
             </h3>
 
@@ -38,11 +38,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Capacity
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ capacity }}
             </h3>
 
@@ -50,11 +50,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Available Seats
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ available }}
             </h3>
 
@@ -62,11 +62,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Occupancy
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ occupancy }}%
             </h3>
 

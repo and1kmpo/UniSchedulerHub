@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
-import ApplicationMark from "@/Components/ApplicationMark.vue";
+import ApplicationCompactMark from "@/Components/ApplicationCompactMark.vue";
 
 defineProps({
     title: {
@@ -18,7 +18,15 @@ const showingMenu = ref(false);
 const userDropdownOpen = ref(null);
 const dropdownOpen = ref(null);
 
-const navItems = computed(() => page.props.navigation?.main ?? []);
+const navItems = computed(() =>
+    (page.props.navigation?.main ?? []).map((item) => {
+        if (item.children?.length === 1) {
+            return item.children[0];
+        }
+
+        return item;
+    })
+);
 
 const logout = () => {
     router.post(route("logout"));
@@ -88,12 +96,17 @@ onBeforeUnmount(() => {
 
         <Head :title="$props.title" />
 
-        <nav class="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700 relative z-50">
+        <nav class="relative z-50 border-b border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <Link href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
-                    <ApplicationMark class="h-9 w-9" />
-                    <span class="hidden text-sm font-bold tracking-tight text-slate-900 dark:text-white sm:block">
-                        TARRAYA
+                    <ApplicationCompactMark class="h-9 w-9 shrink-0" />
+                    <span class="hidden leading-tight sm:block">
+                        <span class="block text-sm font-bold tracking-tight text-ink dark:text-white">
+                            TARRAYA
+                        </span>
+                        <span class="block font-mono text-[10px] uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+                            Academic OS
+                        </span>
                     </span>
                 </Link>
 
@@ -101,7 +114,7 @@ onBeforeUnmount(() => {
                     <button
                         @click="toggleDarkMode"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-blue-600 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
                         :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
                     >
                         <i :class="[
@@ -111,30 +124,30 @@ onBeforeUnmount(() => {
                     </button>
 
                     <button id="avatar-button" @click="userDropdownOpen = !userDropdownOpen" type="button"
-                        class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
+                        class="flex rounded-full border border-border-light bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-surface-dark">
                         <img class="w-8 h-8 rounded-full object-cover" :src="page.props.auth.user.profile_photo_url"
                             :alt="page.props.auth.user.name" />
                     </button>
 
                     <transition name="fade">
                         <div v-show="userDropdownOpen" id="user-dropdown"
-                            class="absolute right-0 top-12 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600 min-w-[12rem]">
+                            class="absolute right-0 top-12 z-50 min-w-[12rem] list-none divide-y divide-slate-100 rounded-lg border border-border-light bg-surface text-base shadow-sm dark:divide-border-dark dark:border-border-dark dark:bg-surface-dark">
                             <div class="px-4 py-3">
-                                <span class="block text-sm text-gray-900 dark:text-white">{{ page.props.auth.user.name
+                                <span class="block text-sm text-ink dark:text-white">{{ page.props.auth.user.name
                                     }}</span>
-                                <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{
+                                <span class="block truncate text-sm text-slate-500 dark:text-zinc-400">{{
                                     page.props.auth.user.email }}</span>
                             </div>
-                            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
+                            <ul class="py-2 text-sm text-slate-700 dark:text-zinc-200">
                                 <li>
                                     <Link :href="route('profile.show')"
-                                        class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                        class="block px-4 py-2 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
                                     Profile
                                     </Link>
                                 </li>
                                 <li>
                                     <button @click="logout"
-                                        class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                        class="block w-full px-4 py-2 text-left hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
                                         Sign out
                                     </button>
                                 </li>
@@ -143,7 +156,7 @@ onBeforeUnmount(() => {
                     </transition>
 
                     <button @click="showingMenu = !showingMenu" type="button"
-                        class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-transform hover:rotate-90">
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg p-2 text-sm text-slate-500 transition-transform hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:text-zinc-400 dark:hover:bg-brand-500/10 lg:hidden">
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M1 1h15M1 7h15M1 13h15" />
@@ -154,7 +167,7 @@ onBeforeUnmount(() => {
 
                 <div class="hidden lg:block w-full lg:w-auto lg:order-1">
                     <ul
-                        class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+                        class="mt-4 flex flex-col rounded-lg border border-border-light bg-slate-50 p-4 font-medium dark:border-border-dark dark:bg-zinc-900 md:mt-0 md:flex-row md:space-x-8 md:border-0 md:bg-transparent md:p-0 md:dark:bg-transparent">
                         <li v-for="item in navItems" :key="item.route ?? item.label" class="relative">
                             <button
                                 v-if="item.children"
@@ -197,10 +210,10 @@ onBeforeUnmount(() => {
 
                 <transition name="slide">
                     <div v-if="showingMenu"
-                        class="lg:hidden fixed top-0 right-0 z-50 w-64 h-full bg-white dark:bg-gray-800 shadow-lg p-6 overflow-y-auto">
+                        class="fixed right-0 top-0 z-50 h-full w-72 overflow-y-auto border-l border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark lg:hidden">
 
                         <button @click="showingMenu = false"
-                            class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none text-3xl z-50">
+                            class="absolute right-4 top-4 z-50 text-3xl text-slate-500 hover:text-ink focus:outline-none dark:text-zinc-400 dark:hover:text-white">
                             &times;
                         </button>
 
@@ -208,7 +221,7 @@ onBeforeUnmount(() => {
                         <ul class="space-y-5 mt-10">
                             <li v-for="item in navItems" :key="item.route ?? item.label">
                                 <div v-if="item.children" class="space-y-2">
-                                    <p class="px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                    <p class="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
                                         {{ item.label }}
                                     </p>
                                     <Link
@@ -231,7 +244,7 @@ onBeforeUnmount(() => {
             </div>
         </nav>
 
-        <header class="bg-white shadow dark:bg-gray-800">
+        <header class="border-b border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
             <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
                 <slot name="header"></slot>
             </div>
@@ -249,13 +262,13 @@ body {
 }
 
 .nav-link {
-    @apply block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent;
+    @apply block rounded-md px-3 py-2 text-ink transition hover:bg-brand-50 hover:text-brand-700 md:border-0 md:p-0 md:hover:bg-transparent md:hover:text-brand-700 dark:text-white dark:hover:bg-brand-500/10 dark:hover:text-brand-300 md:dark:hover:bg-transparent;
 }
 
 /* Haciendo que el dropdown flote por encima de otros elementos */
 /* Para asegurarse de que el submenú no mueva otros elementos */
 .dropdown-menu {
-    @apply mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600;
+    @apply mt-2 w-44 divide-y divide-slate-100 rounded-lg border border-border-light bg-surface shadow-sm dark:divide-border-dark dark:border-border-dark dark:bg-surface-dark;
     position: absolute;
     top: 100%;
     left: 0;
@@ -274,11 +287,11 @@ body {
 }
 
 .dropdown-item {
-    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white;
+    @apply block px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-200 dark:hover:bg-brand-500/10 dark:hover:text-white;
 }
 
 .mobile-child-link {
-    @apply block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700;
+    @apply block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-200 dark:hover:bg-brand-500/10 dark:hover:text-white;
 }
 
 .fade-enter-active,

@@ -15,11 +15,11 @@ defineProps({
 
             <div>
 
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                     Academic Period
                 </p>
 
-                <h3 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">
+                <h3 class="mt-1 text-lg font-semibold text-ink dark:text-white">
                     {{ period.name }}
                 </h3>
 

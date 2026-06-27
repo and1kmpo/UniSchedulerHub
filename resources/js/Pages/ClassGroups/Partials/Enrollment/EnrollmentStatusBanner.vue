@@ -19,30 +19,30 @@ const props = defineProps({
 
 const variants = {
     ready: `
-        bg-emerald-50
-        border-emerald-200
-        text-emerald-700
-        dark:bg-emerald-500/10
-        dark:border-emerald-500/20
-        dark:text-emerald-300
+        bg-success/10
+        border-success/30
+        text-success
+        dark:bg-success/10
+        dark:border-success/30
+        dark:text-success
     `,
 
     warning: `
-        bg-amber-50
-        border-amber-200
+        bg-warning/10
+        border-warning/30
         text-amber-700
-        dark:bg-amber-500/10
-        dark:border-amber-500/20
-        dark:text-amber-300
+        dark:bg-warning/10
+        dark:border-warning/30
+        dark:text-warning
     `,
 
     danger: `
-        bg-red-50
-        border-red-200
-        text-red-700
-        dark:bg-red-500/10
-        dark:border-red-500/20
-        dark:text-red-300
+        bg-danger/10
+        border-danger/20
+        text-danger
+        dark:bg-danger/10
+        dark:border-danger/20
+        dark:text-danger
     `,
 }
 
@@ -81,7 +81,7 @@ const message = computed(() => {
 
 <template>
     <div :class="[
-        'rounded-2xl border p-4',
+        'rounded-lg border p-4',
         variants[status],
     ]">
         <div class="flex items-center gap-3">

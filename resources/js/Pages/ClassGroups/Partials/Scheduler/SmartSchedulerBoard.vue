@@ -392,15 +392,15 @@ async function persistCalendarChange(info) {
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+    <div class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+        <div class="border-b border-border-light px-6 py-4 dark:border-border-dark">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 class="text-lg font-semibold text-ink dark:text-white">
                         Smart Scheduler
                     </h3>
 
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {{ !canEdit ? "Schedule editing is locked" : editable ? "Drag or resize official blocks" : "Official academic week overview" }}
                     </p>
                 </div>
@@ -413,22 +413,22 @@ async function persistCalendarChange(info) {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 sm:w-72">
-                    <div class="rounded-xl border border-gray-200 p-3 text-center dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="rounded-lg border border-border-light p-3 text-center dark:border-border-dark">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Score
                         </p>
 
-                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        <p class="text-xl font-bold text-ink dark:text-white">
                             {{ score.value }}
                         </p>
                     </div>
 
-                    <div class="rounded-xl border border-gray-200 p-3 text-center dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="rounded-lg border border-border-light p-3 text-center dark:border-border-dark">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Conflicts
                         </p>
 
-                        <p class="text-xl font-bold" :class="conflicts.length ? 'text-red-600' : 'text-emerald-600'">
+                        <p class="text-xl font-bold" :class="conflicts.length ? 'text-danger' : 'text-success'">
                             {{ conflicts.length }}
                         </p>
                     </div>
@@ -437,24 +437,24 @@ async function persistCalendarChange(info) {
         </div>
 
         <div class="space-y-4 p-6">
-            <div v-if="saveError" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div v-if="saveError" class="rounded-lg border border-danger/20 bg-danger/10 p-4 text-sm text-danger">
                 {{ saveError }}
             </div>
 
-            <div v-if="saving" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-700">
+            <div v-if="saving" class="rounded-lg border border-brand-200 bg-brand-50 p-4 text-sm text-brand-700">
                 Saving schedule change...
             </div>
 
             <FullCalendar class="uh-full-calendar" :options="calendarOptions" />
 
-            <div v-if="selectedSchedule" class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+            <div v-if="selectedSchedule" class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        <h4 class="text-sm font-semibold text-ink dark:text-white">
                             {{ selectedSchedule.subject }}
                         </h4>
 
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        <p class="mt-1 text-sm text-slate-600 dark:text-zinc-300">
                             {{ selectedSchedule.start_label }} - {{ selectedSchedule.end_label }}
                         </p>
                     </div>
@@ -464,19 +464,19 @@ async function persistCalendarChange(info) {
 
                 <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                     <div>
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Professor
                         </p>
-                        <p class="mt-1 text-gray-700 dark:text-gray-200">
+                        <p class="mt-1 text-slate-700 dark:text-zinc-200">
                             {{ selectedSchedule.professor }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Classroom
                         </p>
-                        <p class="mt-1 text-gray-700 dark:text-gray-200">
+                        <p class="mt-1 text-slate-700 dark:text-zinc-200">
                             {{ selectedSchedule.classroom }}
                         </p>
                     </div>

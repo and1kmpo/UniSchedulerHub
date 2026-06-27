@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    :root {
+        --color-brand: #2563EB;
+        --color-brand-dark: #1D4ED8;
+        --color-ink: #0F172A;
+        --color-dark-bg: #09090B;
+        --color-surface: #FFFFFF;
+        --color-surface-dark: #18181B;
+        --color-border-light: #E2E8F0;
+        --color-border-dark: #27272A;
+        --color-accent: #06B6D4;
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-danger: #EF4444;
+    }
+
+    html {
+        @apply bg-slate-50 text-ink antialiased dark:bg-dark-bg;
+    }
+
+    body {
+        @apply bg-slate-50 text-ink dark:bg-dark-bg dark:text-zinc-100;
+    }
+
+    ::selection {
+        @apply bg-brand-600 text-white;
+    }
+}
 
 [x-cloak] {
     display: none;

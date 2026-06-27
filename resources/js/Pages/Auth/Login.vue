@@ -43,6 +43,17 @@ const submit = () => {
             {{ status }}
         </div>
 
+        <div
+            class="mb-6 border-l-2 border-brand-600 bg-brand-50/70 px-4 py-3 dark:bg-brand-950/20"
+        >
+            <p class="text-sm font-semibold text-ink dark:text-white">
+                Welcome to TARRAYA
+            </p>
+            <p class="mt-1 font-mono text-xs text-slate-600 dark:text-zinc-400">
+                The operational network for your institution.
+            </p>
+        </div>
+
         <form @submit.prevent="submit" class="text-slate-900 dark:text-zinc-100">
             <div>
                 <InputLabel for="email" value="Email" />
@@ -67,7 +78,7 @@ const submit = () => {
 
             <div class="flex items-center justify-end mt-4">
                 <Link v-if="canResetPassword" :href="route('password.request')"
-                    class="rounded-md font-mono text-xs text-slate-600 underline hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 dark:text-zinc-400 dark:hover:text-white dark:focus:ring-offset-[#09090B]">
+                    class="rounded-md font-mono text-xs text-slate-600 underline hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 dark:text-zinc-400 dark:hover:text-white dark:focus:ring-offset-dark-bg">
                     Forgot your password?
                 </Link>
 

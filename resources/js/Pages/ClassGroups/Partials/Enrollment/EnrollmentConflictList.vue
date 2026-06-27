@@ -10,25 +10,25 @@ defineProps({
 <template>
     <div v-if="conflicts.length" class="space-y-3">
         <div v-for="(conflict, index) in conflicts" :key="index" class="
-                rounded-xl
+                rounded-lg
                 border
-                border-red-200
-                bg-red-50
+                border-danger/20
+                bg-danger/10
                 p-4
-                dark:border-red-500/20
-                dark:bg-red-500/10
+                dark:border-danger/20
+                dark:bg-danger/10
             ">
             <div class="flex items-start gap-3">
 
-                <i class="fa-solid fa-ban text-red-600 dark:text-red-300 mt-1" />
+                <i class="fa-solid fa-ban text-danger dark:text-danger mt-1" />
 
                 <div>
 
-                    <p class="font-semibold text-red-700 dark:text-red-300">
+                    <p class="font-semibold text-danger dark:text-danger">
                         Conflict detected
                     </p>
 
-                    <p class="text-sm text-red-600 dark:text-red-200">
+                    <p class="text-sm text-danger dark:text-danger">
                         {{
                             conflict.subject
                                 ? `${conflict.subject} overlaps on ${conflict.day} from ${conflict.existing.start} to ${conflict.existing.end}`

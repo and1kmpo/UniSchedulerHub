@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import FilterPanel from "@/Components/UI/Filters/FilterPanel.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
 import { printTableReport } from "@/Components/Composables/usePrintableReport";
@@ -167,7 +168,7 @@ function printReport() {
         <template v-slot:actions>
             <Link
                 :href="route('reports.index')"
-                class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-all duration-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                class="inline-flex items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition-all duration-200 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-600"
             >
                 <i class="fa-solid fa-arrow-left mr-2" />
                 Reports
@@ -187,56 +188,47 @@ function printReport() {
                 </section>
 
                 <SectionCard>
-                    <div class="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
-                        <div class="grid gap-3 lg:grid-cols-[minmax(18rem,24rem)_1fr]">
+                    <FilterPanel>
+                        <template #search>
                             <TableSearch v-model="filterForm.search" placeholder="Search group, subject or professor..." />
+                        </template>
 
-                            <div class="grid gap-3 md:grid-cols-3">
-                                <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period" :options="periodOptions" />
-                                <BaseSelect v-model="filterForm.status" placeholder="Group status" :options="statusOptions" />
-                                <BaseSelect v-model="filterForm.grade_state" placeholder="Grade state" :options="gradeStateOptions" />
-                            </div>
-                        </div>
+                        <template #filters>
+                            <BaseSelect v-model="filterForm.academic_period_id" placeholder="Academic period" :options="periodOptions" />
+                            <BaseSelect v-model="filterForm.status" placeholder="Group status" :options="statusOptions" />
+                            <BaseSelect v-model="filterForm.grade_state" placeholder="Grade state" :options="gradeStateOptions" />
+                        </template>
 
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                Exports use the current search and filter criteria.
-                            </p>
+                        <template #reset>
                             <BaseButton variant="secondary" @click="clearFilters">
                                 <i class="fa-solid fa-rotate-left mr-2" />
                                 Reset filters
                             </BaseButton>
-                        </div>
+                        </template>
 
-                        <div class="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
-                            <span class="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
-                                Report actions
-                            </span>
+                        <template #actions>
+                            <a
+                                :href="csvExportUrl"
+                                class="inline-flex items-center justify-center rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-success"
+                            >
+                                <i class="fa-solid fa-file-csv mr-2" />
+                                Export CSV
+                            </a>
 
-                            <div class="flex flex-wrap gap-2 sm:justify-end">
-                                <a
-                                    :href="csvExportUrl"
-                                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                >
-                                    <i class="fa-solid fa-file-csv mr-2" />
-                                    Export CSV
-                                </a>
-
-                                <BaseButton variant="secondary" @click="printReport">
-                                    <i class="fa-solid fa-print mr-2" />
-                                    Print / PDF
-                                </BaseButton>
-                            </div>
-                        </div>
-                    </div>
+                            <BaseButton variant="secondary" @click="printReport">
+                                <i class="fa-solid fa-print mr-2" />
+                                Print / PDF
+                            </BaseButton>
+                        </template>
+                    </FilterPanel>
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Grading Progress By Group
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Use this report to identify grading workload, locked groups and pending evaluation actions.
                         </p>
                     </div>
@@ -246,7 +238,7 @@ function printReport() {
                             <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div>
                                     <div class="flex flex-wrap items-center gap-3">
-                                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                                        <h3 class="text-base font-semibold text-ink dark:text-white">
                                             {{ group.code }}
                                         </h3>
                                         <StatusBadge :label="group.status" :variant="statusVariant(group.status)" />
@@ -255,19 +247,19 @@ function printReport() {
                                             :variant="group.can_edit_grades ? 'success' : 'warning'"
                                         />
                                     </div>
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                                         {{ group.subject.code }} - {{ group.subject.name }} / {{ group.professor }} / {{ group.period || "-" }}
                                     </p>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                                    <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                    <span class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
                                         {{ group.active_students }} active
                                     </span>
-                                    <span class="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                    <span class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
                                         {{ group.graded_students }} graded
                                     </span>
-                                    <span class="rounded-lg bg-amber-50 px-3 py-2 font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                                    <span class="rounded-lg bg-warning/10 px-3 py-2 font-medium text-amber-700 dark:bg-warning/10 dark:text-warning">
                                         {{ group.pending_grades }} pending
                                     </span>
                                     <StatusBadge :label="group.progress + '% progress'" :variant="progressVariant(group.progress)" />
@@ -275,23 +267,23 @@ function printReport() {
                             </div>
 
                             <div class="mt-5 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-                                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Academic period
                                     </p>
-                                    <p class="mt-2 font-medium text-gray-900 dark:text-white">
+                                    <p class="mt-2 font-medium text-ink dark:text-white">
                                         {{ group.period || "No period" }}
                                     </p>
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                                         {{ group.period_status }}
                                     </p>
                                 </div>
 
-                                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Grade lock reason
                                     </p>
-                                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <p class="mt-2 text-sm text-slate-700 dark:text-zinc-300">
                                         {{ group.lock_reason || "Grades are editable for this group." }}
                                     </p>
                                 </div>

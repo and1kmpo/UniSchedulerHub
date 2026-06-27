@@ -29,17 +29,17 @@ defineEmits(["enroll"]);
         <div class="flex items-start gap-4">
 
             <div
-                class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
                 <i class="fa-solid fa-brain" />
             </div>
 
             <div>
 
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 class="text-lg font-semibold text-ink dark:text-white">
                     Smart Enrollment Assistant
                 </h3>
 
-                <div class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <div class="mt-4 space-y-2 text-sm text-slate-600 dark:text-zinc-300">
 
                     <p>
                         • Monitor schedule conflicts
@@ -66,15 +66,15 @@ defineEmits(["enroll"]);
                         w-full
                         items-center
                         justify-center
-                        rounded-xl
-                        bg-indigo-600
+                        rounded-lg
+                        bg-brand-600
                         px-4
                         py-2
                         text-sm
                         font-semibold
                         text-white
                         transition
-                        hover:bg-indigo-700
+                        hover:bg-brand-700
                         disabled:cursor-not-allowed
                         disabled:opacity-50
                     ">

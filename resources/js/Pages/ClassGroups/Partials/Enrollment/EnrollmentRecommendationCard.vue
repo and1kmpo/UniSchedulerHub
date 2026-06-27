@@ -9,33 +9,33 @@ defineProps({
 });
 
 const priorityClass = (priority) => ({
-    high: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300",
-    medium: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-    low: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-}[priority] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300");
+    high: "bg-danger/10 text-danger dark:bg-danger/10 dark:text-danger",
+    medium: "bg-warning/10 text-amber-700 dark:bg-warning/10 dark:text-warning",
+    low: "bg-success/10 text-success dark:bg-success/10 dark:text-success",
+}[priority] || "bg-slate-100 text-slate-700 dark:bg-zinc-900 dark:text-zinc-300");
 </script>
 
 <template>
     <SectionCard class="p-6">
         <div class="mb-4 flex items-center justify-between gap-4">
             <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 class="text-lg font-semibold text-ink dark:text-white">
                     Recommendations
                 </h3>
 
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Suggested next steps for this enrollment.
                 </p>
             </div>
 
-            <i class="fa-solid fa-lightbulb text-amber-500" />
+            <i class="fa-solid fa-lightbulb text-warning" />
         </div>
 
         <div v-if="recommendations.length" class="space-y-3">
             <div v-for="(recommendation, index) in recommendations" :key="index"
-                class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                class="rounded-lg border border-border-light p-4 dark:border-border-dark">
                 <div class="flex items-start justify-between gap-3">
-                    <p class="text-sm text-gray-700 dark:text-gray-200">
+                    <p class="text-sm text-slate-700 dark:text-zinc-200">
                         {{ recommendation.message ?? recommendation }}
                     </p>
 
@@ -48,7 +48,7 @@ const priorityClass = (priority) => ({
             </div>
         </div>
 
-        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+        <p v-else class="text-sm text-slate-500 dark:text-slate-400">
             No recommendations available.
         </p>
     </SectionCard>

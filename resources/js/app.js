@@ -7,7 +7,7 @@ import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue.m";
 import '../css/calendar.css';
 
-const appName = import.meta.env.VITE_APP_NAME || "UniSchedulerHub";
+const appName = import.meta.env.VITE_APP_NAME || "TARRAYA";
 
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
@@ -27,6 +27,6 @@ createInertiaApp({
         app.mount(el);
     },
     progress: {
-        color: "#4B5563",
+        color: "#2563EB",
     },
 });

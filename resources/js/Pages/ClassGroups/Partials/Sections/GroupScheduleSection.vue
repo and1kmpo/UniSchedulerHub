@@ -107,11 +107,11 @@ const submitCreateSchedule = () => {
         <SectionCard class="p-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 class="text-lg font-semibold text-ink dark:text-white">
                         Schedule Planning
                     </h2>
 
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Manage official blocks, conflicts and weekly distribution.
                     </p>
                 </div>
@@ -123,12 +123,12 @@ const submitCreateSchedule = () => {
                     </BaseButton>
 
                     <Link :href="route('class-schedules.create', classGroup.id)"
-                        class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                        class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
                         Open full form
                     </Link>
                 </div>
 
-                <div v-else class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+                <div v-else class="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2 text-sm text-amber-800">
                     Schedule changes are locked for this group or academic period.
                 </div>
             </div>
