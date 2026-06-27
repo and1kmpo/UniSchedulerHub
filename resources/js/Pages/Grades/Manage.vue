@@ -130,10 +130,10 @@ function isFieldInvalid(enrollmentId, field) {
 
 function inputClasses(enrollmentId, field) {
     return [
-        "w-24 rounded-lg border bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-gray-100 dark:bg-gray-900 dark:text-gray-100",
+        "w-24 rounded-lg border bg-surface px-3 py-2 text-sm text-ink shadow-sm transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-surface-dark dark:text-zinc-100",
         isFieldInvalid(enrollmentId, field)
             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500"
-            : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-gray-700",
+            : "border-border-light focus:border-brand focus:ring-brand/20 dark:border-border-dark",
     ];
 }
 
@@ -220,7 +220,7 @@ function formatAudit(grade) {
 
 function finalGradeClass(value) {
     if (!isNumeric(value)) {
-        return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
+        return "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300";
     }
 
     const number = Number(value);
@@ -335,34 +335,34 @@ async function submitGrades() {
                 <SectionCard>
                     <div class="grid gap-4 p-6 md:grid-cols-4">
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Subject
                             </p>
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-semibold text-ink dark:text-white">
                                 {{ subject.name }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Group
                             </p>
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-semibold text-ink dark:text-white">
                                 {{ group.code }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Students
                             </p>
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-semibold text-ink dark:text-white">
                                 {{ activeEnrollments.length }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Period Status
                             </p>
                             <StatusBadge class="mt-1" :label="periodLabel(academicPeriod)"
@@ -385,40 +385,40 @@ async function submitGrades() {
 
                 <div class="grid gap-4 md:grid-cols-3">
                     <SectionCard class="p-5">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                             Completed Grades
                         </p>
-                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+                        <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">
                             {{ completedGradesCount }}
                         </p>
                     </SectionCard>
 
                     <SectionCard class="p-5">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                             Pending Changes
                         </p>
-                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+                        <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">
                             {{ pendingChangesCount }}
                         </p>
                     </SectionCard>
 
                     <SectionCard class="p-5">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                             Formula
                         </p>
-                        <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                        <p class="mt-2 text-sm font-semibold text-ink dark:text-white">
                             P1 25% / P2 25% / P3 30% / Activities 20%
                         </p>
                     </SectionCard>
                 </div>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Student Grades
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Values must be 0-5. Attendance must be 0-100. Final grade is previewed before saving.
                         </p>
                     </div>
@@ -429,47 +429,47 @@ async function submitGrades() {
 
                     <div v-if="activeEnrollments.length" class="overflow-x-auto">
                         <table class="min-w-full text-sm">
-                            <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800/80">
+                            <thead class="border-b border-border-light bg-slate-50 dark:border-border-dark dark:bg-zinc-950">
                                 <tr>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         Student
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         P1
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         P2
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         P3
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         Activities
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         Attendance
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         Final
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         State
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
                                         Last Update
                                     </th>
                                 </tr>
                             </thead>
 
-                            <tbody class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900">
+                            <tbody class="divide-y divide-border-light bg-surface dark:divide-border-dark dark:bg-surface-dark">
                                 <tr v-for="enrollment in activeEnrollments" :key="enrollment.id"
-                                    class="transition hover:bg-gray-50 dark:hover:bg-gray-800/70"
+                                    class="transition hover:bg-slate-50 dark:hover:bg-zinc-900"
                                     :class="{ 'bg-amber-50 dark:bg-amber-900/10': isModified(enrollment.id) }">
                                     <td class="px-4 py-4 align-middle">
-                                        <p class="font-medium text-gray-900 dark:text-white">
+                                        <p class="font-medium text-ink dark:text-white">
                                             {{ enrollment.student.name }}
                                         </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        <p class="text-xs text-slate-500 dark:text-zinc-400">
                                             {{ enrollment.student.document }}
                                         </p>
                                     </td>
@@ -501,7 +501,7 @@ async function submitGrades() {
                                             :variant="stateVariant(displayState(enrollment.id))" />
                                     </td>
 
-                                    <td class="px-4 py-4 align-middle text-xs text-gray-500 dark:text-gray-400">
+                                    <td class="px-4 py-4 align-middle text-xs text-slate-500 dark:text-zinc-400">
                                         {{ formatAudit(grades[enrollment.id]) }}
                                     </td>
                                 </tr>
@@ -519,3 +519,5 @@ async function submitGrades() {
         </CrudContainer>
     </CrudPageLayout>
 </template>
+
+

@@ -215,7 +215,7 @@ const deleteProfessor = async (professor) => {
 
                         <Link :href="route('professors.edit', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-pen" label="Edit professor" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit professor" color="brand" />
 
                         </Link>
 
@@ -254,3 +254,5 @@ const deleteProfessor = async (professor) => {
 
     </CrudPageLayout>
 </template>
+
+

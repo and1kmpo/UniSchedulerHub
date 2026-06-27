@@ -89,3 +89,4 @@ defineEmits(["enroll"]);
     </SectionCard>
 
 </template>
+

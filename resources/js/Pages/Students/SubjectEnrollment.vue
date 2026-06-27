@@ -282,7 +282,7 @@ function messageClasses(type) {
         error: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
         warning: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
         info: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
-    }[type] || "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300";
+    }[type] || "border-border-light bg-slate-50 text-slate-700 dark:border-border-dark dark:bg-zinc-950 dark:text-zinc-300";
 }
 
 async function openGroupModal(subject) {
@@ -420,10 +420,10 @@ async function confirmPeriodEnrollment() {
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
                                 Enrollment Window
                             </h2>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 {{ currentPeriod?.name ?? "No active academic period" }}. Enrolled subjects: {{ enrolledSubjects }}.
                             </p>
                         </div>
@@ -434,23 +434,23 @@ async function confirmPeriodEnrollment() {
                         />
                     </div>
 
-                    <div class="grid gap-4 border-t border-gray-200 p-6 text-sm dark:border-gray-800 md:grid-cols-2">
+                    <div class="grid gap-4 border-t border-border-light p-6 text-sm dark:border-border-dark md:grid-cols-2">
                         <div>
-                            <p class="font-medium text-gray-500 dark:text-gray-400">Enrollment deadline</p>
-                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(enrollmentDeadline, "Not defined") }}</p>
+                            <p class="font-medium text-slate-500 dark:text-zinc-400">Enrollment deadline</p>
+                            <p class="mt-1 text-ink dark:text-white">{{ formatDate(enrollmentDeadline, "Not defined") }}</p>
                         </div>
                         <div>
-                            <p class="font-medium text-gray-500 dark:text-gray-400">Unenrollment deadline</p>
-                            <p class="mt-1 text-gray-900 dark:text-white">{{ formatDate(unenrollmentDeadline, "Not defined") }}</p>
+                            <p class="font-medium text-slate-500 dark:text-zinc-400">Unenrollment deadline</p>
+                            <p class="mt-1 text-ink dark:text-white">{{ formatDate(unenrollmentDeadline, "Not defined") }}</p>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-4 border-t border-gray-200 p-6 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex flex-col gap-4 border-t border-border-light p-6 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                            <p class="text-sm font-semibold text-ink dark:text-white">
                                 Enrollment confirmation
                             </p>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 <span v-if="meetsMinimumCredits">
                                     Minimum credit load met. Confirm pending selections when your schedule is ready.
                                 </span>
@@ -472,11 +472,11 @@ async function confirmPeriodEnrollment() {
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             My Weekly Schedule
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Review your current selections before confirming the academic period enrollment.
                         </p>
                     </div>
@@ -503,11 +503,11 @@ async function confirmPeriodEnrollment() {
                 </SectionCard>
 
                 <SectionCard v-else>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Curriculum Subjects
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Choose a class group for eligible subjects. The backend validates capacity, duplicates and schedule conflicts.
                         </p>
                     </div>
@@ -519,13 +519,13 @@ async function confirmPeriodEnrollment() {
                             </template>
 
                             <template #cell-availableGroupsCount="{ value }">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <span class="text-sm font-medium text-slate-700 dark:text-zinc-300">
                                     {{ value || 0 }} {{ value === 1 ? "group" : "groups" }}
                                 </span>
                             </template>
 
                             <template #cell-block_reason="{ value }">
-                                <span class="block max-w-sm whitespace-normal text-sm text-gray-600 dark:text-gray-300">
+                                <span class="block max-w-sm whitespace-normal text-sm text-slate-600 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
@@ -551,7 +551,7 @@ async function confirmPeriodEnrollment() {
                                     View Group
                                 </BaseButton>
 
-                                <span v-else class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                <span v-else class="text-xs font-medium text-slate-500 dark:text-zinc-400">
                                     {{ row.block_reason }}
                                 </span>
                             </template>
@@ -574,24 +574,24 @@ async function confirmPeriodEnrollment() {
             role="dialog"
             aria-label="Class group selection"
         >
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-900">
-                <div class="flex items-start justify-between gap-4 border-b border-gray-200 p-6 dark:border-gray-800">
+            <div class="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <div class="flex items-start justify-between gap-4 border-b border-border-light p-6 dark:border-border-dark">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             {{ selectedSubject.name }}
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Select a published group with available capacity and a valid schedule.
                         </p>
                     </div>
 
-                    <button class="text-gray-500 hover:text-red-500" type="button" @click="closeGroupModal">
+                    <button class="text-slate-500 hover:text-danger" type="button" @click="closeGroupModal">
                         <i class="fa-solid fa-xmark" />
                     </button>
                 </div>
 
                 <div class="max-h-[60vh] overflow-y-auto p-6">
-                    <div v-if="loadingGroups" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <div v-if="loadingGroups" class="py-10 text-center text-sm text-slate-500 dark:text-zinc-400">
                         Loading groups...
                     </div>
 
@@ -607,12 +607,12 @@ async function confirmPeriodEnrollment() {
                     />
 
                     <div v-else class="space-y-4">
-                        <div class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-col gap-3 rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                <p class="text-sm font-semibold text-ink dark:text-white">
                                     Compare available groups
                                 </p>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <p class="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                                     Filter by professor and compare schedule, capacity, modality and shift before selecting.
                                 </p>
                             </div>
@@ -636,13 +636,13 @@ async function confirmPeriodEnrollment() {
                         <div
                             v-for="group in filteredSelectedGroups"
                             :key="group.id"
-                            class="rounded-lg border border-gray-200 p-4 dark:border-gray-800"
-                            :class="group.isCurrent ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'bg-white dark:bg-gray-900'"
+                            class="rounded-lg border border-border-light p-4 dark:border-border-dark"
+                            :class="group.isCurrent ? 'bg-brand/10 dark:bg-brand/15' : 'bg-surface dark:bg-surface-dark'"
                         >
                             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                                        <h3 class="font-semibold text-ink dark:text-white">
                                             {{ group.code }} - {{ group.name }}
                                         </h3>
                                         <StatusBadge v-if="group.isCurrent" label="CURRENT" variant="success" />
@@ -652,28 +652,28 @@ async function confirmPeriodEnrollment() {
 
                                     <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                                         <div>
-                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Professor</dt>
-                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.professor || "TBD" }}</dd>
+                                            <dt class="font-medium text-slate-500 dark:text-zinc-400">Professor</dt>
+                                            <dd class="mt-1 text-ink dark:text-white">{{ group.professor || "TBD" }}</dd>
                                         </div>
 
                                         <div>
-                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Capacity</dt>
-                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.enrolled }}/{{ group.capacity }}</dd>
+                                            <dt class="font-medium text-slate-500 dark:text-zinc-400">Capacity</dt>
+                                            <dd class="mt-1 text-ink dark:text-white">{{ group.enrolled }}/{{ group.capacity }}</dd>
                                         </div>
 
                                         <div>
-                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Modality</dt>
-                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.modality || "TBD" }}</dd>
+                                            <dt class="font-medium text-slate-500 dark:text-zinc-400">Modality</dt>
+                                            <dd class="mt-1 text-ink dark:text-white">{{ group.modality || "TBD" }}</dd>
                                         </div>
 
                                         <div>
-                                            <dt class="font-medium text-gray-500 dark:text-gray-400">Shift</dt>
-                                            <dd class="mt-1 text-gray-900 dark:text-white">{{ group.shift || "TBD" }}</dd>
+                                            <dt class="font-medium text-slate-500 dark:text-zinc-400">Shift</dt>
+                                            <dd class="mt-1 text-ink dark:text-white">{{ group.shift || "TBD" }}</dd>
                                         </div>
                                     </dl>
 
-                                    <div class="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                                        <span class="font-medium text-gray-500 dark:text-gray-400">Schedule:</span>
+                                    <div class="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 dark:bg-zinc-950 dark:text-zinc-300">
+                                        <span class="font-medium text-slate-500 dark:text-zinc-400">Schedule:</span>
                                         {{ scheduleSummary(group.schedules) }}
                                     </div>
 
@@ -704,7 +704,7 @@ async function confirmPeriodEnrollment() {
                     </div>
                 </div>
 
-                <div class="flex flex-col-reverse gap-3 border-t border-gray-200 p-6 dark:border-gray-800 sm:flex-row sm:justify-between">
+                <div class="flex flex-col-reverse gap-3 border-t border-border-light p-6 dark:border-border-dark sm:flex-row sm:justify-between">
                     <BaseButton
                         v-if="selectedSubject.enrollmentId && selectedSubject.currentGroupId && canUnenroll"
                         variant="danger"
@@ -725,3 +725,5 @@ async function confirmPeriodEnrollment() {
         </div>
     </CrudPageLayout>
 </template>
+
+

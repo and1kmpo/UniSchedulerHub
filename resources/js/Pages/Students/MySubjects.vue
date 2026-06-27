@@ -170,11 +170,11 @@ const handleOpenSummary = async () => {
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
                                 Current Academic Period
                             </h2>
 
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 {{ currentPeriod?.name ?? "No active academic period" }}
                             </p>
                         </div>
@@ -183,23 +183,23 @@ const handleOpenSummary = async () => {
                             :variant="currentPeriod?.can_enroll ? 'success' : 'gray'" />
                     </div>
 
-                    <div v-if="currentPeriod" class="grid gap-4 border-t border-gray-200 p-6 text-sm dark:border-gray-800 md:grid-cols-2">
+                    <div v-if="currentPeriod" class="grid gap-4 border-t border-border-light p-6 text-sm dark:border-border-dark md:grid-cols-2">
                         <div>
-                            <p class="font-medium text-gray-500 dark:text-gray-400">
+                            <p class="font-medium text-slate-500 dark:text-zinc-400">
                                 Enrollment deadline
                             </p>
 
-                            <p class="mt-1 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-ink dark:text-white">
                             {{ formatDate(currentPeriod.enrollment_deadline, "Not defined") }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="font-medium text-gray-500 dark:text-gray-400">
+                            <p class="font-medium text-slate-500 dark:text-zinc-400">
                                 Unenrollment deadline
                             </p>
 
-                            <p class="mt-1 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-ink dark:text-white">
                                 {{ formatDate(currentPeriod.unenrollment_deadline, "Not defined") }}
                             </p>
                         </div>
@@ -207,12 +207,12 @@ const handleOpenSummary = async () => {
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Enrolled Subjects
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Subjects assigned to your current academic period.
                         </p>
                     </div>
@@ -225,24 +225,24 @@ const handleOpenSummary = async () => {
 
                             <template #cell-group="{ row }">
                                 <div class="space-y-1">
-                                    <p class="font-medium text-gray-900 dark:text-white">
+                                    <p class="font-medium text-ink dark:text-white">
                                         {{ row.group || "Pending" }}
                                     </p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    <p class="text-xs text-slate-500 dark:text-zinc-400">
                                         {{ row.modality || "TBD" }} / {{ row.shift || "TBD" }}
                                     </p>
                                 </div>
                             </template>
 
                             <template #cell-schedule_summary="{ value }">
-                                <span class="block max-w-md whitespace-normal text-sm text-gray-700 dark:text-gray-300">
+                                <span class="block max-w-md whitespace-normal text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
 
                             <template #cell-final_grade="{ row }">
                                 <div class="space-y-1">
-                                    <p class="font-medium text-gray-900 dark:text-white">
+                                    <p class="font-medium text-ink dark:text-white">
                                         {{ row.final_grade }}
                                     </p>
                                     <StatusBadge
@@ -271,18 +271,18 @@ const handleOpenSummary = async () => {
 
         <div v-if="isGradeModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
             role="dialog" aria-label="Subject grades modal">
-            <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900 dark:text-gray-200">
+            <div class="w-full max-w-md rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                 <div class="mb-4 flex items-center justify-between gap-4">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 class="text-lg font-semibold text-ink dark:text-white">
                         {{ selectedSubject?.name }}
                     </h2>
 
-                    <button class="text-gray-500 hover:text-red-500" @click="closeGradeModal" aria-label="Close">
+                    <button class="text-slate-500 hover:text-danger" @click="closeGradeModal" aria-label="Close">
                         <i class="fa-solid fa-xmark" />
                     </button>
                 </div>
 
-                <div v-if="gradesLoading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div v-if="gradesLoading" class="py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                     Loading grades...
                 </div>
 
@@ -292,37 +292,37 @@ const handleOpenSummary = async () => {
 
                 <dl v-else class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">First Exam</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">First Exam</dt>
                         <dd>{{ selectedGrade?.partial_1 ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Second Exam</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Second Exam</dt>
                         <dd>{{ selectedGrade?.partial_2 ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Third Exam</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Third Exam</dt>
                         <dd>{{ selectedGrade?.partial_3 ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Activities</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Activities</dt>
                         <dd>{{ selectedGrade?.activities ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Attendance</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Attendance</dt>
                         <dd>{{ selectedGrade?.attendance ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Final Grade</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Final Grade</dt>
                         <dd>{{ selectedGrade?.final_grade ?? "Pending" }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-gray-500">Status</dt>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Status</dt>
                         <dd>{{ selectedGrade?.state?.label ?? "Pending" }}</dd>
                     </div>
                 </dl>
@@ -331,18 +331,18 @@ const handleOpenSummary = async () => {
 
         <div v-if="showSummary" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
             role="dialog" aria-label="Grades summary modal">
-            <div class="w-full max-w-5xl rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900 dark:text-gray-200">
+            <div class="w-full max-w-5xl rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                 <div class="mb-4 flex items-center justify-between gap-4">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 class="text-lg font-semibold text-ink dark:text-white">
                         Grade Summary
                     </h2>
 
-                    <button class="text-gray-500 hover:text-red-500" @click="showSummary = false" aria-label="Close">
+                    <button class="text-slate-500 hover:text-danger" @click="showSummary = false" aria-label="Close">
                         <i class="fa-solid fa-xmark" />
                     </button>
                 </div>
 
-                <div v-if="summaryLoading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div v-if="summaryLoading" class="py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                     Loading grade summary...
                 </div>
 
@@ -376,3 +376,5 @@ const handleOpenSummary = async () => {
         </div>
     </CrudPageLayout>
 </template>
+
+

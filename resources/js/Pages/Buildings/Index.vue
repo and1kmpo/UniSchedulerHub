@@ -190,7 +190,7 @@ const deleteBuilding = async (building) => {
                         </Link>
 
                         <Link :href="route('buildings.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen" label="Edit building" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit building" color="brand" />
                         </Link>
 
                         <TableActionButton icon="fa-solid fa-trash" label="Delete building" color="red" @click="deleteBuilding(row)" />
@@ -227,3 +227,4 @@ const deleteBuilding = async (building) => {
 
     </CrudPageLayout>
 </template>
+

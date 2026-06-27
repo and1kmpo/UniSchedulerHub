@@ -203,7 +203,7 @@ const deleteStudent = async (student) => {
                         </Link>
 
                         <Link :href="route('students.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen" label="Edit student" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit student" color="brand" />
                         </Link>
 
                         <TableActionButton icon="fa-solid fa-trash" label="Delete student" color="red" @click="deleteStudent(row)" />
@@ -226,3 +226,5 @@ const deleteStudent = async (student) => {
         </CrudContainer>
     </CrudPageLayout>
 </template>
+
+

@@ -230,31 +230,31 @@ const totalStudents = computed(() => {
             <div class="mb-6 grid gap-4 md:grid-cols-3">
 
                 <SectionCard class="p-6">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <p class="text-sm font-medium text-slate-600 dark:text-zinc-400">
                         Total Groups
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{ classGroups.total }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <p class="text-sm font-medium text-slate-600 dark:text-zinc-400">
                         Total Students
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{ totalStudents }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <p class="text-sm font-medium text-slate-600 dark:text-zinc-400">
                         Average Occupancy
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{
                             Math.round(
                                 totalStudents /
@@ -374,13 +374,13 @@ const totalStudents = computed(() => {
 
                     <div>
 
-                        <p class="font-medium text-gray-900 dark:text-white">
+                        <p class="font-medium text-ink dark:text-white">
                             {{
                                 row.subject.name
                             }}
                         </p>
 
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <p class="text-xs text-slate-500 dark:text-zinc-400">
                             {{
                                 row.subject.code
                             }}
@@ -394,7 +394,7 @@ const totalStudents = computed(() => {
 
                 <template #cell-professor="{ row }">
 
-                    <span class="text-gray-700 dark:text-gray-300">
+                    <span class="text-slate-700 dark:text-zinc-300">
 
                         {{
                             row.professor?.name ||
@@ -443,7 +443,7 @@ const totalStudents = computed(() => {
 
                     <div class="w-44">
 
-                        <div class="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
+                        <div class="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-zinc-300">
 
                             <span>
                                 {{
@@ -463,9 +463,9 @@ const totalStudents = computed(() => {
 
                         </div>
 
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
 
-                            <div class="h-full rounded-full bg-indigo-600" :style="{
+                            <div class="h-full rounded-full bg-brand" :style="{
                                 width:
                                     occupancyPercentage(row) + '%'
                             }" />
@@ -502,7 +502,7 @@ const totalStudents = computed(() => {
                         )
                             ">
 
-                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit class group" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit class group" color="brand" />
 
                         </Link>
 
@@ -547,3 +547,6 @@ const totalStudents = computed(() => {
     </CrudPageLayout>
 
 </template>
+
+
+

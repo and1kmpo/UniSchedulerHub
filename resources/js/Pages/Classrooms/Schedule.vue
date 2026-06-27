@@ -54,19 +54,19 @@ const rows = props.classroom.schedules.map((schedule) => ({
         <CrudContainer>
             <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                 <template #cell-day="{ value }">
-                    <span class="font-medium capitalize text-gray-900 dark:text-white">
+                    <span class="font-medium capitalize text-ink dark:text-white">
                         {{ value }}
                     </span>
                 </template>
 
                 <template #cell-time="{ value }">
-                    <span class="font-mono text-sm text-gray-700 dark:text-gray-300">
+                    <span class="font-mono text-sm text-slate-700 dark:text-zinc-300">
                         {{ value }}
                     </span>
                 </template>
 
                 <template #cell-class_group="{ value }">
-                    <span class="font-medium text-gray-900 dark:text-white">
+                    <span class="font-medium text-ink dark:text-white">
                         {{ value }}
                     </span>
                 </template>
@@ -88,3 +88,4 @@ const rows = props.classroom.schedules.map((schedule) => ({
         </CrudContainer>
     </CrudPageLayout>
 </template>
+

@@ -35,7 +35,7 @@ defineEmits(["submit"]);
 </script>
 
 <template>
-    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
         <FormSection :title="updating ? 'Update Subject' : 'Create Subject'" :description="updating
             ? 'Update the selected subject information.'
             : 'Create a new university subject.'
@@ -77,3 +77,5 @@ defineEmits(["submit"]);
         </FormActions>
     </form>
 </template>
+
+

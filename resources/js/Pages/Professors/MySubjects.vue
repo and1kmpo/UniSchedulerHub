@@ -127,11 +127,11 @@ const groupStatusVariant = (status) => ({
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
                                 Current Academic Period
                             </h2>
 
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 {{ period?.name ?? "No active academic period" }}
                             </p>
                         </div>
@@ -142,12 +142,12 @@ const groupStatusVariant = (status) => ({
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Assigned Class Groups
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Teaching groups, schedules, enrolled students and grade entry for the active period.
                         </p>
                     </div>
@@ -155,25 +155,25 @@ const groupStatusVariant = (status) => ({
                     <div class="p-6">
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-schedule_summary="{ value }">
-                                <span class="block max-w-md whitespace-normal text-sm text-gray-700 dark:text-gray-300">
+                                <span class="block max-w-md whitespace-normal text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
 
                             <template #cell-modality_summary="{ value }">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                <span class="text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
 
                             <template #cell-students_summary="{ value }">
-                                <span class="font-medium text-gray-900 dark:text-white">
+                                <span class="font-medium text-ink dark:text-white">
                                     {{ value }}
                                 </span>
                             </template>
 
                             <template #cell-grade_summary="{ value }">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                <span class="text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
@@ -218,3 +218,5 @@ const groupStatusVariant = (status) => ({
 
     </CrudPageLayout>
 </template>
+
+

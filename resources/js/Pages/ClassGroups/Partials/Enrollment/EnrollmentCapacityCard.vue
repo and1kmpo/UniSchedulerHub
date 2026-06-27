@@ -51,3 +51,4 @@ const percentage = Math.min(
     </SectionCard>
 
 </template>
+

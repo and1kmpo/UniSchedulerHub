@@ -197,13 +197,13 @@ function renderEventContent(arg) {
         <template v-else>
             <FullCalendar class="uh-student-schedule-calendar" :options="calendarOptions" />
 
-            <div v-if="selectedSchedule" class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+            <div v-if="selectedSchedule" class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-zinc-950">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        <h3 class="text-sm font-semibold text-ink dark:text-white">
                             {{ selectedSchedule.subject }}
                         </h3>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        <p class="mt-1 text-sm text-slate-600 dark:text-zinc-300">
                             {{ selectedSchedule.day }} &middot; {{ selectedSchedule.time }}
                         </p>
                     </div>
@@ -213,16 +213,16 @@ function renderEventContent(arg) {
 
                 <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                     <div>
-                        <dt class="text-xs font-medium uppercase text-gray-400">Group</dt>
-                        <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ selectedSchedule.group }}</dd>
+                        <dt class="text-xs font-medium uppercase text-slate-400">Group</dt>
+                        <dd class="mt-1 text-slate-700 dark:text-zinc-200">{{ selectedSchedule.group }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-medium uppercase text-gray-400">Professor</dt>
-                        <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ selectedSchedule.professor }}</dd>
+                        <dt class="text-xs font-medium uppercase text-slate-400">Professor</dt>
+                        <dd class="mt-1 text-slate-700 dark:text-zinc-200">{{ selectedSchedule.professor }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-medium uppercase text-gray-400">Classroom</dt>
-                        <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ selectedSchedule.classroom }}</dd>
+                        <dt class="text-xs font-medium uppercase text-slate-400">Classroom</dt>
+                        <dd class="mt-1 text-slate-700 dark:text-zinc-200">{{ selectedSchedule.classroom }}</dd>
                     </div>
                 </dl>
             </div>
@@ -231,9 +231,9 @@ function renderEventContent(arg) {
                 <div
                     v-for="group in groupedSchedules"
                     :key="group.day"
-                    class="rounded-lg border border-gray-200 p-4 dark:border-gray-800"
+                    class="rounded-lg border border-border-light p-4 dark:border-border-dark"
                 >
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                    <h3 class="text-sm font-semibold text-ink dark:text-white">
                         {{ formatDay(group.day) }}
                     </h3>
 
@@ -241,15 +241,15 @@ function renderEventContent(arg) {
                         <div
                             v-for="schedule in group.schedules"
                             :key="`${schedule.id}-${schedule.start_time}`"
-                            class="rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-800"
+                            class="rounded-md bg-slate-50 p-3 text-sm dark:bg-zinc-950"
                         >
-                            <p class="font-medium text-gray-900 dark:text-white">
+                            <p class="font-medium text-ink dark:text-white">
                                 {{ readableSchedule(schedule).subject }}
                             </p>
-                            <p class="mt-1 text-gray-600 dark:text-gray-300">
+                            <p class="mt-1 text-slate-600 dark:text-zinc-300">
                                 {{ readableSchedule(schedule).time }}
                             </p>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                                 {{ readableSchedule(schedule).group }} &middot; {{ readableSchedule(schedule).classroom }}
                             </p>
                         </div>
@@ -331,3 +331,5 @@ function renderEventContent(arg) {
     white-space: normal;
 }
 </style>
+
+

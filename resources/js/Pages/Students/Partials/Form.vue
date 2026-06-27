@@ -66,7 +66,7 @@ const curriculumOptions = computed(() =>
 </script>
 
 <template>
-    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
         <FormSection :title="updating ? 'Update Student' : 'Create Student'" :description="updating
             ? 'Update student profile, program and academic status.'
             : 'Create a student profile connected to a user account.'
@@ -132,3 +132,5 @@ const curriculumOptions = computed(() =>
         </FormActions>
     </form>
 </template>
+
+

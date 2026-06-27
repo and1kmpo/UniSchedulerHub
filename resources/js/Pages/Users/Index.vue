@@ -261,18 +261,18 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </template>
 
         <CrudContainer>
-            <div class="grid gap-3 border-b border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-3">
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Users</p>
-                    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ metrics.users }}</p>
+            <div class="grid gap-3 border-b border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark sm:grid-cols-3">
+                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Users</p>
+                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.users }}</p>
                 </div>
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Active</p>
-                    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ metrics.active }}</p>
+                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Active</p>
+                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.active }}</p>
                 </div>
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                    <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Available roles</p>
-                    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ metrics.roles }}</p>
+                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Available roles</p>
+                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.roles }}</p>
                 </div>
             </div>
 
@@ -301,8 +301,8 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
             <DataTable v-if="rows.length" :columns="columns" :rows="rows" :filters="filters" sortable>
                 <template #cell-name="{ row }">
                     <div>
-                        <p class="font-semibold text-gray-900 dark:text-white">{{ row.name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">ID {{ row.id }}</p>
+                        <p class="font-semibold text-ink dark:text-white">{{ row.name }}</p>
+                        <p class="font-mono text-xs text-slate-500 dark:text-zinc-400">ID {{ row.id }}</p>
                     </div>
                 </template>
 
@@ -327,7 +327,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
 
                 <template #actions="{ row }">
                     <div class="flex items-center justify-center gap-2">
-                        <TableActionButton icon="fa-solid fa-pen" label="Edit user" color="indigo" @click="openEditModal(row)" />
+                        <TableActionButton icon="fa-solid fa-pen" label="Edit user" color="brand" @click="openEditModal(row)" />
                         <TableActionButton
                             :icon="row.status === '1' ? 'fa-solid fa-user-slash' : 'fa-solid fa-user-check'"
                             :label="row.status === '1' ? 'Deactivate user' : 'Activate user'"
@@ -355,17 +355,17 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </CrudContainer>
 
         <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl dark:bg-gray-900">
-                <div class="flex items-start justify-between border-b border-gray-200 p-5 dark:border-gray-800">
+            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <div class="flex items-start justify-between border-b border-border-light p-5 dark:border-border-dark">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             {{ form.id ? "Edit User" : "Create User" }}
                         </h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-slate-500 dark:text-zinc-400">
                             Operational users only need login and role data. Academic users require profile details.
                         </p>
                     </div>
-                    <button class="text-gray-400 hover:text-gray-700 dark:hover:text-white" @click="closeModal">
+                    <button class="text-slate-400 hover:text-ink dark:hover:text-white" @click="closeModal">
                         <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
@@ -377,8 +377,8 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                         <BaseSelect v-model="form.role" label="Role" required placeholder="Select a role" :options="roleOptions" :error="firstError('role')" />
                     </div>
 
-                    <div v-if="requiresAcademicProfile" class="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-                        <p class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-100">Academic profile</p>
+                    <div v-if="requiresAcademicProfile" class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                        <p class="mb-4 text-sm font-semibold text-ink dark:text-zinc-100">Academic profile</p>
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <BaseInput v-model="form.document" label="Document" required :error="firstError('document')" />
@@ -390,11 +390,11 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                         </div>
                     </div>
 
-                    <div v-else-if="form.role" class="rounded-lg bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                    <div v-else-if="form.role" class="rounded-lg bg-brand/10 p-4 text-sm text-brand dark:bg-brand/15 dark:text-brand">
                         This role is operational. Create or edit academic profile data from Students or Professors when needed.
                     </div>
 
-                    <div class="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 dark:border-gray-800 sm:flex-row sm:justify-end">
+                    <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 dark:border-border-dark sm:flex-row sm:justify-end">
                         <BaseButton variant="secondary" @click="closeModal">
                             Cancel
                         </BaseButton>
@@ -408,3 +408,5 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </div>
     </CrudPageLayout>
 </template>
+
+

@@ -75,3 +75,4 @@ const occupancy = Math.round(
     </div>
 
 </template>
+

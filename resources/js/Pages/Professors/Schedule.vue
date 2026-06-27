@@ -38,8 +38,8 @@ function formatStatus(status) {
                     <StatCard title="Class Blocks" :value="summary.blocks" icon="fa-solid fa-calendar-week" />
                     <StatCard title="Assigned Groups" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
                     <StatCard title="Active Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
-                    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Period Status</p>
+                    <div class="rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">Period Status</p>
                         <div class="mt-4">
                             <StatusBadge
                                 :label="formatStatus(currentPeriod?.state)"
@@ -50,11 +50,11 @@ function formatStatus(status) {
                 </section>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Academic Week
                         </h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Review your assigned class blocks, classroom and building location.
                         </p>
                     </div>
@@ -71,3 +71,5 @@ function formatStatus(status) {
         </CrudContainer>
     </CrudPageLayout>
 </template>
+
+
