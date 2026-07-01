@@ -29,6 +29,11 @@ defineProps({
         type: Boolean,
         default: false,
     },
+
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 defineEmits(["update:modelValue"]);
@@ -44,8 +49,8 @@ defineEmits(["update:modelValue"]);
             </span>
         </label>
 
-        <select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)"
-            class="w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink shadow-sm transition focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100"
+        <select :value="modelValue" :disabled="disabled" @change="$emit('update:modelValue', $event.target.value)"
+            class="w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink shadow-sm transition focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:disabled:bg-zinc-900"
             :class="{
                 'border-danger focus:border-danger focus:ring-danger/20':
                     error,

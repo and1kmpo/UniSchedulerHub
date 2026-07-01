@@ -17,6 +17,7 @@ import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import BaseInput from "@/Components/UI/Base/BaseInput.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
@@ -37,7 +38,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    programs: {
+    identityRoleOptions: {
         type: Array,
         default: () => [],
     },
@@ -50,7 +51,9 @@ const props = defineProps({
         default: () => ({
             users: 0,
             active: 0,
+            inactive: 0,
             roles: 0,
+            academicProfiles: 0,
         }),
     },
 });
@@ -79,17 +82,11 @@ const form = reactive({
     name: "",
     email: "",
     role: "",
-    document: "",
-    phone: "",
-    address: "",
-    city: "",
-    semester: "",
-    program_id: "",
 });
 
 const roleOptions = computed(() => props.roles);
-const requiresAcademicProfile = computed(() => ["student", "professor"].includes(form.role));
-const isStudent = computed(() => form.role === "student");
+const identityRoleOptions = computed(() => props.identityRoleOptions);
+const isEditingAcademicAccount = computed(() => ["student", "professor"].includes(form.role));
 
 const rows = computed(() =>
     props.users.data.map((user) => {
@@ -140,12 +137,6 @@ const resetForm = () => {
         name: "",
         email: "",
         role: "",
-        document: "",
-        phone: "",
-        address: "",
-        city: "",
-        semester: "",
-        program_id: "",
     });
     formErrors.value = {};
 };
@@ -163,12 +154,6 @@ const openEditModal = (user) => {
         name: user.name,
         email: user.email,
         role: user.primary_role === "No role" ? "" : user.primary_role,
-        document: user.student?.document ?? user.professor?.document ?? "",
-        phone: user.student?.phone ?? user.professor?.phone ?? "",
-        address: user.student?.address ?? user.professor?.address ?? "",
-        city: user.student?.city ?? user.professor?.city ?? "",
-        semester: user.student?.semester ?? "",
-        program_id: user.student?.program_id ?? "",
     });
 
     isModalOpen.value = true;
@@ -256,23 +241,33 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         <template #actions>
             <BaseButton variant="primary" @click="openCreateModal">
                 <i class="fa-solid fa-plus mr-2"></i>
-                Create User
+                Create Access Account
             </BaseButton>
         </template>
 
         <CrudContainer>
-            <div class="grid gap-3 border-b border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark sm:grid-cols-3">
-                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Users</p>
-                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.users }}</p>
-                </div>
-                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Active</p>
-                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.active }}</p>
-                </div>
-                <div class="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                    <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Available roles</p>
-                    <p class="mt-2 font-mono text-2xl font-bold text-ink dark:text-white">{{ metrics.roles }}</p>
+            <div class="grid gap-3 border-b border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard title="Accounts" :value="metrics.users" icon="fa-solid fa-users-gear" />
+                <StatCard title="Active Access" :value="metrics.active" icon="fa-solid fa-user-check" />
+                <StatCard title="Blocked Access" :value="metrics.inactive" icon="fa-solid fa-user-lock" />
+                <StatCard title="Academic Profiles" :value="metrics.academicProfiles" icon="fa-solid fa-id-card-clip" />
+            </div>
+
+            <div class="border-b border-border-light bg-brand/5 px-4 py-4 dark:border-border-dark dark:bg-brand/10 sm:px-6">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-ink dark:text-white">
+                            Identity & Access is for technical account governance.
+                        </p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+                            Create admins and academic coordinators here. Create students and professors from their academic modules so their institutional profiles stay complete.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <StatusBadge label="Admin creates coordinators" variant="brand" />
+                        <StatusBadge label="Academic profiles stay in Core" variant="gray" />
+                    </div>
                 </div>
             </div>
 
@@ -347,7 +342,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
             >
                 <BaseButton variant="primary" @click="openCreateModal">
                     <i class="fa-solid fa-plus mr-2"></i>
-                    Create User
+                    Create Access Account
                 </BaseButton>
             </EmptyState>
 
@@ -362,7 +357,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                             {{ form.id ? "Edit User" : "Create User" }}
                         </h2>
                         <p class="text-sm text-slate-500 dark:text-zinc-400">
-                            Operational users only need login and role data. Academic users require profile details.
+                            Manage account access. Academic profile data is maintained from Students and Professors.
                         </p>
                     </div>
                     <button class="text-slate-400 hover:text-ink dark:hover:text-white" @click="closeModal">
@@ -374,24 +369,23 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                     <div class="grid gap-4 sm:grid-cols-2">
                         <BaseInput v-model="form.name" label="Name" required :error="firstError('name')" />
                         <BaseInput v-model="form.email" label="Email" type="email" required :error="firstError('email')" />
-                        <BaseSelect v-model="form.role" label="Role" required placeholder="Select a role" :options="roleOptions" :error="firstError('role')" />
+                        <BaseSelect
+                            v-model="form.role"
+                            label="Role"
+                            required
+                            placeholder="Select a role"
+                            :options="form.id && isEditingAcademicAccount ? roleOptions : identityRoleOptions"
+                            :disabled="form.id && isEditingAcademicAccount"
+                            :error="firstError('role')"
+                        />
                     </div>
 
-                    <div v-if="requiresAcademicProfile" class="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                        <p class="mb-4 text-sm font-semibold text-ink dark:text-zinc-100">Academic profile</p>
-
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <BaseInput v-model="form.document" label="Document" required :error="firstError('document')" />
-                            <BaseInput v-model="form.phone" label="Phone" required :error="firstError('phone')" />
-                            <BaseInput v-model="form.address" label="Address" required :error="firstError('address')" />
-                            <BaseInput v-model="form.city" label="City" required :error="firstError('city')" />
-                            <BaseInput v-if="isStudent" v-model="form.semester" label="Semester" type="number" required :error="firstError('semester')" />
-                            <BaseSelect v-if="isStudent" v-model="form.program_id" label="Program" required placeholder="Select a program" :options="programs" :error="firstError('program_id')" />
-                        </div>
+                    <div v-if="form.id && isEditingAcademicAccount" class="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-amber-800 dark:bg-warning/15 dark:text-amber-200">
+                        This account is connected to an academic profile. Edit student or professor details from the corresponding Core module; use this screen only for access status and account identity.
                     </div>
 
-                    <div v-else-if="form.role" class="rounded-lg bg-brand/10 p-4 text-sm text-brand dark:bg-brand/15 dark:text-brand">
-                        This role is operational. Create or edit academic profile data from Students or Professors when needed.
+                    <div v-else-if="form.role" class="rounded-lg border border-brand/20 bg-brand/10 p-4 text-sm text-brand dark:bg-brand/15 dark:text-brand-200">
+                        This role is operational. Students and professors must be created from their academic modules to keep curriculum, document and institutional profile data consistent.
                     </div>
 
                     <div class="flex flex-col-reverse gap-3 border-t border-border-light pt-5 dark:border-border-dark sm:flex-row sm:justify-end">

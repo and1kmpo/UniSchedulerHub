@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\SubjectEnrollmentStatus;
 use App\Models\User;
-use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -67,12 +65,10 @@ class UserController extends Controller
                     'value' => $role->name,
                 ])
                 ->values(),
-            'programs' => Program::query()
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn($program) => [
-                    'label' => $program->name,
-                    'value' => $program->id,
+            'identityRoleOptions' => collect($this->identityRoles())
+                ->map(fn($role) => [
+                    'label' => str($role)->replace('_', ' ')->title()->toString(),
+                    'value' => $role,
                 ])
                 ->values(),
             'statusOptions' => [
@@ -82,7 +78,11 @@ class UserController extends Controller
             'metrics' => [
                 'users' => User::count(),
                 'active' => User::where('status', User::STATUS_ACTIVE)->count(),
+                'inactive' => User::where('status', User::STATUS_INACTIVE)->count(),
                 'roles' => Role::count(),
+                'academicProfiles' => User::whereHas('student')
+                    ->orWhereHas('professor')
+                    ->count(),
             ],
         ]);
     }
@@ -109,13 +109,7 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'role' => 'required|in:professor,student,admin,academic_coordinator',
-                'document' => 'nullable|required_if:role,professor,student|string|unique:students,document|unique:professors,document',
-                'phone' => 'nullable|required_if:role,professor,student|string|min:7|max:15',
-                'address' => 'nullable|required_if:role,professor,student|string|max:255',
-                'city' => 'nullable|required_if:role,professor,student|string|max:50',
-                'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
-                'program_id' => 'nullable|required_if:role,student|exists:programs,id',
+                'role' => ['required', Rule::in($this->identityRoles())],
             ]);
 
             // Crear el usuario
@@ -123,29 +117,11 @@ class UserController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => bcrypt('123'),
+                'status' => User::STATUS_ACTIVE,
             ]);
 
             // Asignar rol al usuario
             $user->assignRole($validated['role']);
-
-            // Crear el registro correspondiente dependiendo del rol
-            if ($validated['role'] === 'professor') {
-                $user->professor()->create([
-                    'document' => $validated['document'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'city' => $validated['city'],
-                ]);
-            } elseif ($validated['role'] === 'student') {
-                $user->student()->create([
-                    'document' => $validated['document'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'city' => $validated['city'],
-                    'semester' => $validated['semester'],
-                    'program_id' => $validated['program_id'],
-                ]);
-            }
 
             // Si todo está bien, se hace commit de la transacción
             DB::commit();
@@ -183,71 +159,25 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
+            $user = User::with(['professor', 'student', 'roles'])->findOrFail($id);
+            $academicRole = $this->academicProfileRole($user);
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'role' => 'required|in:professor,student,admin,academic_coordinator',
-                'document' => [
-                    'nullable',
-                    'required_if:role,professor,student',
-                    'string',
-                    Rule::unique('students', 'document')->ignore($id, 'user_id'),
-                    Rule::unique('professors', 'document')->ignore($id, 'user_id'),
+                'role' => [
+                    'required',
+                    Rule::in($academicRole ? [$academicRole] : $this->identityRoles()),
                 ],
-                'phone' => 'nullable|required_if:role,professor,student|string|min:7|max:15',
-                'address' => 'nullable|required_if:role,professor,student|string|max:255',
-                'city' => 'nullable|required_if:role,professor,student|string|max:50',
-                'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
-                'program_id' => 'nullable|required_if:role,student|exists:programs,id',
             ]);
-
-            $user = User::findOrFail($id);
-
-            if (
-                $this->academicProfileRole($user)
-                && $validated['role'] !== $this->academicProfileRole($user)
-                && $this->hasAcademicHistory($user)
-            ) {
-                DB::rollBack();
-
-                return response()->json([
-                    'message' => 'This user has academic history. Deactivate the account instead of changing its academic role.',
-                ], 422);
-            }
 
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
             ]);
-            $user->syncRoles($validated['role']);
 
-            if ($validated['role'] === 'professor') {
-                $user->professor()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'document' => $validated['document'],
-                        'phone' => $validated['phone'],
-                        'address' => $validated['address'],
-                        'city' => $validated['city'],
-                    ]
-                );
-                $user->student()->delete();
-            } elseif ($validated['role'] === 'student') {
-                $user->student()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'document' => $validated['document'],
-                        'phone' => $validated['phone'],
-                        'address' => $validated['address'],
-                        'city' => $validated['city'],
-                        'semester' => $validated['semester'],
-                        'program_id' => $validated['program_id'],
-                    ]
-                );
-                $user->professor()->delete();
-            } else {
-                $user->professor()->delete();
-                $user->student()->delete();
+            if (! $academicRole) {
+                $user->syncRoles($validated['role']);
             }
 
             DB::commit();
@@ -427,5 +357,10 @@ class UserController extends Controller
         }
 
         return false;
+    }
+
+    private function identityRoles(): array
+    {
+        return ['admin', 'academic_coordinator'];
     }
 }
