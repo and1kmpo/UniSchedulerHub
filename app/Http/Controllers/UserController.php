@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\SubjectEnrollmentStatus;
 use App\Models\User;
+use App\Services\AcademicAuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
@@ -264,6 +267,38 @@ class UserController extends Controller
         }
     }
 
+    public function resetTemporaryPassword(User $user, AcademicAuditService $audit)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json([
+                'message' => 'You cannot reset your own password from this action. Use your profile security settings instead.',
+            ], 422);
+        }
+
+        $temporaryPassword = $this->generateTemporaryPassword();
+
+        $user->forceFill([
+            'password' => Hash::make($temporaryPassword),
+        ])->save();
+
+        $audit->record(
+            'identity.password_reset',
+            $user,
+            [
+                'target_user_id' => $user->id,
+                'target_user_email' => $user->email,
+                'target_user_roles' => $user->roles()->pluck('name')->values()->all(),
+                'temporary_password_issued' => true,
+            ],
+            "Temporary password issued for {$user->email}."
+        );
+
+        return response()->json([
+            'message' => 'Temporary password generated successfully. Share it through an institutional channel and ask the user to change it after login.',
+            'temporary_password' => $temporaryPassword,
+        ]);
+    }
+
     public function getUserAssignments(Request $request)
     {
         $user = $request->user();
@@ -362,5 +397,16 @@ class UserController extends Controller
     private function identityRoles(): array
     {
         return ['admin', 'academic_coordinator'];
+    }
+
+    private function generateTemporaryPassword(): string
+    {
+        return implode('', [
+            Str::random(4),
+            random_int(10, 99),
+            '!',
+            Str::upper(Str::random(2)),
+            Str::lower(Str::random(4)),
+        ]);
     }
 }

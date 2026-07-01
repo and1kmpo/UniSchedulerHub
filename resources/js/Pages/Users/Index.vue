@@ -76,6 +76,11 @@ const filterForm = reactive({
 const isModalOpen = ref(false);
 const processing = ref(false);
 const formErrors = ref({});
+const temporaryPasswordModal = ref({
+    open: false,
+    user: null,
+    password: "",
+});
 
 const form = reactive({
     id: null,
@@ -215,6 +220,46 @@ const toggleStatus = async (user) => {
     }
 };
 
+const resetTemporaryPassword = async (user) => {
+    const confirmed = await confirm(
+        `This will generate a new temporary password for "${user.name}". The current password will stop working immediately.`,
+        "Reset Temporary Password"
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await axios.patch(route("users.reset-password", user.id));
+
+        temporaryPasswordModal.value = {
+            open: true,
+            user,
+            password: response.data.temporary_password,
+        };
+
+        success("Temporary password generated");
+    } catch (exception) {
+        error(exception.response?.data?.message ?? "The temporary password could not be generated");
+    }
+};
+
+const closeTemporaryPasswordModal = () => {
+    temporaryPasswordModal.value = {
+        open: false,
+        user: null,
+        password: "",
+    };
+};
+
+const copyTemporaryPassword = async () => {
+    try {
+        await navigator.clipboard.writeText(temporaryPasswordModal.value.password);
+        success("Temporary password copied");
+    } catch {
+        error("Copy failed. Select and copy the password manually.");
+    }
+};
+
 const deleteUser = async (user) => {
     const confirmed = await confirm(
         `This will permanently delete "${user.name}". Prefer deactivation when the account has academic history.`,
@@ -329,6 +374,12 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                             color="sky"
                             @click="toggleStatus(row)"
                         />
+                        <TableActionButton
+                            icon="fa-solid fa-key"
+                            label="Reset temporary password"
+                            color="gray"
+                            @click="resetTemporaryPassword(row)"
+                        />
                         <TableActionButton icon="fa-solid fa-trash" label="Delete user" color="red" @click="deleteUser(row)" />
                     </div>
                 </template>
@@ -398,6 +449,53 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                         </BaseButton>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div v-if="temporaryPasswordModal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="w-full max-w-lg rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <div class="border-b border-border-light p-5 dark:border-border-dark">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
+                                Temporary password generated
+                            </h2>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                                This password is shown only once for {{ temporaryPasswordModal.user?.name }}.
+                            </p>
+                        </div>
+
+                        <button class="text-slate-400 hover:text-ink dark:hover:text-white" @click="closeTemporaryPasswordModal">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                            <span class="sr-only">Close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 p-5">
+                    <div class="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-amber-800 dark:bg-warning/15 dark:text-amber-200">
+                        Share this credential through an institutional channel. Ask the user to change it immediately after login.
+                    </div>
+
+                    <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-zinc-900">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+                            Temporary password
+                        </p>
+                        <p class="mt-2 break-all font-mono text-xl font-semibold text-ink dark:text-white">
+                            {{ temporaryPasswordModal.password }}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <BaseButton variant="secondary" @click="closeTemporaryPasswordModal">
+                            Done
+                        </BaseButton>
+                        <BaseButton variant="primary" @click="copyTemporaryPassword">
+                            <i class="fa-solid fa-copy mr-2"></i>
+                            Copy Password
+                        </BaseButton>
+                    </div>
+                </div>
             </div>
         </div>
     </CrudPageLayout>

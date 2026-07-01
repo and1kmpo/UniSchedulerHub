@@ -13,10 +13,8 @@ use App\Http\Controllers\CurriculumSubjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GroupEnrollmentController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProgramController;
-use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Scheduling\SmartSchedulerController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
@@ -44,6 +42,24 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         return redirect('/');
     });
+
+    Route::get('/user-assignments', function (Request $request) {
+        $user = $request->user();
+
+        if ($user->hasRole('student')) {
+            return redirect()->route('student.subjects');
+        }
+
+        if ($user->hasRole('professor')) {
+            return redirect()->route('professor.subjects');
+        }
+
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
+            return redirect()->route('reports.student-assignments.index');
+        }
+
+        return redirect()->route('dashboard');
+    })->name('user.assignments');
 
     /*
      * Shared staff workspace.
@@ -81,9 +97,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('/users', UserController::class);
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+        Route::patch('/users/{user}/reset-temporary-password', [UserController::class, 'resetTemporaryPassword'])->name('users.reset-password');
 
-        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-        Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::redirect('/roles', '/users')->name('roles.index');
+        Route::redirect('/permissions', '/users')->name('permissions.index');
     });
 
     /*
@@ -140,7 +157,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             Route::post('/optimize', [SmartSchedulerController::class, 'optimize'])->name('optimize');
         });
 
-        Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->name('user.assignments');
     });
 
     /*
