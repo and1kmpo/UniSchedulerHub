@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { router } from "@inertiajs/vue3";
 import { route } from "ziggy-js";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
@@ -148,13 +148,10 @@ function printReport() {
         subtitle="Assigned groups, active students, scheduled blocks and pending grades"
     >
         <template v-slot:actions>
-            <Link
-                :href="route('reports.index')"
-                class="inline-flex items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition-all duration-200 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-600"
-            >
+            <BaseButton as="a" variant="secondary" :href="route('reports.index')">
                 <i class="fa-solid fa-arrow-left mr-2" />
                 Reports
-            </Link>
+            </BaseButton>
         </template>
 
         <CrudContainer>
@@ -186,13 +183,10 @@ function printReport() {
                         </template>
 
                         <template #actions>
-                            <a
-                                :href="csvExportUrl"
-                                class="inline-flex items-center justify-center rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-success"
-                            >
+                            <BaseButton as="a" variant="success" :href="csvExportUrl">
                                 <i class="fa-solid fa-file-csv mr-2" />
                                 Export CSV
-                            </a>
+                            </BaseButton>
 
                             <BaseButton variant="secondary" @click="printReport">
                                 <i class="fa-solid fa-print mr-2" />
@@ -212,7 +206,7 @@ function printReport() {
                         </p>
                     </div>
 
-                    <div v-if="professors.data.length" class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <div v-if="professors.data.length" class="divide-y divide-border-light dark:divide-border-dark">
                         <article v-for="professor in professors.data" :key="professor.id" class="p-6">
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div>
@@ -225,13 +219,13 @@ function printReport() {
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                                    <span class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                    <span class="rounded-lg border border-border-light bg-surface px-3 py-2 font-medium text-slate-700 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                                         {{ professor.groups_count }} groups
                                     </span>
-                                    <span class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                    <span class="rounded-lg border border-border-light bg-surface px-3 py-2 font-medium text-slate-700 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                                         {{ professor.active_students }} students
                                     </span>
-                                    <span class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                    <span class="rounded-lg border border-border-light bg-surface px-3 py-2 font-medium text-slate-700 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                                         {{ professor.scheduled_blocks }} blocks
                                     </span>
                                     <span class="rounded-lg bg-warning/10 px-3 py-2 font-medium text-amber-700 dark:bg-warning/10 dark:text-warning">
@@ -242,7 +236,7 @@ function printReport() {
 
                             <div class="mt-5 overflow-x-auto">
                                 <table class="min-w-full text-sm">
-                                    <thead class="border-b border-slate-100 text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
+                                    <thead class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
                                         <tr>
                                             <th class="px-4 py-3 font-semibold">Group</th>
                                             <th class="px-4 py-3 font-semibold">Subject</th>
@@ -253,7 +247,7 @@ function printReport() {
                                             <th class="px-4 py-3 font-semibold">Pending Grades</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
                                         <tr v-for="group in professor.groups" :key="group.id">
                                             <td class="px-4 py-4 font-medium text-ink dark:text-white">
                                                 {{ group.code }}

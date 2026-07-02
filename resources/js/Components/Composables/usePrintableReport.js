@@ -90,6 +90,17 @@ function renderRows(columns, rows) {
         .join("");
 }
 
+const printTokens = {
+    brand: "#2563EB",
+    brandSoft: "#EFF6FF",
+    ink: "#0F172A",
+    graphite: "#5C6B73",
+    surface: "#FFFFFF",
+    surfaceMuted: "#F8FAFC",
+    border: "#E2E8F0",
+    borderStrong: "#CBD5E1",
+};
+
 export function printTableReport({
     title,
     subtitle,
@@ -107,13 +118,14 @@ export function printTableReport({
                 <style>
                     * { box-sizing: border-box; }
                     body {
-                        color: #0F172A;
+                        background: ${printTokens.surface};
+                        color: ${printTokens.ink};
                         font-family: "Geist", "Inter", Arial, sans-serif;
                         margin: 28px;
                         padding-bottom: 36px;
                     }
                     header {
-                        border-bottom: 2px solid #0F172A;
+                        border-bottom: 2px solid ${printTokens.ink};
                         display: flex;
                         justify-content: space-between;
                         gap: 24px;
@@ -121,7 +133,7 @@ export function printTableReport({
                         padding-bottom: 16px;
                     }
                     .brand {
-                        color: #2563EB;
+                        color: ${printTokens.brand};
                         font-size: 12px;
                         font-weight: 700;
                         letter-spacing: 0.08em;
@@ -129,22 +141,23 @@ export function printTableReport({
                         text-transform: uppercase;
                     }
                     h1 { font-size: 24px; margin: 0; }
-                    p { color: #5C6B73; margin: 6px 0 0; }
+                    p { color: ${printTokens.graphite}; margin: 6px 0 0; }
                     .generated {
-                        color: #5C6B73;
+                        color: ${printTokens.graphite};
                         font-family: "Geist Mono", "JetBrains Mono", monospace;
                         font-size: 12px;
                         min-width: 180px;
                         text-align: right;
                     }
                     .filters {
-                        border: 1px solid #d1d5db;
+                        background: ${printTokens.surfaceMuted};
+                        border: 1px solid ${printTokens.border};
                         border-radius: 8px;
                         margin-bottom: 18px;
                         padding: 12px;
                     }
                     .section-label {
-                        color: #6b7280;
+                        color: ${printTokens.graphite};
                         display: block;
                         font-size: 11px;
                         font-weight: 700;
@@ -152,7 +165,8 @@ export function printTableReport({
                         text-transform: uppercase;
                     }
                     .filter-pill {
-                        background: #f3f4f6;
+                        background: ${printTokens.surface};
+                        border: 1px solid ${printTokens.border};
                         border-radius: 999px;
                         display: inline-block;
                         font-size: 11px;
@@ -166,13 +180,14 @@ export function printTableReport({
                         margin-bottom: 20px;
                     }
                     .metric {
-                        border: 1px solid #d1d5db;
+                        background: ${printTokens.surface};
+                        border: 1px solid ${printTokens.border};
                         border-radius: 8px;
                         min-height: 70px;
                         padding: 10px;
                     }
                     .metric span {
-                        color: #6b7280;
+                        color: ${printTokens.graphite};
                         display: block;
                         font-size: 11px;
                         font-weight: 700;
@@ -189,20 +204,20 @@ export function printTableReport({
                         width: 100%;
                     }
                     th {
-                        background: #eff6ff;
-                        color: #0F172A;
+                        background: ${printTokens.brandSoft};
+                        color: ${printTokens.ink};
                         text-align: left;
                     }
                     th, td {
-                        border: 1px solid #d1d5db;
+                        border: 1px solid ${printTokens.borderStrong};
                         padding: 7px;
                         vertical-align: top;
                     }
                     tr { break-inside: avoid; }
                     footer {
-                        border-top: 1px solid #d1d5db;
+                        border-top: 1px solid ${printTokens.border};
                         bottom: 0;
-                        color: #6b7280;
+                        color: ${printTokens.graphite};
                         display: flex;
                         font-size: 10px;
                         justify-content: space-between;

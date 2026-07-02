@@ -87,7 +87,7 @@ php artisan migrate:fresh --seed
 Tests must use a separate database:
 
 ```text
-uniSchedulerHub_testing
+tarraya_testing
 ```
 
 Never run destructive migration commands unless the target database is intentionally disposable.

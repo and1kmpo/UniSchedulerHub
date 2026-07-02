@@ -94,15 +94,15 @@ Demo credentials use the password `password`.
 
 | Role | Email |
 | --- | --- |
-| Admin | `admin@unischedulerhub.test` |
-| Academic Coordinator | `coordinator@unischedulerhub.test` |
-| Professor | `professor@unischedulerhub.test` |
-| Professor | `professor.math@unischedulerhub.test` |
-| Student | `student@unischedulerhub.test` |
-| Student | `student.enrolled@unischedulerhub.test` |
-| Student | `student.probation@unischedulerhub.test` |
-| Student | `student.suspended@unischedulerhub.test` |
-| Student | `student.graded@unischedulerhub.test` |
+| Admin | `admin@tarraya.test` |
+| Academic Coordinator | `coordinator@tarraya.test` |
+| Professor | `professor@tarraya.test` |
+| Professor | `professor.math@tarraya.test` |
+| Student | `student@tarraya.test` |
+| Student | `student.enrolled@tarraya.test` |
+| Student | `student.probation@tarraya.test` |
+| Student | `student.suspended@tarraya.test` |
+| Student | `student.graded@tarraya.test` |
 
 ## Academic Design Principles
 

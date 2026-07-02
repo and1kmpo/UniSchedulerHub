@@ -265,16 +265,16 @@ class DemoAcademicSeeder extends Seeder
     private function people(Program $program, Curriculum $curriculum): array
     {
         $professors = [
-            'primary' => $this->professor('professor@unischedulerhub.test', 'Ada Lovelace', 'P1001'),
-            'secondary' => $this->professor('professor.math@unischedulerhub.test', 'Katherine Johnson', 'P1002'),
+            'primary' => $this->professor('professor@tarraya.test', 'Ada Lovelace', 'P1001'),
+            'secondary' => $this->professor('professor.math@tarraya.test', 'Katherine Johnson', 'P1002'),
         ];
 
         $students = [
-            'open' => $this->student('student@unischedulerhub.test', 'Grace Hopper Student', 'S1001', $program, $curriculum, Student::STATUS_ACTIVE, 1),
-            'enrolled' => $this->student('student.enrolled@unischedulerhub.test', 'Alan Turing Student', 'S1002', $program, $curriculum, Student::STATUS_ACTIVE, 1),
-            'probation' => $this->student('student.probation@unischedulerhub.test', 'Barbara Liskov Student', 'S1003', $program, $curriculum, Student::STATUS_PROBATION, 2),
-            'suspended' => $this->student('student.suspended@unischedulerhub.test', 'Suspended Demo Student', 'S1004', $program, $curriculum, Student::STATUS_SUSPENDED, 1),
-            'graded' => $this->student('student.graded@unischedulerhub.test', 'Margaret Hamilton Student', 'S1005', $program, $curriculum, Student::STATUS_ACTIVE, 3),
+            'open' => $this->student('student@tarraya.test', 'Grace Hopper Student', 'S1001', $program, $curriculum, Student::STATUS_ACTIVE, 1),
+            'enrolled' => $this->student('student.enrolled@tarraya.test', 'Alan Turing Student', 'S1002', $program, $curriculum, Student::STATUS_ACTIVE, 1),
+            'probation' => $this->student('student.probation@tarraya.test', 'Barbara Liskov Student', 'S1003', $program, $curriculum, Student::STATUS_PROBATION, 2),
+            'suspended' => $this->student('student.suspended@tarraya.test', 'Suspended Demo Student', 'S1004', $program, $curriculum, Student::STATUS_SUSPENDED, 1),
+            'graded' => $this->student('student.graded@tarraya.test', 'Margaret Hamilton Student', 'S1005', $program, $curriculum, Student::STATUS_ACTIVE, 3),
         ];
 
         return compact('professors', 'students');
@@ -445,8 +445,8 @@ class DemoAcademicSeeder extends Seeder
                 'attendance' => 92,
                 'final_grade' => 4.08,
                 'grade_status_id' => GradeStatus::where('code', 'passed')->value('id'),
-                'created_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
-                'updated_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
+                'created_by' => User::where('email', 'admin@tarraya.test')->value('id'),
+                'updated_by' => User::where('email', 'admin@tarraya.test')->value('id'),
             ]
         );
     }
@@ -463,14 +463,14 @@ class DemoAcademicSeeder extends Seeder
                 'class_group_id' => $group->id,
                 'status_id' => $statusId,
                 'enrolled_at' => now(),
-                'enrolled_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
+                'enrolled_by' => User::where('email', 'admin@tarraya.test')->value('id'),
             ]
         );
     }
 
     private function auditLogs(array $students, array $groups, array $periods): void
     {
-        $adminId = User::where('email', 'admin@unischedulerhub.test')->value('id');
+        $adminId = User::where('email', 'admin@tarraya.test')->value('id');
         $enrollment = SubjectEnrollment::query()
             ->where('student_id', $students['enrolled']->id)
             ->where('class_group_id', $groups['programmingA']->id)

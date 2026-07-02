@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { router } from "@inertiajs/vue3";
 import { route } from "ziggy-js";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
@@ -186,11 +186,10 @@ const statusOptions = props.options.statuses.map((status) => ({
     <CrudPageLayout title="Student Assignment Report"
         subtitle="Students, enrolled subjects, class groups and responsible professors">
         <template v-slot:actions>
-            <Link :href="route('reports.index')"
-                class="inline-flex items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition-all duration-200 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-600">
+            <BaseButton as="a" variant="secondary" :href="route('reports.index')">
                 <i class="fa-solid fa-arrow-left mr-2" />
                 Reports
-            </Link>
+            </BaseButton>
         </template>
 
         <CrudContainer>
@@ -229,11 +228,10 @@ const statusOptions = props.options.statuses.map((status) => ({
                         </template>
 
                         <template #actions>
-                            <a :href="csvExportUrl"
-                                class="inline-flex items-center justify-center rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-success">
+                            <BaseButton as="a" variant="success" :href="csvExportUrl">
                                 <i class="fa-solid fa-file-csv mr-2" />
                                 Export CSV
-                            </a>
+                            </BaseButton>
 
                             <BaseButton variant="secondary" @click="printReport">
                                 <i class="fa-solid fa-print mr-2" />
@@ -253,7 +251,7 @@ const statusOptions = props.options.statuses.map((status) => ({
                         </p>
                     </div>
 
-                    <div v-if="students.data.length" class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <div v-if="students.data.length" class="divide-y divide-border-light dark:divide-border-dark">
                         <article v-for="student in students.data" :key="student.id" class="p-6">
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div>
@@ -272,7 +270,7 @@ const statusOptions = props.options.statuses.map((status) => ({
 
                                 <div class="flex flex-wrap gap-2 text-sm">
                                     <span
-                                        class="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                        class="rounded-lg border border-border-light bg-surface px-3 py-2 font-medium text-slate-700 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                                         {{ student.assignments_count }} assignments
                                     </span>
                                 </div>
@@ -281,7 +279,7 @@ const statusOptions = props.options.statuses.map((status) => ({
                             <div class="mt-5 overflow-x-auto">
                                 <table class="min-w-full text-sm">
                                     <thead
-                                        class="border-b border-slate-100 text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
+                                        class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
                                         <tr>
                                             <th class="px-4 py-3 font-semibold">Subject</th>
                                             <th class="px-4 py-3 font-semibold">Professor</th>
@@ -290,7 +288,7 @@ const statusOptions = props.options.statuses.map((status) => ({
                                             <th class="px-4 py-3 font-semibold">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
                                         <tr v-for="assignment in student.assignments" :key="assignment.id">
                                             <td class="px-4 py-4">
                                                 <p class="font-medium text-ink dark:text-white">

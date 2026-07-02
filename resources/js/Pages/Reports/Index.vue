@@ -1,5 +1,4 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 import { route } from "ziggy-js";
 
@@ -113,7 +112,7 @@ function resetFilters() {
                             <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
                                 <i :class="report.icon" />
                             </span>
-                            <span class="rounded-full bg-slate-100 px-3 py-1 text-right text-xs font-semibold text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">
+                            <span class="rounded-full border border-border-light bg-surface px-3 py-1 text-right text-xs font-semibold text-slate-600 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300">
                                 {{ report.category }}
                             </span>
                         </div>
@@ -128,13 +127,15 @@ function resetFilters() {
                         </div>
 
                         <div class="mt-6">
-                            <Link
+                            <BaseButton
+                                as="a"
+                                variant="primary"
+                                class="w-full"
                                 :href="route(report.route)"
-                                class="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600"
                             >
                                 <i class="fa-solid fa-arrow-right mr-2" />
                                 Open report
-                            </Link>
+                            </BaseButton>
                         </div>
                     </div>
                 </SectionCard>

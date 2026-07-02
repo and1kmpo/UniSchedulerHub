@@ -22,15 +22,15 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertDemoUser('admin@unischedulerhub.test', 'admin');
-        $this->assertDemoUser('coordinator@unischedulerhub.test', 'academic_coordinator');
-        $this->assertDemoUser('professor@unischedulerhub.test', 'professor');
-        $this->assertDemoUser('professor.math@unischedulerhub.test', 'professor');
-        $this->assertDemoUser('student@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.enrolled@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.probation@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.suspended@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.graded@unischedulerhub.test', 'student');
+        $this->assertDemoUser('admin@tarraya.test', 'admin');
+        $this->assertDemoUser('coordinator@tarraya.test', 'academic_coordinator');
+        $this->assertDemoUser('professor@tarraya.test', 'professor');
+        $this->assertDemoUser('professor.math@tarraya.test', 'professor');
+        $this->assertDemoUser('student@tarraya.test', 'student');
+        $this->assertDemoUser('student.enrolled@tarraya.test', 'student');
+        $this->assertDemoUser('student.probation@tarraya.test', 'student');
+        $this->assertDemoUser('student.suspended@tarraya.test', 'student');
+        $this->assertDemoUser('student.graded@tarraya.test', 'student');
 
         $this->assertSame(1, AcademicPeriod::where('is_active', true)->count());
         $this->assertGreaterThanOrEqual(5, Subject::count());
@@ -47,7 +47,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $admin = User::where('email', 'admin@unischedulerhub.test')->firstOrFail();
+        $admin = User::where('email', 'admin@tarraya.test')->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('dashboard'))
@@ -58,7 +58,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $professor = User::where('email', 'professor@unischedulerhub.test')->firstOrFail();
+        $professor = User::where('email', 'professor@tarraya.test')->firstOrFail();
 
         $this->actingAs($professor)
             ->get(route('professor.subjects'))
@@ -69,7 +69,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $student = User::where('email', 'student@unischedulerhub.test')->firstOrFail();
+        $student = User::where('email', 'student@tarraya.test')->firstOrFail();
 
         $this->actingAs($student)
             ->get(route('student.subject-enrollment.index'))
@@ -80,8 +80,8 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $coordinator = User::where('email', 'coordinator@unischedulerhub.test')->firstOrFail();
-        $student = User::where('email', 'student@unischedulerhub.test')->firstOrFail();
+        $coordinator = User::where('email', 'coordinator@tarraya.test')->firstOrFail();
+        $student = User::where('email', 'student@tarraya.test')->firstOrFail();
         $subject = Subject::where('code', 'SWE101')->firstOrFail();
 
         $this->actingAs($coordinator)
@@ -100,9 +100,9 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $admin = User::where('email', 'admin@unischedulerhub.test')->firstOrFail();
-        $professor = User::where('email', 'professor@unischedulerhub.test')->firstOrFail();
-        $student = User::where('email', 'student.enrolled@unischedulerhub.test')->firstOrFail();
+        $admin = User::where('email', 'admin@tarraya.test')->firstOrFail();
+        $professor = User::where('email', 'professor@tarraya.test')->firstOrFail();
+        $student = User::where('email', 'student.enrolled@tarraya.test')->firstOrFail();
 
         $adminResponse = $this->actingAs($admin)
             ->get(route('dashboard'))

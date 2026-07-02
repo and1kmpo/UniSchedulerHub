@@ -1,11 +1,12 @@
 <script setup>
 import { computed, reactive, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { router } from "@inertiajs/vue3";
 import { route } from "ziggy-js";
 
 import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseInput from "@/Components/UI/Base/BaseInput.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
@@ -176,13 +177,10 @@ function printReport() {
         subtitle="Critical academic events, actors, affected records and audit context"
     >
         <template v-slot:actions>
-            <Link
-                :href="route('reports.index')"
-                class="inline-flex items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition-all duration-200 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-600"
-            >
+            <BaseButton as="a" variant="secondary" :href="route('reports.index')">
                 <i class="fa-solid fa-arrow-left mr-2" />
                 Reports
-            </Link>
+            </BaseButton>
         </template>
 
         <CrudContainer>
@@ -208,16 +206,14 @@ function printReport() {
                             <BaseSelect v-model="filterForm.action" placeholder="Action" :options="options.actions" />
                             <BaseSelect v-model="filterForm.user_id" placeholder="Actor" :options="options.users" />
                             <BaseSelect v-model="filterForm.auditable_type" placeholder="Entity" :options="options.entities" />
-                            <input
+                            <BaseInput
                                 v-model="filterForm.date_from"
                                 type="date"
-                                class="w-full rounded-lg border border-border-light bg-surface px-4 py-2 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-zinc-900 dark:text-white"
                                 aria-label="Date from"
                             />
-                            <input
+                            <BaseInput
                                 v-model="filterForm.date_to"
                                 type="date"
-                                class="w-full rounded-lg border border-border-light bg-surface px-4 py-2 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-zinc-900 dark:text-white"
                                 aria-label="Date to"
                             />
                         </template>
@@ -230,13 +226,10 @@ function printReport() {
                         </template>
 
                         <template #actions>
-                            <a
-                                :href="csvExportUrl"
-                                class="inline-flex items-center justify-center rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-success"
-                            >
+                            <BaseButton as="a" variant="success" :href="csvExportUrl">
                                 <i class="fa-solid fa-file-csv mr-2" />
                                 Export CSV
-                            </a>
+                            </BaseButton>
 
                             <BaseButton variant="secondary" @click="printReport">
                                 <i class="fa-solid fa-print mr-2" />
@@ -256,7 +249,7 @@ function printReport() {
                         </p>
                     </div>
 
-                    <div v-if="events.data.length" class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <div v-if="events.data.length" class="divide-y divide-border-light dark:divide-border-dark">
                         <article v-for="event in events.data" :key="event.id" class="p-6">
                             <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div class="min-w-0">
@@ -286,7 +279,7 @@ function printReport() {
                             </div>
 
                             <div class="mt-5 grid gap-4 lg:grid-cols-[16rem_1fr]">
-                                <div class="rounded-lg bg-slate-50 p-4 dark:bg-surface-dark/60">
+                                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
                                     <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Affected record
                                     </p>
@@ -301,7 +294,7 @@ function printReport() {
                                     </p>
                                 </div>
 
-                                <div class="rounded-lg bg-slate-50 p-4 dark:bg-surface-dark/60">
+                                <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
                                     <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                                         Context
                                     </p>

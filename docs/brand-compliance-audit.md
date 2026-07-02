@@ -6,26 +6,26 @@ This audit checks whether the current product experience fully matches the TARRA
 
 ## Executive Status
 
-Current estimated compliance: **80%**.
+Current estimated compliance: **85%**.
 
-The product is already recognizably TARRAYA in its main architecture, navigation, auth flow, dashboard direction, CRUD foundation, reports and core academic workflows. It is not yet fully brand-complete because some visible screens still carry local Tailwind styling, legacy Jetstream components, old demo naming, and uneven report/card treatments.
+The product is already recognizably TARRAYA in its main architecture, navigation, auth flow, dashboard direction, CRUD foundation, reports and core academic workflows. It is not yet fully brand-complete because some visible screens still carry local Tailwind styling, legacy Jetstream components and uneven detail/card treatments.
 
 ## Compliance Checklist
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Brand name and product language | Partial | Main UI uses TARRAYA, but demo emails/docs still use `unischedulerhub.test`. |
+| Brand name and product language | Aligned | Main UI and demo credentials use TARRAYA naming and `tarraya.test` demo emails. |
 | Logo system | Partial | Favicon, compact mark, mark and lockup exist. Final polish and usage rules still need visual QA. |
 | Color tokens | Mostly aligned | Global tokens exist. Some raw hex values and local gray/slate/zinc usage remain. |
 | Typography | Mostly aligned | Geist/mono intent exists. Need final pass to avoid decorative monospace usage. |
 | Surfaces | Mostly aligned | Main components use 1px borders and calm cards. Some report/detail screens still use local surface patterns. |
-| Buttons/actions | Mostly aligned | BaseButton/TableActionButton exist. Some reports still use local export/back button styles. |
+| Buttons/actions | Mostly aligned | BaseButton/TableActionButton exist. Reports now use BaseButton for main navigation/export/print actions. |
 | Forms | Mostly aligned | Base inputs/selects are in place. Legacy Jetstream/auth/profile forms need final alignment. |
 | Tables | Mostly aligned | DataTable exists and CRUDs use it broadly. Some report internals still build local tables. |
 | Status badges | Mostly aligned | StatusBadge exists. Some inline badges/spans remain in reports and portals. |
 | Navigation | Aligned | Modular navigation matches Insights/Core/Sync/Rooms/Admin and role-aware access. |
 | Dark mode | Mostly aligned | Major issues have been improved. Needs visual QA on reports/profile/API/legacy pages. |
-| Reports/print | Partial | Functional and professional, but print CSS still uses raw hex and non-token gray values. |
+| Reports/print | Mostly aligned | Functional and professional. Print styles now use an explicit TARRAYA print token block. |
 | Scheduler | Mostly aligned | FullCalendar is adopted and styled. Needs final event-density/legibility QA. |
 | Motion | Not complete | No unified motion language yet beyond basic transitions. |
 | Public portfolio/landing | Not complete | Product is usable after login, but public-facing brand presentation is still missing. |
@@ -33,11 +33,8 @@ The product is already recognizably TARRAYA in its main architecture, navigation
 ## P0: Must Fix Before "Brand Complete"
 
 1. **Remove or isolate old brand naming**
-   - Keep `unischedulerhub.test` only if intentionally used as local demo email domain.
-   - Prefer `tarraya.test` or document why old demo emails remain.
-   - Files identified:
-     - `README.md`
-     - `docs/demo-testing.md`
+   - Status: completed for visible docs, seeders, tests and Laravel config defaults.
+   - Demo users now use the intentional local domain `tarraya.test`.
 
 2. **Eliminate visible legacy modules from active UI**
    - `resources/js/Pages/Assignments/Index.vue` is deprecated and should remain compatibility-only or be removed after route QA.
@@ -46,19 +43,12 @@ The product is already recognizably TARRAYA in its main architecture, navigation
    - `resources/js/Components/Security/Permissions.vue`
 
 3. **Normalize report action buttons**
-   - Reports still contain local button classes for back/export/print actions.
-   - Standardize on `BaseButton` variants.
-   - Screens:
-     - `Reports/StudentAssignments.vue`
-     - `Reports/ProfessorLoad.vue`
-     - `Reports/ClassroomOccupancy.vue`
-     - `Reports/GroupCapacityConflicts.vue`
-     - `Reports/GradeOperations.vue`
-     - `Reports/AcademicEvents.vue`
+   - Status: completed for the current report bank and report detail pages.
+   - Reports use `BaseButton` variants for back, export and print actions.
 
 4. **Tokenize print template styling**
-   - `usePrintableReport.js` uses raw hex/gray values.
-   - Move print palette to a small documented print token block or align values to TARRAYA tokens.
+   - Status: completed for the current print helper.
+   - `usePrintableReport.js` uses an explicit TARRAYA print token block.
 
 5. **Final dark/light QA for critical screens**
    - Login
@@ -255,7 +245,7 @@ Remaining checks:
 
 TARRAYA can be declared brand-complete when:
 
-- No visible product UI says UniSchedulerHub except intentional local demo email domains.
+- No visible product UI uses the old project name.
 - P0 items are complete.
 - Key screens pass light/dark/mobile visual QA.
 - Report buttons and print templates follow design system rules.

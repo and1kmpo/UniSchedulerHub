@@ -1,5 +1,15 @@
 <script setup>
 defineProps({
+    as: {
+        type: String,
+        default: "button",
+    },
+
+    href: {
+        type: String,
+        default: "",
+    },
+
     type: {
         type: String,
         default: "button",
@@ -46,11 +56,14 @@ const sizes = {
 </script>
 
 <template>
-    <button :type="type" :disabled="disabled" :class="[
+    <component :is="as" :type="as === 'button' ? type : undefined" :href="as !== 'button' ? href : undefined"
+        :disabled="as === 'button' ? disabled : undefined" :aria-disabled="as !== 'button' && disabled ? 'true' : undefined"
+        :class="[
         'inline-flex items-center justify-center rounded-lg border font-medium transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-dark-bg',
+        { 'pointer-events-none opacity-50': as !== 'button' && disabled },
         variants[variant],
         sizes[size],
     ]">
         <slot />
-    </button>
+    </component>
 </template>
