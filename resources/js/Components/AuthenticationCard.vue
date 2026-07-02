@@ -5,7 +5,7 @@
         </div>
 
         <div
-            class="w-full sm:max-w-md mt-6 px-6 py-5 bg-surface overflow-hidden border border-border-light shadow-sm sm:rounded-lg dark:border-border-dark dark:bg-surface-dark"
+            class="w-full sm:max-w-md mt-6 px-6 py-5 bg-surface overflow-hidden border border-border-light sm:rounded-lg dark:border-border-dark dark:bg-surface-dark"
         >
             <slot />
         </div>

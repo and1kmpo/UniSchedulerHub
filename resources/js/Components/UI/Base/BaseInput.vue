@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted, ref } from "vue";
+
 defineOptions({
     inheritAttrs: false,
 });
@@ -41,6 +43,16 @@ defineProps({
 });
 
 defineEmits(["update:modelValue"]);
+
+const input = ref(null);
+
+onMounted(() => {
+    if (input.value?.hasAttribute("autofocus")) {
+        input.value.focus();
+    }
+});
+
+defineExpose({ focus: () => input.value?.focus() });
 </script>
 
 <template>
@@ -53,9 +65,9 @@ defineEmits(["update:modelValue"]);
             </span>
         </label>
 
-        <input v-bind="$attrs" :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
+        <input ref="input" v-bind="$attrs" :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
             @input="$emit('update:modelValue', $event.target.value)"
-            class="base-input w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink shadow-sm transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:disabled:bg-zinc-900"
+            class="base-input w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:disabled:bg-zinc-900"
             :class="{
                 'border-danger focus:border-danger focus:ring-danger/20':
                     error,
