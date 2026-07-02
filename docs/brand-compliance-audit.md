@@ -25,7 +25,7 @@ The product is already recognizably TARRAYA in its main architecture, navigation
 | Status badges | Mostly aligned | StatusBadge exists. Some inline badges/spans remain in reports and portals. |
 | Navigation | Aligned | Modular navigation matches Insights/Core/Sync/Rooms/Admin and role-aware access. |
 | Dark mode | Mostly aligned | Major issues have been improved. Needs final visual QA on critical flows and compatibility pages. |
-| Reports/print | Mostly aligned | Functional and professional. Print styles now use an explicit TARRAYA print token block. |
+| Reports/print | Aligned | Functional and professional. Report actions use BaseButton and print styles use a TARRAYA print token block. |
 | Scheduler | Mostly aligned | FullCalendar is adopted and styled. Needs final event-density/legibility QA. |
 | Motion | Not complete | No unified motion language yet beyond basic transitions. |
 | Public portfolio/landing | Mostly aligned | Root page now presents TARRAYA as an academic operating system before login. |
@@ -197,7 +197,7 @@ Remaining checks:
 
 ### Reports
 
-Status: **Partial**
+Status: **Aligned**
 
 Strengths:
 - Report bank exists.
@@ -205,9 +205,7 @@ Strengths:
 - Reports answer real operational questions.
 
 Remaining checks:
-- Standardize local action buttons.
-- Tokenize print CSS.
-- Align nested report tables/cards to design system.
+- Final mobile and print-output QA.
 
 ### Student Portal
 
@@ -257,15 +255,15 @@ TARRAYA can be declared brand-complete when:
 
 ## Recommended Next Implementation Pass
 
-Start with **Brand Polish Pass 1: Reports and Print**.
+Start with **Visual QA Pass 1: Critical Screens**.
 
 Why:
-- Reports are public-facing in demos.
-- They currently contain the most obvious local button/table styles.
-- They are central to the portfolio story and original functional requirements.
+- The remaining brand-complete risk is now visual consistency, not architecture.
+- The system needs screenshot evidence for portfolio/demo confidence.
+- Light/dark/mobile issues are easier to catch with a fixed checklist.
 
 Scope:
-- Replace local report buttons with `BaseButton`.
-- Align report nested tables/cards to border/surface tokens.
-- Tokenize `usePrintableReport.js`.
+- Use `docs/visual-qa-checklist.md`.
+- Capture public entry, login, dashboard, reports, scheduler, enrollment, student portal, professor portal and users.
+- Fix any visible text contrast, overlap, spacing, or responsive issues found.
 - Run `npm run build`.
