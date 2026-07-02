@@ -9,10 +9,6 @@
 
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=tarraya-20260612">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=geist:400,500,600,700|geist-mono:400,500,600,700&display=swap" rel="stylesheet" />
-
     <!-- Scripts -->
     @routes
     @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
