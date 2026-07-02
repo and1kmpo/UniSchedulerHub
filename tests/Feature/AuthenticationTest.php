@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\RolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -23,6 +24,18 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+    }
+
+    public function test_public_entry_screen_can_be_rendered(): void
+    {
+        $response = $this->get('/');
+
+        $response
+            ->assertStatus(200)
+            ->assertInertia(fn(Assert $page) => $page
+                ->component('Welcome')
+                ->has('canLogin')
+                ->has('canRegister'));
     }
 
     public function test_admin_can_authenticate_and_is_redirected_to_academic_dashboard(): void

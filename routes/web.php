@@ -21,9 +21,13 @@ use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => redirect()->route('login'));
+Route::get('/', fn() => Inertia::render('Welcome', [
+    'canLogin' => Route::has('login'),
+    'canRegister' => Route::has('register'),
+]));
 Route::get('/favicon.ico', fn() => redirect('/favicon.svg?v=tarraya-20260612'));
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

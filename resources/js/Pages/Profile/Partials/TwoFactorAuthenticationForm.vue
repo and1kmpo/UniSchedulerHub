@@ -111,7 +111,7 @@ const disableTwoFactorAuthentication = () => {
         </template>
 
         <template #description>
-            Add additional security to your account using two factor authentication.
+            Add an extra verification layer to protect academic operations and account access.
         </template>
 
         <template #content>
@@ -145,7 +145,7 @@ const disableTwoFactorAuthentication = () => {
                         </p>
                     </div>
 
-                    <div class="mt-4 inline-block rounded-lg border border-border-light bg-white p-2 dark:border-border-dark" v-html="qrCode" />
+                    <div class="mt-4 inline-block rounded-lg border border-border-light bg-surface p-2 dark:border-border-dark dark:bg-surface-dark" v-html="qrCode" />
 
                     <div v-if="setupKey" class="mt-4 max-w-xl text-sm text-slate-600 dark:text-zinc-300">
                         <p class="font-semibold">
@@ -179,7 +179,7 @@ const disableTwoFactorAuthentication = () => {
                         </p>
                     </div>
 
-                    <div class="mt-4 grid max-w-xl gap-1 rounded-lg border border-border-light bg-slate-50 px-4 py-4 font-mono text-sm text-ink dark:border-border-dark dark:bg-zinc-950 dark:text-zinc-100">
+                    <div class="mt-4 grid max-w-xl gap-1 rounded-lg border border-border-light bg-slate-50 px-4 py-4 font-mono text-sm text-ink dark:border-border-dark dark:bg-dark-bg dark:text-zinc-100">
                         <div v-for="code in recoveryCodes" :key="code">
                             {{ code }}
                         </div>

@@ -6,9 +6,9 @@ This audit checks whether the current product experience fully matches the TARRA
 
 ## Executive Status
 
-Current estimated compliance: **85%**.
+Current estimated compliance: **90%**.
 
-The product is already recognizably TARRAYA in its main architecture, navigation, auth flow, dashboard direction, CRUD foundation, reports and core academic workflows. It is not yet fully brand-complete because some visible screens still carry local Tailwind styling, legacy Jetstream components and uneven detail/card treatments.
+The product is already recognizably TARRAYA in its main architecture, navigation, auth flow, public entry, dashboard direction, CRUD foundation, reports and core academic workflows. It is not yet fully brand-complete because a few compatibility components remain and final screenshot-based QA is still pending.
 
 ## Compliance Checklist
 
@@ -20,15 +20,15 @@ The product is already recognizably TARRAYA in its main architecture, navigation
 | Typography | Mostly aligned | Geist/mono intent exists. Need final pass to avoid decorative monospace usage. |
 | Surfaces | Mostly aligned | Main components use 1px borders and calm cards. Some report/detail screens still use local surface patterns. |
 | Buttons/actions | Mostly aligned | BaseButton/TableActionButton exist. Reports now use BaseButton for main navigation/export/print actions. |
-| Forms | Mostly aligned | Base inputs/selects are in place. Legacy Jetstream/auth/profile forms need final alignment. |
+| Forms | Mostly aligned | Base inputs/selects are in place. API/Profile entry screens are aligned; some Jetstream-compatible internals remain. |
 | Tables | Mostly aligned | DataTable exists and CRUDs use it broadly. Some report internals still build local tables. |
 | Status badges | Mostly aligned | StatusBadge exists. Some inline badges/spans remain in reports and portals. |
 | Navigation | Aligned | Modular navigation matches Insights/Core/Sync/Rooms/Admin and role-aware access. |
-| Dark mode | Mostly aligned | Major issues have been improved. Needs visual QA on reports/profile/API/legacy pages. |
+| Dark mode | Mostly aligned | Major issues have been improved. Needs final visual QA on critical flows and compatibility pages. |
 | Reports/print | Mostly aligned | Functional and professional. Print styles now use an explicit TARRAYA print token block. |
 | Scheduler | Mostly aligned | FullCalendar is adopted and styled. Needs final event-density/legibility QA. |
 | Motion | Not complete | No unified motion language yet beyond basic transitions. |
-| Public portfolio/landing | Not complete | Product is usable after login, but public-facing brand presentation is still missing. |
+| Public portfolio/landing | Mostly aligned | Root page now presents TARRAYA as an academic operating system before login. |
 
 ## P0: Must Fix Before "Brand Complete"
 
@@ -77,7 +77,8 @@ The product is already recognizably TARRAYA in its main architecture, navigation
    - Ensure the detailed mark is not used where it becomes visually noisy.
 
 3. **Profile/API/auth legacy component pass**
-   - Jetstream components still exist and may use older styling patterns:
+   - Status: partially completed for API Tokens and Profile entry.
+   - Jetstream compatibility components still exist:
      - `PrimaryButton.vue`
      - `SecondaryButton.vue`
      - `DangerButton.vue`
@@ -102,7 +103,8 @@ The product is already recognizably TARRAYA in its main architecture, navigation
    - Keep motion between 150ms and 250ms for UI microinteractions.
 
 2. **Public product entry**
-   - Add a portfolio/demo landing page or demo entry state that explains TARRAYA as an academic operating system before login.
+   - Status: implemented for the root route.
+   - Final visual QA still needed on mobile and dark mode.
 
 3. **Brand assets documentation**
    - Add examples for:

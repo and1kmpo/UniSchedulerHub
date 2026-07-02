@@ -1,5 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
+import CrudContainer from '@/Layouts/CrudContainerLayout.vue';
+import PageHeader from '@/Components/UI/PageHeader.vue';
 import DeleteUserForm from '@/Pages/Profile/Partials/DeleteUserForm.vue';
 import LogoutOtherBrowserSessionsForm from '@/Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue';
 import SectionBorder from '@/Components/SectionBorder.vue';
@@ -15,14 +17,14 @@ defineProps({
 
 <template>
     <AppLayout title="Profile">
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-ink dark:text-white">
-                Profile
-            </h2>
-        </template>
+        <div class="min-h-screen bg-slate-50 dark:bg-dark-bg">
+            <CrudContainer>
+                <PageHeader
+                    title="Profile"
+                    subtitle="Manage your TARRAYA account, authentication and active sessions."
+                    class="py-8"
+                />
 
-        <div>
-            <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
                 <div v-if="$page.props.jetstream.canUpdateProfileInformation">
                     <UpdateProfileInformationForm :user="$page.props.auth.user" />
 
@@ -51,7 +53,7 @@ defineProps({
 
                     <DeleteUserForm class="mt-10 sm:mt-0" />
                 </template>
-            </div>
+            </CrudContainer>
         </div>
     </AppLayout>
 </template>
