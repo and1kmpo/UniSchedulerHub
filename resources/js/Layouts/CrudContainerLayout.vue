@@ -7,7 +7,7 @@ defineProps({
 
     shadow: {
         type: Boolean,
-        default: true,
+        default: false,
     },
 
     bordered: {
@@ -19,7 +19,7 @@ defineProps({
 
 <template>
     <div :class="[
-        'overflow-hidden rounded-lg bg-surface transition duration-200 dark:bg-surface-dark',
+        'overflow-hidden rounded-xl bg-surface transition duration-200 dark:bg-surface-dark',
 
         padded ? 'p-4 sm:p-6' : '',
 

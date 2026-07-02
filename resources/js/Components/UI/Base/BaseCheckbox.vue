@@ -1,4 +1,6 @@
 <script setup>
+import { computed, useAttrs } from "vue";
+
 defineOptions({
     inheritAttrs: false,
 });
@@ -26,10 +28,20 @@ defineProps({
 });
 
 defineEmits(["update:modelValue"]);
+
+const attrs = useAttrs();
+
+const rootClass = computed(() => attrs.class);
+
+const inputAttrs = computed(() => {
+    const { class: _class, ...rest } = attrs;
+
+    return rest;
+});
 </script>
 
 <template>
-    <div class="space-y-2">
+    <div class="space-y-2" :class="rootClass">
         <span v-if="label" class="block text-sm font-medium text-slate-700 dark:text-zinc-200">
             {{ label }}
         </span>
@@ -56,7 +68,7 @@ defineEmits(["update:modelValue"]);
             </span>
 
             <input
-                v-bind="$attrs"
+                v-bind="inputAttrs"
                 type="checkbox"
                 :checked="modelValue"
                 @change="$emit('update:modelValue', $event.target.checked)"

@@ -8,7 +8,7 @@ defineProps({
 
 <template>
     <div
-        class="grid min-h-[6.25rem] grid-cols-[1fr_auto] items-start gap-3 rounded-lg border border-border-light bg-surface p-4 shadow-sm dark:border-border-dark dark:bg-surface-dark sm:p-5"
+        class="grid min-h-[6.25rem] grid-cols-[1fr_auto] items-start gap-3 rounded-xl border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark sm:p-5"
     >
         <div class="min-w-0 pr-1">
             <p class="text-xs font-medium leading-5 text-slate-500 dark:text-zinc-400 sm:text-sm">

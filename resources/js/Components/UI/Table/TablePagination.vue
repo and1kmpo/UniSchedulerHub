@@ -17,7 +17,7 @@ defineProps({
         </p>
 
         <div
-            class="mx-auto inline-flex items-center overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark sm:mx-0">
+            class="mx-auto inline-flex items-center overflow-hidden rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark sm:mx-0">
             <Link v-if="data.prev_page_url" :href="data.prev_page_url"
                 class="inline-flex h-10 w-11 items-center justify-center text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 aria-label="Previous page">

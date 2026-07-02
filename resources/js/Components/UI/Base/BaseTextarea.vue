@@ -46,7 +46,7 @@ defineEmits(["update:modelValue"]);
 
         <textarea :value="modelValue" :placeholder="placeholder" :rows="rows"
             @input="$emit('update:modelValue', $event.target.value)"
-            class="w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink shadow-sm transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            class="w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500"
             :class="{
                 'border-danger focus:border-danger focus:ring-danger/20':
                     error,

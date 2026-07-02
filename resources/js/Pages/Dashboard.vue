@@ -268,9 +268,9 @@ function gradingProgressData(items) {
 
         <main class="min-h-screen bg-slate-50 py-6 dark:bg-dark-bg">
             <div v-if="dashboardType === 'academic'" class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                     <article v-for="card in metricCards" :key="card.key"
-                        class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                        class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-3">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
@@ -285,8 +285,8 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-8">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-base font-semibold text-ink dark:text-white">Capacity Overview</h2>
@@ -298,15 +298,15 @@ function gradingProgressData(items) {
                         </div>
 
                         <div class="mt-5 grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
+                            <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Used seats</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.used_seats ?? 0 }}</p>
                             </div>
-                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
+                            <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Available seats</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.available_seats ?? 0 }}</p>
                             </div>
-                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
+                            <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Full groups</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.metrics?.full_groups ?? 0 }}</p>
                             </div>
@@ -328,12 +328,12 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Status</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Distribution by academic enrollment state.</p>
 
                         <div class="mt-5 space-y-3">
-                            <div v-for="status in academicDashboard.enrollmentStatus || []" :key="status.label" class="flex items-center justify-between rounded-lg border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
+                            <div v-for="status in academicDashboard.enrollmentStatus || []" :key="status.label" class="flex items-center justify-between rounded-xl border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
                                 <span class="text-sm font-medium text-slate-700 dark:text-zinc-300">{{ status.label }}</span>
                                 <span class="text-sm font-semibold text-ink dark:text-white">{{ status.value }}</span>
                             </div>
@@ -344,8 +344,8 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-8">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Trend</h2>
@@ -365,7 +365,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Status Mix</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Enrollment states at a glance.</p>
 
@@ -382,8 +382,8 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="grid gap-6 xl:grid-cols-2">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Capacity By Group</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Used seats compared with configured group capacity.</p>
 
@@ -399,7 +399,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Subject Areas</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Academic offering distribution by knowledge area.</p>
 
@@ -416,13 +416,13 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="grid gap-6 xl:grid-cols-3">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Schedule Conflicts</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Overlaps by classroom or professor.</p>
 
                         <div class="mt-5 space-y-4">
-                            <div v-for="conflict in academicDashboard.scheduleConflicts || []" :key="conflict.id" class="rounded-lg border border-warning/30 bg-warning/10 p-4 dark:border-warning/30 dark:bg-warning/10">
+                            <div v-for="conflict in academicDashboard.scheduleConflicts || []" :key="conflict.id" class="rounded-xl border border-warning/30 bg-warning/10 p-4 dark:border-warning/30 dark:bg-warning/10">
                                 <p class="text-sm font-semibold text-amber-900 dark:text-warning">{{ conflict.day }} · {{ conflict.time }}</p>
                                 <p class="mt-1 text-sm text-amber-800 dark:text-warning">{{ conflict.first_group }} conflicts with {{ conflict.second_group }}</p>
                                 <p class="mt-1 text-xs text-amber-700 dark:text-warning">{{ conflict.classroom || "Professor overlap" }}</p>
@@ -433,12 +433,12 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Professor Load</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Groups and active students by professor.</p>
 
                         <div class="mt-5 space-y-3">
-                            <div v-for="professor in academicDashboard.professorLoad || []" :key="professor.name" class="flex items-center justify-between rounded-lg border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
+                            <div v-for="professor in academicDashboard.professorLoad || []" :key="professor.name" class="flex items-center justify-between rounded-xl border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
                                 <div>
                                     <p class="text-sm font-medium text-slate-800 dark:text-zinc-200">{{ professor.name }}</p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ professor.groups }} groups</p>
@@ -451,12 +451,12 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Needs Attention</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Operational issues to resolve first.</p>
 
                         <div class="mt-5 space-y-3">
-                            <div v-for="item in academicDashboard.attentionItems || []" :key="`${item.type}-${item.description}`" class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                            <div v-for="item in academicDashboard.attentionItems || []" :key="`${item.type}-${item.description}`" class="rounded-xl border border-border-light p-4 dark:border-border-dark">
                                 <p class="text-sm font-semibold text-ink dark:text-white">{{ item.title }}</p>
                                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
                             </div>
@@ -467,7 +467,7 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Recent Academic Events</h2>
@@ -490,7 +490,7 @@ function gradingProgressData(items) {
                     </div>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Student Assignments Overview</h2>
@@ -530,7 +530,7 @@ function gradingProgressData(items) {
                                     <td class="px-4 py-4">
                                         <div class="space-y-2">
                                             <div v-for="assignment in student.subjects.slice(0, 3)" :key="`${student.id}-${assignment.code}-${assignment.group}`"
-                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
+                                                class="rounded-xl border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
                                                 <p class="font-medium text-ink dark:text-white">
                                                     {{ assignment.code }} - {{ assignment.subject }}
                                                 </p>
@@ -539,14 +539,14 @@ function gradingProgressData(items) {
                                                 </p>
                                             </div>
                                             <details v-if="student.subjects.length > 3"
-                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
+                                                class="rounded-xl border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
                                                 <summary class="cursor-pointer text-xs font-semibold text-brand-600 dark:text-brand-300">
                                                     {{ student.subjects.length - 3 }} more in full report
                                                 </summary>
                                                 <div class="mt-2 space-y-2">
                                                     <div v-for="assignment in student.subjects.slice(3)"
                                                         :key="`${student.id}-${assignment.code}-${assignment.group}-extra`"
-                                                        class="rounded-lg border border-border-light bg-surface px-3 py-2 dark:border-border-dark dark:bg-surface-dark">
+                                                        class="rounded-xl border border-border-light bg-surface px-3 py-2 dark:border-border-dark dark:bg-surface-dark">
                                                         <p class="font-medium text-ink dark:text-white">
                                                             {{ assignment.code }} - {{ assignment.subject }}
                                                         </p>
@@ -570,9 +570,9 @@ function gradingProgressData(items) {
             </div>
 
             <div v-else class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                     <article v-for="card in professorMetricCards" :key="card.key"
-                        class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                        class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-3">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
@@ -587,8 +587,8 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="grid gap-6 xl:grid-cols-2">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Students By Group</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Active students across your assigned groups.</p>
 
@@ -604,7 +604,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Grading Progress</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Completed and pending grades by group.</p>
 
@@ -621,7 +621,7 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Assigned Groups</h2>
@@ -633,7 +633,7 @@ function gradingProgressData(items) {
                     </div>
 
                     <div class="mt-5 grid gap-4 lg:grid-cols-2">
-                        <article v-for="group in professorDashboard.groups || []" :key="group.id" class="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                        <article v-for="group in professorDashboard.groups || []" :key="group.id" class="rounded-xl border border-border-light p-4 dark:border-border-dark">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <p class="text-sm font-semibold text-ink dark:text-white">{{ group.code }}</p>

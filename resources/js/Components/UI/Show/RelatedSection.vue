@@ -14,7 +14,7 @@ defineProps({
 
 <template>
     <div
-        class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+        class="overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
         <div class="flex items-center justify-between border-b border-border-light px-6 py-5 dark:border-border-dark">
             <div>
                 <h2 class="text-lg font-semibold text-ink dark:text-white">

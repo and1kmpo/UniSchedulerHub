@@ -50,7 +50,7 @@ defineProps({
 
             <div class="mx-auto max-w-5xl">
 
-                <div class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <div class="overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
 
                     <slot />
 
