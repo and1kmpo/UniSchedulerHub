@@ -67,7 +67,7 @@ const metricCards = [
         label: "Seat utilization",
         icon: "fa-solid fa-chart-simple",
         suffix: "%",
-        tone: "text-sky-600 bg-sky-50 dark:bg-sky-500/10 dark:text-sky-300",
+        tone: "text-accent bg-accent/10 dark:bg-accent/10 dark:text-accent",
     },
 ];
 
@@ -78,7 +78,27 @@ const professorMetricCards = [
     { key: "scheduled_blocks", label: "Scheduled blocks", icon: "fa-solid fa-calendar-days" },
 ];
 
-const palette = ["#4f46e5", "#059669", "#f59e0b", "#dc2626", "#0891b2", "#7c3aed", "#475569", "#16a34a"];
+const chartColors = {
+    brand: "#2563EB",
+    brandSoft: "rgba(37, 99, 235, 0.14)",
+    accent: "#06B6D4",
+    success: "#10B981",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+    ink: "#0F172A",
+    slate: "#5C6B73",
+    border: "#E2E8F0",
+};
+
+const palette = [
+    chartColors.brand,
+    chartColors.success,
+    chartColors.warning,
+    chartColors.danger,
+    chartColors.accent,
+    chartColors.ink,
+    chartColors.slate,
+];
 
 const baseChartOptions = {
     responsive: true,
@@ -135,7 +155,7 @@ function simpleBarData(items, label) {
             {
                 label,
                 data: (items || []).map((item) => item.value),
-                backgroundColor: palette[0],
+                backgroundColor: chartColors.brand,
                 borderRadius: 8,
                 maxBarThickness: 42,
             },
@@ -150,14 +170,14 @@ function capacityChartData(items) {
             {
                 label: "Used seats",
                 data: (items || []).map((item) => item.used),
-                backgroundColor: "#4f46e5",
+                backgroundColor: chartColors.brand,
                 borderRadius: 8,
                 maxBarThickness: 34,
             },
             {
                 label: "Capacity",
                 data: (items || []).map((item) => item.capacity),
-                backgroundColor: "#cbd5e1",
+                backgroundColor: chartColors.border,
                 borderRadius: 8,
                 maxBarThickness: 34,
             },
@@ -187,8 +207,8 @@ function trendData(items) {
             {
                 label: "Enrollments",
                 data: (items || []).map((item) => item.value),
-                borderColor: "#4f46e5",
-                backgroundColor: "rgba(79, 70, 229, 0.14)",
+                borderColor: chartColors.brand,
+                backgroundColor: chartColors.brandSoft,
                 fill: true,
                 tension: 0.35,
                 pointRadius: 4,
@@ -205,13 +225,13 @@ function gradingProgressData(items) {
             {
                 label: "Graded",
                 data: (items || []).map((item) => item.graded),
-                backgroundColor: "#059669",
+                backgroundColor: chartColors.success,
                 borderRadius: 8,
             },
             {
                 label: "Pending",
                 data: (items || []).map((item) => item.pending),
-                backgroundColor: "#f59e0b",
+                backgroundColor: chartColors.warning,
                 borderRadius: 8,
             },
         ],
@@ -250,7 +270,7 @@ function gradingProgressData(items) {
             <div v-if="dashboardType === 'academic'" class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <article v-for="card in metricCards" :key="card.key"
-                        class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                        class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
@@ -266,7 +286,7 @@ function gradingProgressData(items) {
                 </section>
 
                 <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-base font-semibold text-ink dark:text-white">Capacity Overview</h2>
@@ -278,15 +298,15 @@ function gradingProgressData(items) {
                         </div>
 
                         <div class="mt-5 grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-lg bg-slate-50 p-4 dark:bg-zinc-900">
+                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Used seats</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.used_seats ?? 0 }}</p>
                             </div>
-                            <div class="rounded-lg bg-slate-50 p-4 dark:bg-zinc-900">
+                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Available seats</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.available_seats ?? 0 }}</p>
                             </div>
-                            <div class="rounded-lg bg-slate-50 p-4 dark:bg-zinc-900">
+                            <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                                 <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Full groups</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.metrics?.full_groups ?? 0 }}</p>
                             </div>
@@ -298,7 +318,7 @@ function gradingProgressData(items) {
                                     <span class="font-medium text-slate-800 dark:text-zinc-200">{{ group.code }} - {{ group.subject }}</span>
                                     <span class="text-slate-500 dark:text-slate-400">{{ group.enrollments }}/{{ group.capacity }} · {{ group.occupancy }}%</span>
                                 </div>
-                                <div class="h-2 rounded-full bg-slate-100 dark:bg-zinc-900">
+                                <div class="h-2 rounded-full bg-slate-100 dark:bg-dark-bg">
                                     <div class="h-2 rounded-full" :class="occupancyColor(group.occupancy)" :style="{ width: `${Math.min(group.occupancy, 100)}%` }"></div>
                                 </div>
                             </div>
@@ -308,12 +328,12 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Status</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Distribution by academic enrollment state.</p>
 
                         <div class="mt-5 space-y-3">
-                            <div v-for="status in academicDashboard.enrollmentStatus || []" :key="status.label" class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 dark:bg-zinc-900">
+                            <div v-for="status in academicDashboard.enrollmentStatus || []" :key="status.label" class="flex items-center justify-between rounded-lg border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
                                 <span class="text-sm font-medium text-slate-700 dark:text-zinc-300">{{ status.label }}</span>
                                 <span class="text-sm font-semibold text-ink dark:text-white">{{ status.value }}</span>
                             </div>
@@ -325,7 +345,7 @@ function gradingProgressData(items) {
                 </section>
 
                 <section class="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Trend</h2>
@@ -345,7 +365,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Status Mix</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Enrollment states at a glance.</p>
 
@@ -363,7 +383,7 @@ function gradingProgressData(items) {
                 </section>
 
                 <section class="grid gap-6 xl:grid-cols-2">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Capacity By Group</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Used seats compared with configured group capacity.</p>
 
@@ -379,7 +399,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Subject Areas</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Academic offering distribution by knowledge area.</p>
 
@@ -397,7 +417,7 @@ function gradingProgressData(items) {
                 </section>
 
                 <section class="grid gap-6 xl:grid-cols-3">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Schedule Conflicts</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Overlaps by classroom or professor.</p>
 
@@ -413,12 +433,12 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Professor Load</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Groups and active students by professor.</p>
 
                         <div class="mt-5 space-y-3">
-                            <div v-for="professor in academicDashboard.professorLoad || []" :key="professor.name" class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 dark:bg-zinc-900">
+                            <div v-for="professor in academicDashboard.professorLoad || []" :key="professor.name" class="flex items-center justify-between rounded-lg border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
                                 <div>
                                     <p class="text-sm font-medium text-slate-800 dark:text-zinc-200">{{ professor.name }}</p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ professor.groups }} groups</p>
@@ -431,7 +451,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Needs Attention</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Operational issues to resolve first.</p>
 
@@ -447,7 +467,7 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Recent Academic Events</h2>
@@ -458,7 +478,7 @@ function gradingProgressData(items) {
                         </Link>
                     </div>
 
-                    <div class="mt-5 divide-y divide-gray-100 dark:divide-gray-800">
+                    <div class="mt-5 divide-y divide-border-light dark:divide-border-dark">
                         <div v-for="event in academicDashboard.recentEvents || []" :key="event.id" class="grid gap-2 py-4 sm:grid-cols-[10rem_1fr_10rem] sm:items-center">
                             <p class="text-sm font-medium text-ink dark:text-white">{{ event.action }}</p>
                             <p class="text-sm text-slate-600 dark:text-zinc-300">{{ event.summary || "No summary available" }}</p>
@@ -470,7 +490,7 @@ function gradingProgressData(items) {
                     </div>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Student Assignments Overview</h2>
@@ -485,7 +505,7 @@ function gradingProgressData(items) {
 
                     <div class="mt-5 overflow-x-auto">
                         <table v-if="(academicDashboard.assignmentPreview || []).length" class="min-w-full text-sm">
-                            <thead class="border-b border-slate-100 text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
+                            <thead class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
                                 <tr>
                                     <th class="px-4 py-3 font-semibold">Student</th>
                                     <th class="px-4 py-3 font-semibold">Document</th>
@@ -493,7 +513,7 @@ function gradingProgressData(items) {
                                     <th class="px-4 py-3 font-semibold">Recent assignments</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
                                 <tr v-for="student in academicDashboard.assignmentPreview" :key="student.id">
                                     <td class="px-4 py-4 font-medium text-ink dark:text-white">{{ student.name }}</td>
                                     <td class="px-4 py-4 text-slate-600 dark:text-zinc-300">{{ student.document }}</td>
@@ -510,7 +530,7 @@ function gradingProgressData(items) {
                                     <td class="px-4 py-4">
                                         <div class="space-y-2">
                                             <div v-for="assignment in student.subjects.slice(0, 3)" :key="`${student.id}-${assignment.code}-${assignment.group}`"
-                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-zinc-900/80">
+                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
                                                 <p class="font-medium text-ink dark:text-white">
                                                     {{ assignment.code }} - {{ assignment.subject }}
                                                 </p>
@@ -519,7 +539,7 @@ function gradingProgressData(items) {
                                                 </p>
                                             </div>
                                             <details v-if="student.subjects.length > 3"
-                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-zinc-900/80">
+                                                class="rounded-lg border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
                                                 <summary class="cursor-pointer text-xs font-semibold text-brand-600 dark:text-brand-300">
                                                     {{ student.subjects.length - 3 }} more in full report
                                                 </summary>
@@ -552,7 +572,7 @@ function gradingProgressData(items) {
             <div v-else class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <article v-for="card in professorMetricCards" :key="card.key"
-                        class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                        class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
@@ -568,7 +588,7 @@ function gradingProgressData(items) {
                 </section>
 
                 <section class="grid gap-6 xl:grid-cols-2">
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Students By Group</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Active students across your assigned groups.</p>
 
@@ -584,7 +604,7 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <article class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                         <h2 class="text-base font-semibold text-ink dark:text-white">Grading Progress</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Completed and pending grades by group.</p>
 
@@ -601,7 +621,7 @@ function gradingProgressData(items) {
                     </article>
                 </section>
 
-                <section class="rounded-lg border border-border-light bg-surface p-5 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                <section class="rounded-lg border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">Assigned Groups</h2>
@@ -619,7 +639,7 @@ function gradingProgressData(items) {
                                     <p class="text-sm font-semibold text-ink dark:text-white">{{ group.code }}</p>
                                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ group.subject }}</p>
                                 </div>
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-zinc-900 dark:text-zinc-300">
+                                <span class="rounded-full border border-border-light bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-border-dark dark:bg-dark-bg dark:text-zinc-300">
                                     {{ group.status }}
                                 </span>
                             </div>
