@@ -53,7 +53,7 @@
 /* Events */
 .fc-daygrid-event,
 .fc-timegrid-event {
-  @apply rounded-md shadow-sm px-2 py-1 font-medium cursor-pointer transition-transform transform;
+  @apply rounded-md px-2 py-1 font-medium cursor-pointer transition-transform transform;
 }
 .fc-event:hover {
   @apply scale-105 brightness-110;
@@ -79,7 +79,7 @@
 
 /* Evento tipo tarjeta */
 .custom-fc-event {
-  @apply relative rounded-md shadow-lg px-2 py-1 transition-transform duration-200 text-sm font-medium;
+  @apply relative rounded-md px-2 py-1 transition-transform duration-200 text-sm font-medium;
 }
 
 .custom-fc-event:hover {

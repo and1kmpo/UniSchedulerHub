@@ -429,33 +429,33 @@ async function submitGrades() {
 
                     <div v-if="activeEnrollments.length" class="overflow-x-auto">
                         <table class="min-w-full text-sm">
-                            <thead class="border-b border-border-light bg-slate-50 dark:border-border-dark dark:bg-zinc-950">
+                            <thead class="border-b border-border-light bg-slate-50 dark:border-border-dark dark:bg-zinc-900">
                                 <tr>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         Student
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         P1
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         P2
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         P3
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         Activities
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         Attendance
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         Final
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         State
                                     </th>
-                                    <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-zinc-200">
+                                    <th class="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                                         Last Update
                                     </th>
                                 </tr>

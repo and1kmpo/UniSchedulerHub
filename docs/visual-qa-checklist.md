@@ -2,6 +2,23 @@
 
 Use this checklist before declaring TARRAYA brand-complete or recording portfolio screenshots.
 
+## Current QA Status
+
+Static brand cleanup pass completed:
+
+- No visible legacy project-name references remain in `resources`, public docs or `.env.example`.
+- Main CRUD modules use shared layout/table/action primitives.
+- `BaseButton`, `StatusBadge` and `DataTable` are the official atomic UI layer.
+- Dashboard, authenticated layout, reports, enrollment engine, grades and scheduler have been aligned to the TARRAYA surface/token rules.
+- Heavy shadows and alternate palette tokens were removed from audited app surfaces.
+
+Manual browser QA still required before final brand-complete sign-off:
+
+- Capture the listed screens in mobile, tablet and desktop.
+- Toggle light/dark mode on each critical screen.
+- Confirm no overlap in dense tables, scheduler events, filters or report actions.
+- Confirm role-specific navigation with admin, coordinator, professor and student demo users.
+
 ## Viewports
 
 Validate each critical screen in:

@@ -1,5 +1,6 @@
 <script setup>
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 
 import EnrollmentStatusBadge from "./EnrollmentStatusBadge.vue";
 
@@ -39,11 +40,9 @@ const columns = [
         </template>
 
         <template #actions="{ row }">
-            <button type="button"
-                class="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger/10 dark:text-danger dark:hover:bg-danger/10"
-                @click="$emit('unenroll', row)">
+            <BaseButton type="button" variant="danger" size="sm" @click="$emit('unenroll', row)">
                 <i class="fa-solid fa-user-minus" />
-            </button>
+            </BaseButton>
         </template>
 
     </DataTable>

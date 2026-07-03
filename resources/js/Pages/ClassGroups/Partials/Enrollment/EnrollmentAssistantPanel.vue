@@ -1,4 +1,5 @@
 <script setup>
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
 defineProps({
@@ -59,28 +60,11 @@ defineEmits(["enroll"]);
 
                 </div>
 
-                <button type="button" :disabled="!selectedStudent || !validationResult.allowed || loading"
-                    @click="$emit('enroll')" class="
-                        mt-6
-                        inline-flex
-                        w-full
-                        items-center
-                        justify-center
-                        rounded-lg
-                        bg-brand-600
-                        px-4
-                        py-2
-                        text-sm
-                        font-semibold
-                        text-white
-                        transition
-                        hover:bg-brand-700
-                        disabled:cursor-not-allowed
-                        disabled:opacity-50
-                    ">
+                <BaseButton type="button" class="mt-6 w-full" :disabled="!selectedStudent || !validationResult.allowed || loading"
+                    @click="$emit('enroll')">
                     <i class="fa-solid fa-user-plus mr-2" />
                     Confirm Enrollment
-                </button>
+                </BaseButton>
 
             </div>
 

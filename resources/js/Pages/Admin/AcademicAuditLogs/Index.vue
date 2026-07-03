@@ -265,14 +265,10 @@ function changeRows(metadata) {
                 </template>
 
                 <template #actions="{ row }">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-lg border border-border-light px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-brand/40 hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand dark:border-border-dark dark:text-zinc-300 dark:hover:border-brand dark:hover:text-brand"
-                        @click="openDetails(row)"
-                    >
+                    <BaseButton type="button" variant="secondary" size="sm" @click="openDetails(row)">
                         <i class="fa-solid fa-eye mr-2 text-xs"></i>
                         Details
-                    </button>
+                    </BaseButton>
                 </template>
             </DataTable>
 
@@ -293,7 +289,7 @@ function changeRows(metadata) {
             aria-modal="true"
             @click.self="closeDetails"
         >
-            <section class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+            <section class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
                 <header class="flex items-start justify-between gap-4 border-b border-border-light px-6 py-5 dark:border-border-dark">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -310,7 +306,7 @@ function changeRows(metadata) {
 
                     <button
                         type="button"
-                        class="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                        class="rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-white"
                         aria-label="Close details"
                         @click="closeDetails"
                     >
@@ -348,7 +344,7 @@ function changeRows(metadata) {
 
                         <div v-if="changeRows(selectedLog.metadata).length" class="mt-4 overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-zinc-400">
+                                <thead class="border-b border-border-light bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-border-dark dark:bg-zinc-900 dark:text-slate-500">
                                     <tr>
                                         <th class="py-2 pr-4 font-semibold">Field</th>
                                         <th class="px-4 py-2 font-semibold">Before</th>

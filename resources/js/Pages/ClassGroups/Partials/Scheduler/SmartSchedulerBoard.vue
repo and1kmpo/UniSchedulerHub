@@ -256,6 +256,15 @@ function readableStatus(status) {
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function statusVariant(status) {
+    return {
+        published: "success",
+        draft: "warning",
+        cancelled: "danger",
+        closed: "gray",
+    }[status] || "brand";
+}
+
 function renderEventContent(arg) {
     const schedule = readableSchedule(arg.event.extendedProps.raw);
     const classroom = schedule.classroom === "No classroom" ? "Room pending" : schedule.classroom;
@@ -392,7 +401,7 @@ async function persistCalendarChange(info) {
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+    <div class="overflow-hidden rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
         <div class="border-b border-border-light px-6 py-4 dark:border-border-dark">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -459,7 +468,7 @@ async function persistCalendarChange(info) {
                         </p>
                     </div>
 
-                    <StatusBadge :status="selectedSchedule.status" />
+                    <StatusBadge :label="readableStatus(selectedSchedule.status)" :variant="statusVariant(selectedSchedule.status)" />
                 </div>
 
                 <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -492,8 +501,8 @@ async function persistCalendarChange(info) {
     --fc-page-bg-color: transparent;
     --fc-neutral-bg-color: rgb(249 250 251);
     --fc-today-bg-color: rgb(238 242 255);
-    --fc-event-bg-color: rgb(79 70 229);
-    --fc-event-border-color: rgb(67 56 202);
+    --fc-event-bg-color: rgb(37 99 235);
+    --fc-event-border-color: rgb(29 78 216);
     --fc-event-text-color: white;
     color: rgb(17 24 39);
 }
@@ -520,29 +529,28 @@ async function persistCalendarChange(info) {
 
 .uh-full-calendar .fc-timegrid-event {
     border-radius: 0.5rem;
-    box-shadow: 0 10px 24px rgb(37 99 235 / 18%);
     overflow: hidden;
 }
 
 .uh-full-calendar .uh-calendar-event {
-    background: linear-gradient(135deg, rgb(37 99 235), rgb(79 70 229));
+    background: rgb(37 99 235);
     border: 1px solid rgb(29 78 216);
     border-left: 4px solid rgb(191 219 254);
 }
 
 .uh-full-calendar .uh-calendar-event-cancelled {
-    background: linear-gradient(135deg, rgb(107 114 128), rgb(75 85 99));
+    background: rgb(92 107 115);
     border-color: rgb(75 85 99);
     opacity: 0.75;
 }
 
 .uh-full-calendar .uh-calendar-event-draft {
-    background: linear-gradient(135deg, rgb(217 119 6), rgb(180 83 9));
+    background: rgb(245 158 11);
     border-color: rgb(146 64 14);
 }
 
 .uh-full-calendar .uh-calendar-event-closed {
-    background: linear-gradient(135deg, rgb(15 118 110), rgb(13 148 136));
+    background: rgb(16 185 129);
     border-color: rgb(15 118 110);
 }
 

@@ -21,7 +21,9 @@ Use semantic Tailwind tokens before raw color scales:
 | `warning` | `#F59E0B` | Warnings and schedule risks |
 | `danger` | `#EF4444` | Errors, destructive actions and critical conflicts |
 
-The legacy `indigo-*` scale is mapped to TARRAYA cobalt for backward compatibility. New code should prefer `brand-*`.
+The legacy `indigo-*` scale is mapped to TARRAYA cobalt for backward compatibility. New code should prefer semantic tokens.
+
+The external visual reference should be treated as an intent guide, not a second color system. Apply its ideas through the official tokens above: network geometry, modular dashboards, precise active states, 1px borders, dense-but-calm data cards and technical typography where it clarifies data.
 
 ## Typography
 
@@ -34,13 +36,13 @@ The legacy `indigo-*` scale is mapped to TARRAYA cobalt for backward compatibili
 Preferred surface pattern:
 
 ```html
-class="rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark"
+class="rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark"
 ```
 
 Rules:
 
 - Use 1px borders as the main separation system.
-- Keep shadows subtle; avoid large diffuse shadows.
+- Avoid diffuse shadows in production UI. Use border, spacing and hierarchy first.
 - Avoid nested cards unless the inner element is a repeated item, modal or framed tool.
 - Keep cards at `rounded-lg` unless a component has a specific usability reason.
 
@@ -55,6 +57,12 @@ Use shared buttons instead of hand-styled buttons:
 - `BaseButton variant="warning"` for risky operational actions.
 
 There should be one visually dominant primary action per section.
+
+Button rules:
+
+- Primary buttons use solid `brand-600`, white text and `brand-700` hover.
+- Secondary buttons are transparent with `border-light` / `border-dark`.
+- Buttons use `rounded-lg`, no diffuse shadows and `transition-colors duration-200`.
 
 ## Forms
 
@@ -80,6 +88,15 @@ Use `DataTable` for CRUD and report tables. Tables should provide:
 - Pagination for large datasets.
 - Visible actions without unnecessary navigation.
 
+Dense data table rules:
+
+- Table headers use uppercase `text-xs`, `font-semibold`, `tracking-wider`.
+- Dark mode headers use `zinc-900` with `border-dark`.
+- Body rows separate data with a 1px border, not shadows.
+- Codes and identifiers use `font-mono`.
+- Names use `font-sans font-medium`.
+- Numeric precision fields such as GPA, averages and grades use `font-mono` with `accent`.
+
 ## Status
 
 Use `StatusBadge` and semantic variants:
@@ -92,6 +109,8 @@ Use `StatusBadge` and semantic variants:
 - `gray`: neutral or inactive.
 
 Do not communicate state by color alone. Pair color with text and, when helpful, an icon.
+
+Status badges render as compact uppercase pills with a solid dot indicator. They accept semantic variants and standard state types such as `active`, `in-progress`, `completed` and `cancelled`.
 
 ## Calendar And Scheduler
 

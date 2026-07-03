@@ -7,8 +7,8 @@ defineProps({
 
 <template>
 
-    <button type="button" class="w-full rounded-lg border p-4 text-left transition" :class="selected
-        ? 'border-brand-500 bg-brand-50 shadow-sm dark:bg-brand-500/10'
+    <button type="button" class="w-full rounded-lg border p-4 text-left transition-colors duration-200" :class="selected
+        ? 'border-brand-600 bg-brand-50 dark:bg-brand-500/10'
         : 'border-border-light bg-surface hover:border-brand-300 hover:bg-brand-50/40 dark:border-border-dark dark:bg-dark-bg dark:hover:border-brand-500 dark:hover:bg-brand-500/10'
         ">
 
