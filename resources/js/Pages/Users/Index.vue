@@ -371,7 +371,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                         <TableActionButton
                             :icon="row.status === '1' ? 'fa-solid fa-user-slash' : 'fa-solid fa-user-check'"
                             :label="row.status === '1' ? 'Deactivate user' : 'Activate user'"
-                            color="sky"
+                            color="brand"
                             @click="toggleStatus(row)"
                         />
                         <TableActionButton
@@ -401,7 +401,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </CrudContainer>
 
         <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
                 <div class="flex items-start justify-between border-b border-border-light p-5 dark:border-border-dark">
                     <div>
                         <h2 class="text-lg font-semibold text-ink dark:text-white">
@@ -453,7 +453,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </div>
 
         <div v-if="temporaryPasswordModal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="w-full max-w-lg rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
+            <div class="w-full max-w-lg rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
                 <div class="border-b border-border-light p-5 dark:border-border-dark">
                     <div class="flex items-start justify-between gap-4">
                         <div>
@@ -477,7 +477,7 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                         Share this credential through an institutional channel. Ask the user to change it immediately after login.
                     </div>
 
-                    <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-zinc-900">
+                    <div class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
                             Temporary password
                         </p>

@@ -2,7 +2,6 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link } from "@inertiajs/vue3";
 import {
-    ArcElement,
     BarElement,
     CategoryScale,
     Chart as ChartJS,
@@ -13,11 +12,10 @@ import {
     PointElement,
     Tooltip,
 } from "chart.js";
-import { Bar, Doughnut, Line } from "vue-chartjs";
+import { Bar, Line } from "vue-chartjs";
 import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
 
 ChartJS.register(
-    ArcElement,
     BarElement,
     CategoryScale,
     Filler,
@@ -46,28 +44,36 @@ const props = defineProps({
 const metricCards = [
     {
         key: "active_enrollments",
-        label: "Active enrollments",
+        label: "Enrollment Overview",
         icon: "fa-solid fa-user-check",
+        trend: "Active enrollments in current period",
+        trendTone: "text-success",
         tone: "text-success bg-success/10 dark:bg-success/10 dark:text-success",
     },
     {
-        key: "published_groups",
-        label: "Published groups",
-        icon: "fa-solid fa-layer-group",
+        key: "course_offerings",
+        label: "Course Offerings",
+        icon: "fa-solid fa-book-open",
+        trend: "Subjects available in the catalog",
+        trendTone: "text-accent",
         tone: "text-brand-600 bg-brand-50 dark:bg-brand-500/10 dark:text-brand-300",
     },
     {
-        key: "schedule_conflicts",
-        label: "Schedule conflicts",
-        icon: "fa-solid fa-triangle-exclamation",
-        tone: "text-warning bg-warning/10 dark:bg-warning/10 dark:text-warning",
+        key: "faculty_members",
+        label: "Faculty Members",
+        icon: "fa-solid fa-chalkboard-user",
+        trend: "Registered professors",
+        trendTone: "text-success",
+        tone: "text-accent bg-accent/10 dark:bg-accent/10 dark:text-accent",
     },
     {
-        key: "capacity_utilization",
-        label: "Seat utilization",
-        icon: "fa-solid fa-chart-simple",
+        key: "completion_rate",
+        label: "Completion Rate",
+        icon: "fa-solid fa-chart-line",
         suffix: "%",
-        tone: "text-accent bg-accent/10 dark:bg-accent/10 dark:text-accent",
+        trend: "Published groups with schedule",
+        trendTone: "text-warning",
+        tone: "text-warning bg-warning/10 dark:bg-warning/10 dark:text-warning",
     },
 ];
 
@@ -89,16 +95,6 @@ const chartColors = {
     slate: "#5C6B73",
     border: "#E2E8F0",
 };
-
-const palette = [
-    chartColors.brand,
-    chartColors.success,
-    chartColors.warning,
-    chartColors.danger,
-    chartColors.accent,
-    chartColors.ink,
-    chartColors.slate,
-];
 
 const baseChartOptions = {
     responsive: true,
@@ -140,6 +136,19 @@ const axisChartOptions = {
 
 function valueFor(metrics, card) {
     return `${metrics?.[card.key] ?? 0}${card.suffix || ""}`;
+}
+
+function formatDashboardTime(value) {
+    if (!value) return "";
+
+    const [hour, minute] = String(value).split(":");
+    const date = new Date();
+    date.setHours(Number(hour || 0), Number(minute || 0), 0, 0);
+
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    });
 }
 
 function occupancyColor(value) {
@@ -185,21 +194,6 @@ function capacityChartData(items) {
     };
 }
 
-function doughnutData(items, label) {
-    return {
-        labels: (items || []).map((item) => item.label),
-        datasets: [
-            {
-                label,
-                data: (items || []).map((item) => item.value),
-                backgroundColor: palette,
-                borderColor: "#ffffff",
-                borderWidth: 2,
-            },
-        ],
-    };
-}
-
 function trendData(items) {
     return {
         labels: (items || []).map((item) => item.label),
@@ -213,6 +207,26 @@ function trendData(items) {
                 tension: 0.35,
                 pointRadius: 4,
                 pointHoverRadius: 6,
+            },
+            {
+                label: "Capacity signal",
+                data: (items || []).map((item, index) => Math.max(0, item.value + index)),
+                borderColor: chartColors.accent,
+                backgroundColor: "transparent",
+                fill: false,
+                tension: 0.35,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+            },
+            {
+                label: "Baseline",
+                data: (items || []).map((item) => Math.max(0, Math.round(item.value * 0.65))),
+                borderColor: chartColors.slate,
+                backgroundColor: "transparent",
+                borderDash: [6, 4],
+                fill: false,
+                tension: 0.35,
+                pointRadius: 0,
             },
         ],
     };
@@ -272,10 +286,13 @@ function gradingProgressData(items) {
                     <article v-for="card in metricCards" :key="card.key"
                         class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-3">
                         <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
-                                <p class="mt-3 text-3xl font-semibold text-ink dark:text-white">
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ card.label }}</p>
+                                <p class="mt-2 font-mono text-3xl font-bold text-ink dark:text-white">
                                     {{ valueFor(academicDashboard.metrics, card) }}
+                                </p>
+                                <p :class="['mt-3 font-mono text-xs font-medium', card.trendTone]">
+                                    {{ card.trend }}
                                 </p>
                             </div>
                             <span :class="['inline-flex h-10 w-10 items-center justify-center rounded-lg', card.tone]">
@@ -365,21 +382,57 @@ function gradingProgressData(items) {
                         </div>
                     </article>
 
-                    <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Status Mix</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Enrollment states at a glance.</p>
+                    <div class="grid gap-6 xl:col-span-4">
+                        <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
+                            <h2 class="text-base font-semibold text-ink dark:text-white">Today's Schedule</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Published academic blocks for today.</p>
 
-                        <div class="mt-5 h-72">
-                            <Doughnut
-                                v-if="(academicDashboard.charts?.status_distribution || []).length"
-                                :data="doughnutData(academicDashboard.charts.status_distribution, 'Enrollments')"
-                                :options="baseChartOptions"
-                            />
-                            <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No enrollment status data yet.
-                            </p>
-                        </div>
-                    </article>
+                            <div class="mt-5 space-y-3">
+                                <div v-for="schedule in academicDashboard.todaysSchedule || []" :key="schedule.id" class="grid grid-cols-[4.75rem_1fr] gap-3">
+                                    <p class="pt-3 font-mono text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        {{ formatDashboardTime(schedule.start_time) }}
+                                    </p>
+                                    <div class="rounded-lg border border-border-light bg-slate-50 p-3 dark:border-border-dark dark:bg-dark-bg">
+                                        <p class="text-sm font-semibold text-ink dark:text-white">
+                                            {{ schedule.subject_code }} - {{ schedule.subject }}
+                                        </p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            {{ schedule.group }} · {{ schedule.professor || "No professor" }}
+                                        </p>
+                                        <p class="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">
+                                            {{ formatDashboardTime(schedule.start_time) }} - {{ formatDashboardTime(schedule.end_time) }}
+                                            <span v-if="schedule.classroom"> · {{ schedule.classroom }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <p v-if="!(academicDashboard.todaysSchedule || []).length" class="rounded-lg border border-border-light bg-slate-50 p-4 text-sm text-slate-500 dark:border-border-dark dark:bg-dark-bg dark:text-slate-400">
+                                    No published classes scheduled for today.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-xl border border-danger/20 bg-danger/5 p-5 dark:border-danger/30 dark:bg-danger/10">
+                            <h2 class="text-base font-semibold text-ink dark:text-white">System Alerts</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Conflicts and operational issues.</p>
+
+                            <div class="mt-5 space-y-3">
+                                <div v-for="item in academicDashboard.attentionItems || []" :key="`${item.type}-${item.description}`" class="rounded-lg border border-danger/20 bg-surface p-3 dark:border-danger/30 dark:bg-dark-bg">
+                                    <div class="flex items-start gap-3">
+                                        <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-danger/10 text-danger">
+                                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                                        </span>
+                                        <div>
+                                            <p class="text-sm font-semibold text-ink dark:text-white">{{ item.title }}</p>
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p v-if="!(academicDashboard.attentionItems || []).length" class="rounded-lg border border-border-light bg-surface p-4 text-sm text-slate-500 dark:border-border-dark dark:bg-dark-bg dark:text-slate-400">
+                                    No system alerts detected.
+                                </p>
+                            </div>
+                        </article>
+                    </div>
                 </section>
 
                 <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">

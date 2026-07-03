@@ -6,7 +6,7 @@ export default {
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { defineProps, onMounted, ref } from "vue";
+import { defineProps, ref } from "vue";
 import Modal from '@/Components/Modal.vue';
 
 // Props recibidas desde el controlador
@@ -21,7 +21,6 @@ const props = defineProps({
     },
     totalCredits: {
         type: Number,
-        required: false,
         default: 0,
     },
 });
@@ -30,7 +29,7 @@ const isModalOpen = ref(false);
 const selectedAssignment = ref(null);
 
 // Abrir el modal de asignación de materias
-const openStudentsModal = async (assignment) => {
+const openStudentsModal = (assignment) => {
     selectedAssignment.value = assignment;
     isModalOpen.value = true;
 };
@@ -42,53 +41,53 @@ const closeStudentsModal = () => {
 };
 
 // Verificar datos en la consola
-onMounted(() => {
-    console.log(props);
-});
-
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout title="Assignments Snapshot">
         <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight dark:text-white">
-                Assignments
+            <h1 class="text-xl font-semibold leading-tight text-ink dark:text-white">
+                Assignments Snapshot
             </h1>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="p-6 bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
+        <div class="min-h-screen bg-slate-50 py-12 dark:bg-dark-bg">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div class="rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+                    <div class="mb-5 rounded-lg border border-warning/20 bg-warning/10 p-4 text-sm text-amber-800 dark:text-amber-300">
+                        This is a legacy assignment snapshot. Official enrollment, schedules and grades now run through My Subjects, Subject Enrollment and Academic Reports.
+                    </div>
+
                     <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
+                        <table class="min-w-full overflow-hidden rounded-lg border border-border-light bg-surface text-center text-sm dark:border-border-dark dark:bg-surface-dark">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                                    <th class="py-3 px-4 hidden sm:table-cell">#</th>
-                                    <th class="py-3 px-4">Subject ID</th>
-                                    <th class="py-3 px-4">Subject Name</th>
-                                    <th v-if="role === 'student'" class="py-3 px-4">Knowledge Area</th>
-                                    <th class="py-3 px-4">Subject Credits</th>
-                                    <th v-if="role === 'student'" class="py-3 px-4">Elective</th>
-                                    <th v-if="role === 'student'" class="py-3 px-4">Professor Name</th>
-                                    <th v-if="role === 'professor'" class="py-3 px-4">Enrolled Students</th>
+                                <tr class="bg-slate-50 text-slate-700 dark:bg-zinc-950 dark:text-zinc-200">
+                                    <th class="px-4 py-3 hidden sm:table-cell">#</th>
+                                    <th class="px-4 py-3">Subject ID</th>
+                                    <th class="px-4 py-3">Subject Name</th>
+                                    <th v-if="role === 'student'" class="px-4 py-3">Knowledge Area</th>
+                                    <th class="px-4 py-3">Subject Credits</th>
+                                    <th v-if="role === 'student'" class="px-4 py-3">Elective</th>
+                                    <th v-if="role === 'student'" class="px-4 py-3">Professor Name</th>
+                                    <th v-if="role === 'professor'" class="px-4 py-3">Enrolled Students</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
+                            <tbody class="divide-y divide-border-light text-ink dark:divide-border-dark dark:text-zinc-100">
                                 <tr v-for="(assignment, index) in assignments" :key="assignment.subject_id">
-                                    <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
-                                    <td class="py-3 px-4">{{ assignment.subject_id }}</td>
-                                    <td class="py-3 px-4">{{ assignment.subject_name }}</td>
-                                    <td v-if="role === 'student'" class="py-3 px-4">{{ assignment.knowledge_area }}</td>
-                                    <td class="py-3 px-4">{{ assignment.credits }}</td>
-                                    <td v-if="role === 'student'" class="py-3 px-4">
+                                    <td class="px-4 py-3 hidden sm:table-cell">{{ index + 1 }}</td>
+                                    <td class="px-4 py-3">{{ assignment.subject_id }}</td>
+                                    <td class="px-4 py-3">{{ assignment.subject_name }}</td>
+                                    <td v-if="role === 'student'" class="px-4 py-3">{{ assignment.knowledge_area }}</td>
+                                    <td class="px-4 py-3">{{ assignment.credits }}</td>
+                                    <td v-if="role === 'student'" class="px-4 py-3">
                                         {{ assignment.elective === 1 ? 'Yes' : 'No' }}
                                     </td>
-                                    <td v-if="role === 'student'" class="py-3 px-4">
+                                    <td v-if="role === 'student'" class="px-4 py-3">
                                         {{ assignment.professor_name || 'Not Assigned' }}
                                     </td>
-                                    <td v-if="role === 'professor'" class="py-3 px-4">
+                                    <td v-if="role === 'professor'" class="px-4 py-3">
                                         <button @click="openStudentsModal(assignment)"
-                                            class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand transition hover:bg-brand/10 hover:text-brand-dark dark:text-brand">
                                             <i class="fa-solid fa-eye"></i> </button>
                                     </td>
                                 </tr>
@@ -98,9 +97,9 @@ onMounted(() => {
 
                     <!-- Contenedor para el total de créditos -->
                     <div v-if="role === 'student'"
-                        class="mt-4 flex justify-center items-center bg-gray-100 px-4 py-2 rounded-md shadow-sm dark:bg-gray-800">
-                        <span class="font-semibold text-gray-800 dark:text-gray-100">Total credits assigned:</span>
-                        <span class="ml-2 font-semibold text-indigo-700 dark:text-indigo-300">{{ totalCredits }}</span>
+                        class="mt-4 flex items-center justify-center rounded-lg border border-border-light bg-slate-50 px-4 py-2 dark:border-border-dark dark:bg-zinc-950">
+                        <span class="font-semibold text-ink dark:text-zinc-100">Total credits assigned:</span>
+                        <span class="ml-2 font-mono font-semibold text-brand dark:text-brand">{{ totalCredits }}</span>
                     </div>
 
                 </div>
@@ -108,40 +107,41 @@ onMounted(() => {
 
             <!-- Modal para mostrar estudiantes matriculados en la asignatura -->
             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeStudentsModal">
-                <div class="p-6 min-h-[600px] flex flex-col items-center">
-                    <div class="flex justify-between items-center w-full mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Students Enrolled in <span class="capitalize underline">{{
-                            selectedAssignment.subject_name
+                <div class="flex min-h-[600px] flex-col items-center p-6">
+                    <div class="mb-4 flex w-full items-center justify-between">
+                        <h2 class="text-2xl font-semibold text-ink dark:text-white">Students Enrolled in <span class="capitalize underline">{{
+                            selectedAssignment?.subject_name
                                 }}</span>
                         </h2>
                         <span class="cursor-pointer" @click="closeStudentsModal">
-                            <i class="fas fa-times text-gray-400 hover:text-black dark:hover:text-white"></i>
+                            <i class="fas fa-times text-slate-400 hover:text-ink dark:hover:text-white"></i>
                         </span>
                     </div>
 
                     <div v-if="selectedAssignment?.students?.length" class="overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
+                        <table class="min-w-full overflow-hidden rounded-lg border border-border-light bg-surface text-center text-sm dark:border-border-dark dark:bg-surface-dark">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                                    <th class="py-3 px-4 hidden sm:table-cell">#</th>
-                                    <th class="py-3 px-4">ID</th>
-                                    <th class="py-3 px-4">Name</th>
-                                    <th class="py-3 px-4">Email</th>
+                                <tr class="bg-slate-50 text-slate-700 dark:bg-zinc-950 dark:text-zinc-200">
+                                    <th class="px-4 py-3 hidden sm:table-cell">#</th>
+                                    <th class="px-4 py-3">ID</th>
+                                    <th class="px-4 py-3">Name</th>
+                                    <th class="px-4 py-3">Email</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
+                            <tbody class="divide-y divide-border-light text-ink dark:divide-border-dark dark:text-zinc-100">
                                 <tr v-for="(student, index) in selectedAssignment.students" :key="student.student_id">
-                                    <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
-                                    <td class="py-3 px-4">{{ student.student_id }}</td>
-                                    <td class="py-3 px-4">{{ student.student_name }}</td>
-                                    <td class="py-3 px-4">{{ student.student_email }}</td>
+                                    <td class="px-4 py-3 hidden sm:table-cell">{{ index + 1 }}</td>
+                                    <td class="px-4 py-3">{{ student.student_id }}</td>
+                                    <td class="px-4 py-3">{{ student.student_name }}</td>
+                                    <td class="px-4 py-3">{{ student.student_email }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p v-else class="text-gray-500 dark:text-gray-400">No students enrolled in this subject.</p>
+                    <p v-else class="text-slate-500 dark:text-zinc-400">No students enrolled in this subject.</p>
                 </div>
             </Modal>
         </div>
     </AppLayout>
 </template>
+

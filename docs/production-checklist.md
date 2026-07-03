@@ -72,6 +72,7 @@ Validate:
 - `APP_DEBUG=false`.
 - HTTPS enabled.
 - Secure cookies enabled when deployed over HTTPS.
+- `composer audit` has no production dependency advisories.
 - Admin credentials are changed after demo setup.
 - Demo users are disabled or removed in real production.
 - Route middleware protects all role-specific areas.
@@ -86,6 +87,13 @@ Recommended `.env` values for HTTPS deployments:
 SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
 ```
+
+Current dependency audit status:
+
+- `composer audit` currently reports dependency advisories in Laravel/Symfony/Guzzle-related packages.
+- This does not block a local portfolio demo with synthetic data, but it blocks a real production deployment with institutional data.
+- Before a real pilot, plan a dependency hardening branch to upgrade Laravel/framework dependencies and rerun the full test suite.
+- Treat any internet-facing demo as public-test/demo-only: no real student data, no real institutional credentials, and reset demo data regularly.
 
 ## Roles And Permissions
 
@@ -253,6 +261,7 @@ Recommended:
 Do not deploy as production if:
 
 - `APP_DEBUG=true`.
+- `composer audit` reports unresolved production dependency advisories.
 - Migrations fail on a clean environment.
 - Demo users remain active in a real production environment.
 - Role bypass tests fail.

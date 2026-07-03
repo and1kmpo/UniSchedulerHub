@@ -165,6 +165,14 @@ class UserController extends Controller
             $user = User::with(['professor', 'student', 'roles'])->findOrFail($id);
             $academicRole = $this->academicProfileRole($user);
 
+            if ($academicRole && $request->input('role') !== $academicRole) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'Academic roles are managed from Students and Professors. Deactivate the account instead of changing its role.',
+                ], 422);
+            }
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,

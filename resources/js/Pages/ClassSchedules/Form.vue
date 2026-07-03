@@ -83,19 +83,19 @@ const groupLabel = computed(() => {
 
 <template>
     <form @submit.prevent="$emit('submit')" :class="[
-        'overflow-hidden bg-white dark:bg-gray-900',
-        framed ? 'rounded-2xl shadow' : 'rounded-lg',
+        'overflow-hidden bg-surface dark:bg-surface-dark',
+        framed ? 'rounded-lg border border-border-light shadow-sm dark:border-border-dark' : 'rounded-lg',
     ]">
         <FormSection :title="updating ? 'Update Schedule' : 'Create Schedule'" :description="updating
             ? 'Adjust this official schedule block.'
             : 'Add an official schedule block before using visual layout adjustments.'
             ">
-            <div class="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800">
-                <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <div class="mb-6 rounded-lg border border-border-light bg-slate-50 p-4 text-sm dark:border-border-dark dark:bg-zinc-950">
+                <p class="text-xs font-medium uppercase text-slate-500 dark:text-zinc-400">
                     Class group
                 </p>
 
-                <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                <p class="mt-1 font-semibold text-ink dark:text-white">
                     {{ groupLabel }}
                 </p>
             </div>
@@ -117,7 +117,7 @@ const groupLabel = computed(() => {
                     :error="form.errors.status" required />
             </FormGrid>
 
-            <p v-if="form.errors.schedule" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <p v-if="form.errors.schedule" class="mt-4 rounded-lg border border-danger/20 bg-danger/10 p-3 text-sm text-danger dark:text-red-300">
                 {{ form.errors.schedule }}
             </p>
         </FormSection>

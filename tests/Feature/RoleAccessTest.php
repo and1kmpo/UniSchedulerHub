@@ -46,8 +46,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('reports.grade-operations.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.export'))->assertOk();
-        $this->actingAs($admin)->get(route('roles.index'))->assertOk();
-        $this->actingAs($admin)->get(route('permissions.index'))->assertOk();
+        $this->actingAs($admin)->get(route('roles.index'))->assertRedirect(route('users.index'));
+        $this->actingAs($admin)->get(route('permissions.index'))->assertRedirect(route('users.index'));
     }
 
     public function test_role_permissions_are_managed_by_code_catalog(): void
@@ -70,11 +70,11 @@ class RoleAccessTest extends TestCase
 
         $this->actingAs($admin)
             ->post('/roles', ['name' => 'custom_role'])
-            ->assertStatus(405);
+            ->assertRedirect(route('users.index'));
 
         $this->actingAs($admin)
             ->post('/permissions', ['name' => 'custom permission'])
-            ->assertStatus(405);
+            ->assertRedirect(route('users.index'));
     }
 
     public function test_admin_can_create_operational_user_without_academic_profile(): void
@@ -142,7 +142,7 @@ class RoleAccessTest extends TestCase
                 'role' => 'admin',
             ])
             ->assertUnprocessable()
-            ->assertJsonPath('message', 'This user has academic history. Deactivate the account instead of changing its academic role.');
+            ->assertJsonPath('message', 'Academic roles are managed from Students and Professors. Deactivate the account instead of changing its role.');
 
         $this->assertTrue($professor->fresh()->hasRole('professor'));
         $this->assertDatabaseHas('professors', ['user_id' => $professor->id]);
@@ -173,6 +173,32 @@ class RoleAccessTest extends TestCase
         $this->actingAs($coordinator)->get(route('users.index'))->assertForbidden();
         $this->actingAs($coordinator)->get(route('roles.index'))->assertForbidden();
         $this->actingAs($coordinator)->get(route('permissions.index'))->assertForbidden();
+
+        $target = $this->userWithRole('academic_coordinator');
+
+        $this->actingAs($coordinator)
+            ->postJson(route('users.store'), [
+                'name' => 'Unauthorized Admin',
+                'email' => 'unauthorized.admin@example.test',
+                'role' => 'admin',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($coordinator)
+            ->patchJson(route('users.activate', $target))
+            ->assertForbidden();
+
+        $this->actingAs($coordinator)
+            ->patchJson(route('users.deactivate', $target))
+            ->assertForbidden();
+
+        $this->actingAs($coordinator)
+            ->patchJson(route('users.reset-password', $target))
+            ->assertForbidden();
+
+        $this->actingAs($coordinator)
+            ->deleteJson(route('users.destroy', $target))
+            ->assertForbidden();
     }
 
     public function test_professor_is_limited_to_teaching_workspace(): void
@@ -198,6 +224,15 @@ class RoleAccessTest extends TestCase
         $this->actingAs($professor)->get(route('reports.academic-events.index'))->assertForbidden();
         $this->actingAs($professor)->get(route('reports.academic-events.export'))->assertForbidden();
         $this->actingAs($professor)->get(route('users.index'))->assertForbidden();
+        $this->actingAs($professor)->get(route('student.subjects'))->assertForbidden();
+        $this->actingAs($professor)->get(route('student.schedule'))->assertForbidden();
+        $this->actingAs($professor)->get(route('student.subject-enrollment.index'))->assertForbidden();
+
+        $target = $this->userWithRole('academic_coordinator');
+
+        $this->actingAs($professor)
+            ->patchJson(route('users.reset-password', $target))
+            ->assertForbidden();
     }
 
     public function test_student_cannot_access_administrative_or_professor_crud_routes(): void
@@ -222,6 +257,15 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('reports.academic-events.index'))->assertForbidden();
         $this->actingAs($student)->get(route('reports.academic-events.export'))->assertForbidden();
         $this->actingAs($student)->get(route('users.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('admin.group-enrollments.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('professor.subjects'))->assertForbidden();
+        $this->actingAs($student)->get(route('professor.schedule'))->assertForbidden();
+
+        $target = $this->userWithRole('academic_coordinator');
+
+        $this->actingAs($student)
+            ->patchJson(route('users.reset-password', $target))
+            ->assertForbidden();
     }
 
     public function test_student_cannot_jump_to_group_grade_routes_by_typing_url(): void
@@ -306,51 +350,56 @@ class RoleAccessTest extends TestCase
         ]);
 
         $this->assertNavigationFor($admin, route('dashboard'), [
+            'Insights',
             'Dashboard',
-            'Academics',
-            'Programs',
-            'Subjects',
-            'Class Groups',
-            'Academic Periods',
-            'People',
-            'Professors',
-            'Students',
-            'Operations',
-            'Enrollment Management',
             'Reports',
             'Audit Logs',
-            'Campus',
+            'Core',
+            'Programs',
+            'Subjects',
+            'Professors',
+            'Students',
+            'Class Groups',
+            'Sync',
+            'Enrollment Management',
+            'Academic Periods',
+            'Rooms',
             'Buildings',
             'Classrooms',
+            'Admin',
             'Identity & Access',
         ]);
 
         $this->assertNavigationFor($coordinator, route('students.index'), [
+            'Insights',
             'Dashboard',
-            'Academics',
-            'Programs',
-            'Subjects',
-            'Class Groups',
-            'Academic Periods',
-            'People',
-            'Professors',
-            'Students',
-            'Operations',
-            'Enrollment Management',
             'Reports',
             'Audit Logs',
-            'Campus',
+            'Core',
+            'Programs',
+            'Subjects',
+            'Professors',
+            'Students',
+            'Class Groups',
+            'Sync',
+            'Enrollment Management',
+            'Academic Periods',
+            'Rooms',
             'Buildings',
             'Classrooms',
         ], [
+            'Admin',
             'Identity & Access',
         ]);
 
         $this->assertNavigationFor($professor, route('dashboard'), [
+            'Insights',
             'Dashboard',
+            'Teaching',
             'My Subjects',
             'My Schedule',
             'Group Enrollments',
+            'Account',
             'Profile',
         ], [
             'Reports',
@@ -360,9 +409,11 @@ class RoleAccessTest extends TestCase
         ]);
 
         $this->assertNavigationFor($student, route('student.subjects'), [
+            'Student Flow',
             'My Subjects',
             'My Schedule',
             'Subject Enrollment',
+            'Account',
             'Profile',
         ], [
             'Dashboard',

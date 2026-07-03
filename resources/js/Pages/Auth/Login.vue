@@ -59,7 +59,7 @@ const submit = () => {
             <BaseInput id="password" v-model="form.password" label="Password" type="password" class="mt-4" required
                 autocomplete="current-password" :error="form.errors.password" />
 
-            <BaseCheckbox v-model="form.remember" class="mt-4" description="Remember me" />
+            <BaseCheckbox v-model="form.remember" class="mt-6" description="Remember me" />
 
             <div class="flex items-center justify-end mt-4">
                 <Link v-if="canResetPassword" :href="route('password.request')"

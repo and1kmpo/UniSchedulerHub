@@ -1,5 +1,5 @@
 {
-    "name": "unischedulerhub/academic-scheduler",
+    "name": "tarraya/academic-operating-system",
     "type": "project",
     "description": "Academic scheduling, enrollment, and reporting system built with Laravel, Inertia, Vue, and Tailwind CSS.",
     "keywords": ["academic-scheduling", "enrollment", "laravel", "vue", "inertia"],

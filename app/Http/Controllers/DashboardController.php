@@ -7,6 +7,7 @@ use App\Models\AcademicPeriod;
 use App\Models\ClassGroup;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
+use App\Models\Professor;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
@@ -95,6 +96,15 @@ class DashboardController extends Controller
             ->filter(fn($group) => $group->capacity > 0 && $group->active_enrollments_count >= $group->capacity)
             ->count();
 
+        $scheduledGroups = (clone $groupScope)
+            ->where('status', ClassGroup::STATUS_PUBLISHED)
+            ->whereHas('schedules', fn($query) => $query->where('status', ClassSchedule::STATUS_PUBLISHED))
+            ->count();
+
+        $completionRate = $publishedGroups > 0
+            ? round(($scheduledGroups / $publishedGroups) * 100, 1)
+            : 0;
+
         $highOccupancyGroups = $groupsWithCounts
             ->filter(fn($group) => $group->capacity > 0 && ($group->active_enrollments_count / $group->capacity) >= 0.9)
             ->take(6)
@@ -125,6 +135,9 @@ class DashboardController extends Controller
                 'capacity_utilization' => $utilization,
                 'full_groups' => $fullGroups,
                 'professors_with_groups' => (clone $groupScope)->whereNotNull('professor_id')->distinct('professor_id')->count('professor_id'),
+                'course_offerings' => Subject::query()->count(),
+                'faculty_members' => Professor::query()->count(),
+                'completion_rate' => $completionRate,
             ],
             'capacity' => [
                 'total_capacity' => (int) $capacity,
@@ -135,6 +148,7 @@ class DashboardController extends Controller
             'enrollmentStatus' => $this->enrollmentStatusBreakdown($activePeriod?->id),
             'professorLoad' => $this->professorLoad($activePeriod?->id, $activeStatusIds),
             'scheduleConflicts' => $this->scheduleConflictPreview($activePeriod?->id),
+            'todaysSchedule' => $this->todaysSchedule($activePeriod?->id),
             'attentionItems' => $this->attentionItems($activePeriod?->id, $activeStatusIds),
             'recentEvents' => $this->recentAuditEvents(),
             'assignmentPreview' => $this->assignmentReportPreview($activeStatusIds),
@@ -269,6 +283,40 @@ class DashboardController extends Controller
                             ->whereColumn('cg1.professor_id', 'cg2.professor_id');
                     });
             });
+    }
+
+    private function todaysSchedule(?int $periodId)
+    {
+        $today = Str::lower(now()->englishDayOfWeek);
+
+        return ClassSchedule::query()
+            ->with([
+                'classGroup:id,code,subject_id,professor_id,academic_period_id,status',
+                'classGroup.subject:id,name,code',
+                'classGroup.professor:id,name',
+                'classroom:id,name,building_id',
+                'classroom.building:id,name,code',
+            ])
+            ->where('status', ClassSchedule::STATUS_PUBLISHED)
+            ->where('day', $today)
+            ->whereHas('classGroup', function ($query) use ($periodId) {
+                $query->where('status', ClassGroup::STATUS_PUBLISHED)
+                    ->when($periodId, fn($groupQuery) => $groupQuery->where('academic_period_id', $periodId));
+            })
+            ->orderBy('start_time')
+            ->limit(5)
+            ->get()
+            ->map(fn($schedule) => [
+                'id' => $schedule->id,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+                'group' => $schedule->classGroup?->code,
+                'subject' => $schedule->classGroup?->subject?->name,
+                'subject_code' => $schedule->classGroup?->subject?->code,
+                'professor' => $schedule->classGroup?->professor?->name,
+                'classroom' => $schedule->classroom?->name,
+                'building' => $schedule->classroom?->building?->name ?? $schedule->classroom?->building?->code,
+            ]);
     }
 
     private function enrollmentStatusBreakdown(?int $periodId)
