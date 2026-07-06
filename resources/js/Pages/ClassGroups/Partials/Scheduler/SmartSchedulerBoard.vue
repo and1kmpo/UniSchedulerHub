@@ -6,6 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 
 const props = defineProps({
@@ -402,6 +403,15 @@ async function persistCalendarChange(info) {
 
 <template>
     <div class="overflow-hidden rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
+        <div class="border-b border-border-light p-4 dark:border-border-dark">
+            <ContextHelp
+                title="Scheduler interaction"
+                description="Use the calendar as the official weekly schedule surface. When editing is enabled, drag blocks to move them or resize their edges; every change is persisted only after backend validation."
+                icon="fa-solid fa-calendar-week"
+                tone="neutral"
+            />
+        </div>
+
         <div class="border-b border-border-light px-6 py-4 dark:border-border-dark">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>

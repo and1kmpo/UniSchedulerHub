@@ -6,6 +6,7 @@ import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
+import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
@@ -58,6 +59,12 @@ function resetFilters() {
         <CrudContainer>
             <SectionCard class="mb-6">
                 <div class="space-y-5 p-5">
+                    <ContextHelp
+                        title="How to use the report bank"
+                        description="Use reports for detailed analysis, exports and print-ready evidence. Dashboards show operational status; reports answer specific institutional questions."
+                        icon="fa-solid fa-compass"
+                    />
+
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">

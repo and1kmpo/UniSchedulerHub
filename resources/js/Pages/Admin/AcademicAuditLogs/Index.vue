@@ -9,6 +9,7 @@ import TableToolbar from "@/Components/UI/Table/TableToolbar.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
+import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import BaseInput from "@/Components/UI/Base/BaseInput.vue";
@@ -148,6 +149,15 @@ function changeRows(metadata) {
 <template>
     <CrudPageLayout title="Academic Audit Logs" subtitle="Trace critical academic operations across enrollments, schedules, grades and periods">
         <CrudContainer>
+            <div class="border-b border-border-light p-4 dark:border-border-dark">
+                <ContextHelp
+                    title="What is audited here?"
+                    description="This log records critical academic operations such as enrollments, withdrawals, schedule changes, grade updates and period transitions. Use it to answer who changed what, when and why."
+                    icon="fa-solid fa-shield-halved"
+                    tone="neutral"
+                />
+            </div>
+
             <div class="grid gap-3 border-b border-border-light p-4 dark:border-border-dark sm:grid-cols-2 xl:grid-cols-4">
                 <div class="rounded-lg border border-border-light bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
                     <p class="text-xs font-semibold uppercase text-slate-500 dark:text-zinc-400">Total events</p>

@@ -7,6 +7,7 @@ import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
@@ -410,6 +411,12 @@ async function confirmPeriodEnrollment() {
     <CrudPageLayout title="Subject Enrollment" subtitle="Select available subjects and class groups for the active academic period">
         <CrudContainer>
             <div class="space-y-6">
+                <ContextHelp
+                    title="Enrollment flow"
+                    description="Start by reviewing your credit load, then select a subject and compare available groups by professor, schedule and capacity. TARRAYA blocks duplicates, capacity overflows and schedule conflicts before confirming enrollment."
+                    icon="fa-solid fa-route"
+                />
+
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-4">
                     <StatCard title="Current Credits" :value="currentCredits" icon="fa-solid fa-layer-group" />
                     <StatCard title="Minimum Credits" :value="minCredits" icon="fa-solid fa-list-check" />
@@ -489,7 +496,7 @@ async function confirmPeriodEnrollment() {
                 <SectionCard v-if="systemState === 'no_curriculum'">
                     <EmptyState
                         title="Academic setup pending"
-                        description="Your student profile does not have an active curriculum assigned. Please contact academic administration."
+                        description="Your student profile is not connected to a curriculum yet. Academic administration must assign the curriculum before subjects can be offered for enrollment."
                         icon="fa-solid fa-triangle-exclamation"
                     />
                 </SectionCard>
@@ -497,7 +504,7 @@ async function confirmPeriodEnrollment() {
                 <SectionCard v-else-if="systemState === 'no_period'">
                     <EmptyState
                         title="No active academic period"
-                        description="Enrollment will be available when academic administration activates a period."
+                        description="Subject enrollment depends on an active academic period. When coordination opens the period, eligible curriculum subjects and class groups will appear here."
                         icon="fa-solid fa-calendar-xmark"
                     />
                 </SectionCard>

@@ -42,9 +42,23 @@ const iconMap = {
     "Identity & Access": "fa-solid fa-users-gear",
     "My Subjects": "fa-solid fa-book",
     "My Schedule": "fa-solid fa-calendar-week",
+    "Academic Record": "fa-solid fa-scroll",
     "Group Enrollments": "fa-solid fa-list-check",
     "Subject Enrollment": "fa-solid fa-clipboard-list",
     Profile: "fa-solid fa-id-card",
+};
+
+const navHelp = {
+    Core: "Academic master data: programs, subjects, people and class groups.",
+    Sync: "Operational workflows that synchronize enrollment, academic periods and schedules.",
+    Rooms: "Campus infrastructure, buildings, classrooms and room capacity.",
+    Insights: "Dashboards, reports and audit evidence for institutional decisions.",
+    Admin: "Technical access management, user status and role assignment.",
+    "Enrollment Management": "Staff workspace to enroll, validate and review students by class group.",
+    "Subject Enrollment": "Student flow to select subjects and compare available class groups.",
+    "Class Groups": "Course offerings for a period: subject, professor, schedule, capacity and enrollment rules.",
+    "Audit Logs": "Institutional trace of critical academic actions and who performed them.",
+    "Academic Record": "Transcript preview with periods, credits, grades and academic progress.",
 };
 
 const navGroups = computed(() => page.props.navigation?.main ?? []);
@@ -173,7 +187,10 @@ onBeforeUnmount(() => {
                 <div v-for="group in navGroups" :key="group.label" class="mb-5">
                     <div class="mb-2 flex items-center gap-2 px-3">
                         <i :class="[iconMap[group.label] || 'fa-solid fa-circle-nodes', 'w-4 text-xs text-slate-500']" />
-                        <p class="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        <p
+                            class="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+                            :title="navHelp[group.label]"
+                        >
                             {{ group.label }}
                         </p>
                     </div>
@@ -183,6 +200,7 @@ onBeforeUnmount(() => {
                             v-for="child in group.children || [group]"
                             :key="child.route ?? child.label"
                             :href="child.route ? route(child.route) : '#'"
+                            :title="navHelp[child.label]"
                             :class="[
                                 'group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition',
                                 isRouteActive(child.route)
@@ -218,8 +236,10 @@ onBeforeUnmount(() => {
                             </span>
                             <input
                                 type="search"
-                                placeholder="Search anything..."
-                                class="w-full rounded-lg border border-border-light bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                disabled
+                                placeholder="Global search is not enabled yet"
+                                title="Global search will be connected when the cross-module search index exists."
+                                class="w-full cursor-not-allowed rounded-lg border border-border-light bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-500 outline-none transition placeholder:text-slate-400 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-500 dark:placeholder:text-zinc-600"
                             />
                         </label>
                     </div>
