@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\AcademicAuditLogController;
 use App\Http\Controllers\AcademicReportController;
+use App\Http\Controllers\AcademicRequestController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\ClassGroupController;
@@ -92,6 +93,20 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/class-groups/{classGroup}/grades', [GradeController::class, 'storeByGroup'])
             ->name('class-groups.grades.store')
             ->can('manageGrades', 'classGroup');
+    });
+
+    Route::middleware(['role:admin|academic_coordinator|student'])->group(function () {
+        Route::get('/academic-requests', [AcademicRequestController::class, 'index'])->name('academic-requests.index');
+    });
+
+    Route::middleware(['role:student'])->group(function () {
+        Route::get('/academic-requests/create', [AcademicRequestController::class, 'create'])->name('academic-requests.create');
+        Route::post('/academic-requests', [AcademicRequestController::class, 'store'])->name('academic-requests.store');
+    });
+
+    Route::middleware(['role:admin|academic_coordinator'])->group(function () {
+        Route::patch('/academic-requests/{academicRequest}/approve', [AcademicRequestController::class, 'approve'])->name('academic-requests.approve');
+        Route::patch('/academic-requests/{academicRequest}/reject', [AcademicRequestController::class, 'reject'])->name('academic-requests.reject');
     });
 
     /*

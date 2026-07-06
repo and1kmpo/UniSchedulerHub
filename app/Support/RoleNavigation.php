@@ -48,6 +48,7 @@ class RoleNavigation
             ]),
             self::group('Sync', [
                 self::item('Enrollment Management', 'admin.group-enrollments.index'),
+                self::item('Academic Requests', 'academic-requests.index'),
                 self::item('Academic Periods', 'academic-periods.index'),
             ]),
             self::group('Rooms', [
@@ -77,6 +78,7 @@ class RoleNavigation
             ]),
             self::group('Sync', [
                 self::item('Enrollment Management', 'admin.group-enrollments.index'),
+                self::item('Academic Requests', 'academic-requests.index'),
                 self::item('Academic Periods', 'academic-periods.index'),
             ]),
             self::group('Rooms', [
@@ -111,6 +113,7 @@ class RoleNavigation
                 self::item('My Schedule', 'student.schedule'),
                 self::item('Academic Record', 'student.academic-record'),
                 self::item('Subject Enrollment', 'student.subject-enrollment.index'),
+                self::item('Academic Requests', 'academic-requests.index'),
             ]),
             self::group('Account', [
                 self::item('Profile', 'profile.show'),
