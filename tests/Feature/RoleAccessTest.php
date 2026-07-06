@@ -46,8 +46,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('reports.grade-operations.export'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.index'))->assertOk();
         $this->actingAs($admin)->get(route('reports.academic-events.export'))->assertOk();
-        $this->actingAs($admin)->get(route('roles.index'))->assertOk();
-        $this->actingAs($admin)->get(route('permissions.index'))->assertOk();
+        $this->actingAs($admin)->get(route('roles.index'))->assertRedirect(route('users.index'));
+        $this->actingAs($admin)->get(route('permissions.index'))->assertRedirect(route('users.index'));
     }
 
     public function test_role_permissions_are_managed_by_code_catalog(): void
@@ -70,11 +70,14 @@ class RoleAccessTest extends TestCase
 
         $this->actingAs($admin)
             ->post('/roles', ['name' => 'custom_role'])
-            ->assertStatus(405);
+            ->assertRedirect(route('users.index'));
 
         $this->actingAs($admin)
             ->post('/permissions', ['name' => 'custom permission'])
-            ->assertStatus(405);
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseMissing('roles', ['name' => 'custom_role']);
+        $this->assertDatabaseMissing('permissions', ['name' => 'custom permission']);
     }
 
     public function test_admin_can_create_operational_user_without_academic_profile(): void
@@ -306,51 +309,56 @@ class RoleAccessTest extends TestCase
         ]);
 
         $this->assertNavigationFor($admin, route('dashboard'), [
+            'Insights',
             'Dashboard',
-            'Academics',
-            'Programs',
-            'Subjects',
-            'Class Groups',
-            'Academic Periods',
-            'People',
-            'Professors',
-            'Students',
-            'Operations',
-            'Enrollment Management',
             'Reports',
             'Audit Logs',
-            'Campus',
+            'Core',
+            'Programs',
+            'Subjects',
+            'Professors',
+            'Students',
+            'Class Groups',
+            'Sync',
+            'Enrollment Management',
+            'Academic Periods',
+            'Rooms',
             'Buildings',
             'Classrooms',
+            'Admin',
             'Identity & Access',
         ]);
 
         $this->assertNavigationFor($coordinator, route('students.index'), [
+            'Insights',
             'Dashboard',
-            'Academics',
-            'Programs',
-            'Subjects',
-            'Class Groups',
-            'Academic Periods',
-            'People',
-            'Professors',
-            'Students',
-            'Operations',
-            'Enrollment Management',
             'Reports',
             'Audit Logs',
-            'Campus',
+            'Core',
+            'Programs',
+            'Subjects',
+            'Professors',
+            'Students',
+            'Class Groups',
+            'Sync',
+            'Enrollment Management',
+            'Academic Periods',
+            'Rooms',
             'Buildings',
             'Classrooms',
         ], [
+            'Admin',
             'Identity & Access',
         ]);
 
         $this->assertNavigationFor($professor, route('dashboard'), [
+            'Insights',
             'Dashboard',
+            'Teaching',
             'My Subjects',
             'My Schedule',
             'Group Enrollments',
+            'Account',
             'Profile',
         ], [
             'Reports',
@@ -360,9 +368,11 @@ class RoleAccessTest extends TestCase
         ]);
 
         $this->assertNavigationFor($student, route('student.subjects'), [
+            'Student Flow',
             'My Subjects',
             'My Schedule',
             'Subject Enrollment',
+            'Account',
             'Profile',
         ], [
             'Dashboard',
