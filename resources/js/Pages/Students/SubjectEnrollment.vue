@@ -585,9 +585,9 @@ async function confirmPeriodEnrollment() {
                         </p>
                     </div>
 
-                    <button class="text-slate-500 hover:text-danger" type="button" @click="closeGroupModal">
+                    <BaseButton type="button" variant="secondary" size="sm" aria-label="Close group selection" @click="closeGroupModal">
                         <i class="fa-solid fa-xmark" />
-                    </button>
+                    </BaseButton>
                 </div>
 
                 <div class="max-h-[60vh] overflow-y-auto p-6">

@@ -139,9 +139,42 @@ Groups with a single visible item should collapse to a direct navigation link in
 
 Use the correct mark for the available size:
 
-- `ApplicationMark`: full isotype for brand moments and larger identity surfaces.
-- `ApplicationLogo`: horizontal lockup with wordmark and descriptor.
-- `ApplicationCompactMark`: compact T mark for navigation, dense UI and mobile contexts.
-- `public/favicon.svg`: micro-scale browser/PWA favicon.
+- `ApplicationMark`: full isotype for brand moments, authentication screens and larger identity surfaces.
+- `ApplicationLogo`: horizontal lockup with wordmark and descriptor for login, public-facing identity and wide header contexts.
+- `ApplicationCompactMark`: compact T mark for sidebar, dense navigation, mobile contexts and places under 40px.
+- `public/favicon.svg`: micro-scale browser/PWA favicon. It must stay simpler than the full isotype so it remains legible in browser tabs.
 
 Do not use the detailed isotype in very small navigation slots; use `ApplicationCompactMark` instead.
+
+Logo usage rules:
+
+- Keep clear space around the mark equal to at least 25% of the symbol width.
+- Do not recolor the mark outside the official token palette.
+- Do not place the full isotype inside busy cards, gradients or low-contrast surfaces.
+- Sidebar and compact UI should prefer `ApplicationCompactMark`; login and brand moments should prefer `ApplicationLogo`.
+- Browser tabs and PWA metadata should use `public/favicon.svg` only.
+
+## Reports And Print
+
+Reports belong to TARRAYA Insights and must feel institutional, printable and decision-oriented.
+
+- Use `FilterPanel` for report filters.
+- Export actions should say `Export data`.
+- Print actions should say `Print report`.
+- Report print output must use `printTableReport` from `resources/js/Components/Composables/usePrintableReport.js`.
+- Printed reports must include the TARRAYA header, descriptor, report title, subtitle, generated date, applied filters, metrics and footer.
+- Dates in printed reports should use readable day/month/year or month/day/year institutional formats, never raw ISO strings.
+- Print templates should use white surfaces, `brand`, `ink`, subtle borders and no decorative shadows.
+
+## Completion Audit
+
+Before marking a screen brand-complete, verify:
+
+- No visible `UniSchedulerHub` references remain.
+- Primary actions use `BaseButton` or a specialized component that delegates to the same visual rules.
+- Statuses use `StatusBadge` or semantic state colors.
+- Tables use `DataTable` or match its density, borders and typography.
+- Cards use `SectionCard`, `ContentCard` or `StatCard` unless there is a clear local layout reason.
+- New code avoids raw `blue-*`, `indigo-*` and arbitrary `gray-*` choices; use `brand`, `accent`, `slate`, `zinc` and semantic tokens.
+- Dark mode has readable text and visible surface boundaries.
+- Mobile layout keeps the primary task clear without horizontal crowding, except data tables that intentionally scroll.

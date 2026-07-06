@@ -25,18 +25,11 @@ export default function usePagination(initialUrl = null) {
             data.value = resource.data
             meta.value = resource.meta 
             links.value = normalizePaginationLinks(resource.links)
-            console.log('[DEBUG] parsed', {
-                data: data.value,
-                meta: meta.value,
-                links: links.value
-            })
         } else {
-            console.warn('[DEBUG] Formato inesperado:', response.data)
-            toastError('Unexpected response format.')
+            toastError('The academic data response could not be synchronized.')
         }
-    } catch (err) {
-        console.error('[DEBUG] Error en axios:', err)
-        toastError('Error fetching data.')
+    } catch {
+        toastError('The academic data could not be loaded.')
     } finally {
         loading.value = false
     }
@@ -45,7 +38,6 @@ export default function usePagination(initialUrl = null) {
 function normalizePaginationLinks(linksObject) {
     const pages = []
 
-    // Simula botones prev, current, next usando el objeto de links
     if (linksObject.prev) {
         pages.push({ label: '&laquo; Previous', url: linksObject.prev, active: false })
     }

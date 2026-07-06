@@ -228,12 +228,12 @@ function printReport() {
                         <template #actions>
                             <BaseButton as="a" variant="success" :href="csvExportUrl">
                                 <i class="fa-solid fa-file-csv mr-2" />
-                                Export CSV
+                                Export data
                             </BaseButton>
 
                             <BaseButton variant="secondary" @click="printReport">
                                 <i class="fa-solid fa-print mr-2" />
-                                Print / PDF
+                                Print report
                             </BaseButton>
                         </template>
                     </FilterPanel>

@@ -120,14 +120,14 @@ onBeforeUnmount(() => {
 
         <aside
             :class="[
-                'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border-dark bg-dark-bg text-white transition-transform duration-200 lg:translate-x-0',
+                'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border-light bg-surface text-ink transition-transform duration-200 dark:border-border-dark dark:bg-dark-bg dark:text-white lg:translate-x-0',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
         >
-            <div class="flex h-20 items-center gap-3 border-b border-border-dark px-5">
+            <div class="flex h-20 items-center gap-3 border-b border-border-light px-5 dark:border-border-dark">
                 <ApplicationCompactMark class="h-11 w-11 shrink-0" />
                 <div class="min-w-0">
-                    <Link href="/" class="block text-lg font-bold leading-none tracking-tight text-white" @click="sidebarOpen = false">
+                    <Link href="/" class="block text-lg font-bold leading-none tracking-tight text-ink dark:text-white" @click="sidebarOpen = false">
                         TARRAYA
                     </Link>
                     <p class="mt-2 font-mono text-[9px] uppercase leading-3 tracking-wider text-slate-500">
@@ -153,8 +153,8 @@ onBeforeUnmount(() => {
                             :class="[
                                 'group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition',
                                 isRouteActive(child.route)
-                                    ? 'border-brand-600 bg-brand-600/10 text-white'
-                                    : 'border-transparent text-slate-400 hover:border-brand-600/60 hover:bg-brand-600/10 hover:text-white',
+                                    ? 'border-brand-600 bg-brand-600/10 text-brand-700 dark:text-white'
+                                    : 'border-transparent text-slate-500 hover:border-brand-600/60 hover:bg-brand-600/10 hover:text-brand-700 dark:text-slate-400 dark:hover:text-white',
                             ]"
                             @click="sidebarOpen = false"
                         >

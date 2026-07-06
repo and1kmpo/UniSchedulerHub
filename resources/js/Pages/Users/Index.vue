@@ -411,9 +411,9 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                             Manage account access. Academic profile data is maintained from Students and Professors.
                         </p>
                     </div>
-                    <button class="text-slate-400 hover:text-ink dark:hover:text-white" @click="closeModal">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
+                    <BaseButton type="button" variant="secondary" size="sm" aria-label="Close user form" @click="closeModal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </BaseButton>
                 </div>
 
                 <form class="space-y-5 p-5" @submit.prevent="saveUser">
@@ -465,10 +465,9 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
                             </p>
                         </div>
 
-                        <button class="text-slate-400 hover:text-ink dark:hover:text-white" @click="closeTemporaryPasswordModal">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                            <span class="sr-only">Close</span>
-                        </button>
+                        <BaseButton type="button" variant="secondary" size="sm" aria-label="Close temporary password" @click="closeTemporaryPasswordModal">
+                            <i class="fa-solid fa-xmark"></i>
+                        </BaseButton>
                     </div>
                 </div>
 
@@ -500,5 +499,4 @@ const firstError = (field) => formErrors.value[field]?.[0] ?? "";
         </div>
     </CrudPageLayout>
 </template>
-
 

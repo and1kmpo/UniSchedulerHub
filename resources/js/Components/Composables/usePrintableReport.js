@@ -101,6 +101,17 @@ const printTokens = {
     borderStrong: "#CBD5E1",
 };
 
+function generatedAt() {
+    return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    }).format(new Date());
+}
+
 export function printTableReport({
     title,
     subtitle,
@@ -138,6 +149,13 @@ export function printTableReport({
                         font-weight: 700;
                         letter-spacing: 0.08em;
                         margin-bottom: 6px;
+                        text-transform: uppercase;
+                    }
+                    .brand-descriptor {
+                        color: ${printTokens.graphite};
+                        font-size: 10px;
+                        font-weight: 700;
+                        letter-spacing: 0.12em;
                         text-transform: uppercase;
                     }
                     h1 { font-size: 24px; margin: 0; }
@@ -234,12 +252,13 @@ export function printTableReport({
                 <header>
                     <div>
                         <div class="brand">TARRAYA</div>
+                        <div class="brand-descriptor">Academic Operating System</div>
                         <h1>${escapeHtml(title)}</h1>
                         <p>${escapeHtml(subtitle)}</p>
                     </div>
                     <div class="generated">
                         Generated<br>
-                        <strong>${escapeHtml(new Date().toLocaleString())}</strong>
+                        <strong>${escapeHtml(generatedAt())}</strong>
                     </div>
                 </header>
 

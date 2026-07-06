@@ -6,7 +6,8 @@ export default {
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { defineProps, onMounted, ref } from "vue";
+import { defineProps, ref } from "vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import Modal from '@/Components/Modal.vue';
 
 // Props recibidas desde el controlador
@@ -41,28 +42,23 @@ const closeStudentsModal = () => {
     selectedAssignment.value = null;
 };
 
-// Verificar datos en la consola
-onMounted(() => {
-    console.log(props);
-});
-
 </script>
 
 <template>
     <AppLayout>
         <template #header>
-            <h1 class="font-semibold text-xl text-gray-800 leading-tight dark:text-white">
-                Assignments
+            <h1 class="text-xl font-semibold leading-tight text-ink dark:text-white">
+                Academic Assignments
             </h1>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="p-6 bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
+                <div class="rounded-xl border border-border-light bg-surface p-6 dark:border-border-dark dark:bg-surface-dark">
                     <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
+                        <table class="min-w-full text-center text-sm">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                <tr class="border-b border-border-light bg-slate-50 text-slate-600 dark:border-border-dark dark:bg-zinc-900 dark:text-zinc-300">
                                     <th class="py-3 px-4 hidden sm:table-cell">#</th>
                                     <th class="py-3 px-4">Subject ID</th>
                                     <th class="py-3 px-4">Subject Name</th>
@@ -73,7 +69,7 @@ onMounted(() => {
                                     <th v-if="role === 'professor'" class="py-3 px-4">Enrolled Students</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
+                            <tbody class="divide-y divide-border-light text-ink dark:divide-border-dark dark:text-zinc-100">
                                 <tr v-for="(assignment, index) in assignments" :key="assignment.subject_id">
                                     <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
                                     <td class="py-3 px-4">{{ assignment.subject_id }}</td>
@@ -87,9 +83,10 @@ onMounted(() => {
                                         {{ assignment.professor_name || 'Not Assigned' }}
                                     </td>
                                     <td v-if="role === 'professor'" class="py-3 px-4">
-                                        <button @click="openStudentsModal(assignment)"
-                                            class="dark:text-indigo-400 text-indigo-800 transition ease-in-out hover:-translate-y-1 hover:scale-110 duration-300">
-                                            <i class="fa-solid fa-eye"></i> </button>
+                                        <BaseButton type="button" variant="secondary" size="sm" @click="openStudentsModal(assignment)">
+                                            <i class="fa-solid fa-users mr-2"></i>
+                                            Students
+                                        </BaseButton>
                                     </td>
                                 </tr>
                             </tbody>
@@ -98,9 +95,9 @@ onMounted(() => {
 
                     <!-- Contenedor para el total de créditos -->
                     <div v-if="role === 'student'"
-                        class="mt-4 flex justify-center items-center bg-gray-100 px-4 py-2 rounded-md shadow-sm dark:bg-gray-800">
-                        <span class="font-semibold text-gray-800 dark:text-gray-100">Total credits assigned:</span>
-                        <span class="ml-2 font-semibold text-indigo-700 dark:text-indigo-300">{{ totalCredits }}</span>
+                        class="mt-4 flex items-center justify-center rounded-lg border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-zinc-900">
+                        <span class="font-semibold text-ink dark:text-zinc-100">Connected credits:</span>
+                        <span class="ml-2 font-mono font-semibold text-brand dark:text-brand-300">{{ totalCredits }}</span>
                     </div>
 
                 </div>
@@ -108,28 +105,28 @@ onMounted(() => {
 
             <!-- Modal para mostrar estudiantes matriculados en la asignatura -->
             <Modal :show="isModalOpen" maxWidth="2xl" @close="closeStudentsModal">
-                <div class="p-6 min-h-[600px] flex flex-col items-center">
+                <div class="flex min-h-[600px] flex-col items-center p-6">
                     <div class="flex justify-between items-center w-full mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Students Enrolled in <span class="capitalize underline">{{
+                        <h2 class="text-2xl font-semibold text-ink dark:text-white">Students enrolled in <span class="capitalize underline">{{
                             selectedAssignment.subject_name
                                 }}</span>
                         </h2>
                         <span class="cursor-pointer" @click="closeStudentsModal">
-                            <i class="fas fa-times text-gray-400 hover:text-black dark:hover:text-white"></i>
+                            <i class="fas fa-times text-slate-400 hover:text-ink dark:hover:text-white"></i>
                         </span>
                     </div>
 
                     <div v-if="selectedAssignment?.students?.length" class="overflow-x-auto">
-                        <table class="min-w-full bg-white shadow-md rounded-xl text-center dark:bg-gray-900">
+                        <table class="min-w-full rounded-xl border border-border-light bg-surface text-center text-sm dark:border-border-dark dark:bg-surface-dark">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                <tr class="border-b border-border-light bg-slate-50 text-slate-600 dark:border-border-dark dark:bg-zinc-900 dark:text-zinc-300">
                                     <th class="py-3 px-4 hidden sm:table-cell">#</th>
                                     <th class="py-3 px-4">ID</th>
                                     <th class="py-3 px-4">Name</th>
                                     <th class="py-3 px-4">Email</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
+                            <tbody class="divide-y divide-border-light text-ink dark:divide-border-dark dark:text-zinc-100">
                                 <tr v-for="(student, index) in selectedAssignment.students" :key="student.student_id">
                                     <td class="py-3 px-4 hidden sm:table-cell">{{ index + 1 }}</td>
                                     <td class="py-3 px-4">{{ student.student_id }}</td>
@@ -139,7 +136,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <p v-else class="text-gray-500 dark:text-gray-400">No students enrolled in this subject.</p>
+                    <p v-else class="text-slate-500 dark:text-zinc-400">No students connected to this subject yet.</p>
                 </div>
             </Modal>
         </div>
