@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('subjects', SubjectController::class);
         Route::resource('/professors', ProfessorController::class);
         Route::resource('/students', StudentController::class);
+        Route::get('/students/{student}/academic-record', [StudentController::class, 'academicRecordForStudent'])->name('students.academic-record');
         Route::resource('curricula', CurriculumController::class);
 
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
@@ -178,6 +179,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::middleware(['role:student'])->group(function () {
         Route::get('/student/subjects', [StudentController::class, 'mySubjects'])->name('student.subjects');
         Route::get('/student/schedule', [StudentController::class, 'schedule'])->name('student.schedule');
+        Route::get('/student/academic-record', [StudentController::class, 'academicRecord'])->name('student.academic-record');
         Route::get('/student/{subject}/grades', [StudentController::class, 'viewGrades'])->name('student.subject.grades');
         Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])->name('student.subject.grades.json');
         Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])->name('student.grades.summary');

@@ -371,6 +371,7 @@ class RoleAccessTest extends TestCase
             'Student Flow',
             'My Subjects',
             'My Schedule',
+            'Academic Record',
             'Subject Enrollment',
             'Account',
             'Profile',

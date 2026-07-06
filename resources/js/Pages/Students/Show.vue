@@ -54,6 +54,13 @@ const rows = computed(() =>
 <template>
     <CrudPageLayout :title="student.user?.name" subtitle="Student profile and academic history">
         <template #actions>
+            <Link :href="route('students.academic-record', student.id)">
+                <BaseButton variant="secondary">
+                    <i class="fa-solid fa-scroll mr-2"></i>
+                    Academic Record
+                </BaseButton>
+            </Link>
+
             <Link :href="route('students.edit', student.id)">
                 <BaseButton variant="primary">
                     <i class="fa-solid fa-pen mr-2"></i>

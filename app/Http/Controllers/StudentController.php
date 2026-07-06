@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\AcademicRecordBuilder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +108,18 @@ class StudentController extends Controller
         return Inertia::render('Students/Show', [
             'student' => $student,
             'enrollments' => $enrollments,
+        ]);
+    }
+
+    public function academicRecordForStudent(Student $student)
+    {
+        $student->load(['user', 'program', 'curriculum']);
+
+        return Inertia::render('Students/AcademicRecord', [
+            'student' => $student,
+            'record' => AcademicRecordBuilder::forStudent($student),
+            'backRoute' => 'students.show',
+            'backRouteParams' => [$student->id],
         ]);
     }
 
@@ -268,6 +281,19 @@ class StudentController extends Controller
                 'name' => $period->name,
                 'state' => $period->state()?->value,
             ] : null,
+        ]);
+    }
+
+    public function academicRecord()
+    {
+        $student = auth()->user()->student;
+        $student->load(['user', 'program', 'curriculum']);
+
+        return Inertia::render('Students/AcademicRecord', [
+            'student' => $student,
+            'record' => AcademicRecordBuilder::forStudent($student),
+            'backRoute' => 'student.subjects',
+            'backRouteParams' => [],
         ]);
     }
 

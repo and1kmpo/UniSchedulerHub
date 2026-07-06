@@ -109,6 +109,7 @@ class RoleNavigation
             self::group('Student Flow', [
                 self::item('My Subjects', 'student.subjects'),
                 self::item('My Schedule', 'student.schedule'),
+                self::item('Academic Record', 'student.academic-record'),
                 self::item('Subject Enrollment', 'student.subject-enrollment.index'),
             ]),
             self::group('Account', [
