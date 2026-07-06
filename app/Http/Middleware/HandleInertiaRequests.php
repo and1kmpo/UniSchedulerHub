@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AcademicPeriod;
+use App\Support\OperationalNotifications;
 use App\Support\RoleNavigation;
 use Closure;
 use Illuminate\Http\Request;
@@ -44,6 +46,12 @@ class HandleInertiaRequests extends Middleware
             'navigation' => [
                 'main' => RoleNavigation::for($request->user()),
             ],
+            'academicContext' => function () use ($request) {
+                return $this->academicContext($request);
+            },
+            'notifications' => function () use ($request) {
+                return OperationalNotifications::for($request->user());
+            },
             'flash' => function () use ($request) {
                 return [
                     'success' => $request->session()->get('success'),
@@ -52,6 +60,28 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
         ]);
+    }
+
+    private function academicContext(Request $request): array
+    {
+        if (! $request->user()) {
+            return [
+                'activePeriod' => null,
+            ];
+        }
+
+        $activePeriod = AcademicPeriod::with('status')->active()->latest('id')->first();
+
+        return [
+            'activePeriod' => $activePeriod ? [
+                'id' => $activePeriod->id,
+                'name' => $activePeriod->name,
+                'status' => $activePeriod->status?->code,
+                'status_label' => $activePeriod->status?->label,
+                'enrollment_deadline' => $activePeriod->enrollment_deadline?->toDateString(),
+                'unenrollment_deadline' => $activePeriod->unenrollment_deadline?->toDateString(),
+            ] : null,
+        ];
     }
 
 

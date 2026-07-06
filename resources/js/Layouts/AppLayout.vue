@@ -16,6 +16,7 @@ const page = usePage();
 const darkMode = ref(false);
 const sidebarOpen = ref(false);
 const userDropdownOpen = ref(false);
+const notificationDropdownOpen = ref(false);
 
 const iconMap = {
     Insights: "fa-solid fa-chart-line",
@@ -47,6 +48,26 @@ const iconMap = {
 };
 
 const navGroups = computed(() => page.props.navigation?.main ?? []);
+const activePeriod = computed(() => page.props.academicContext?.activePeriod ?? null);
+const notifications = computed(() => page.props.notifications?.items ?? []);
+const notificationCount = computed(() => page.props.notifications?.unread_count ?? notifications.value.length);
+const userRoles = computed(() => page.props.user?.roles ?? []);
+const canManagePeriods = computed(() => userRoles.value.includes("admin") || userRoles.value.includes("academic_coordinator"));
+
+const severityClasses = {
+    danger: "border-danger/20 bg-danger/10 text-danger",
+    warning: "border-warning/30 bg-warning/10 text-warning",
+    info: "border-brand-600/20 bg-brand-600/10 text-brand-600 dark:text-brand-300",
+};
+
+const severityIconClasses = {
+    danger: "bg-danger/10 text-danger",
+    warning: "bg-warning/10 text-warning",
+    info: "bg-brand-600/10 text-brand-600 dark:text-brand-300",
+};
+
+const notificationStyle = (severity) => severityClasses[severity] ?? severityClasses.info;
+const notificationIconStyle = (severity) => severityIconClasses[severity] ?? severityIconClasses.info;
 
 const isRouteActive = (routeName) => {
     if (!routeName) return false;
@@ -80,6 +101,8 @@ function updateDarkClass() {
 function handleClickOutside(event) {
     const dropdown = document.getElementById("user-dropdown");
     const avatarBtn = document.getElementById("avatar-button");
+    const notificationDropdown = document.getElementById("notification-dropdown");
+    const notificationButton = document.getElementById("notification-button");
 
     if (
         userDropdownOpen.value &&
@@ -89,6 +112,16 @@ function handleClickOutside(event) {
         !avatarBtn.contains(event.target)
     ) {
         userDropdownOpen.value = false;
+    }
+
+    if (
+        notificationDropdownOpen.value &&
+        notificationDropdown &&
+        notificationButton &&
+        !notificationDropdown.contains(event.target) &&
+        !notificationButton.contains(event.target)
+    ) {
+        notificationDropdownOpen.value = false;
     }
 
 }
@@ -192,14 +225,83 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div class="ml-auto flex items-center gap-2">
-                        <button
-                            type="button"
-                            class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
-                            aria-label="Notifications"
-                        >
-                            <i class="fa-regular fa-bell" />
-                            <span class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-surface dark:ring-dark-bg" />
-                        </button>
+                        <div class="relative">
+                            <button
+                                id="notification-button"
+                                type="button"
+                                class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
+                                aria-label="Notifications"
+                                @click="notificationDropdownOpen = !notificationDropdownOpen"
+                            >
+                                <i class="fa-regular fa-bell" />
+                                <span
+                                    v-if="notificationCount > 0"
+                                    class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold text-ink ring-2 ring-surface dark:ring-dark-bg"
+                                >
+                                    {{ notificationCount > 9 ? "9+" : notificationCount }}
+                                </span>
+                            </button>
+
+                            <transition name="fade">
+                                <div
+                                    v-show="notificationDropdownOpen"
+                                    id="notification-dropdown"
+                                    class="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark sm:w-96"
+                                >
+                                    <div class="border-b border-border-light px-4 py-3 dark:border-border-dark">
+                                        <p class="text-sm font-semibold text-ink dark:text-white">Operational notifications</p>
+                                        <p class="mt-1 font-mono text-[11px] text-slate-500 dark:text-zinc-400">
+                                            Academic network signals by role
+                                        </p>
+                                    </div>
+
+                                    <div v-if="notifications.length" class="max-h-96 overflow-y-auto p-2">
+                                        <Link
+                                            v-for="notification in notifications"
+                                            :key="notification.id"
+                                            :href="notification.route ? route(notification.route) : '#'"
+                                            class="flex gap-3 rounded-lg border border-transparent p-3 transition hover:border-brand-600/20 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+                                            @click="notificationDropdownOpen = false"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                                                    notificationIconStyle(notification.severity),
+                                                ]"
+                                            >
+                                                <i :class="[notification.icon, 'text-sm']" />
+                                            </span>
+                                            <span class="min-w-0">
+                                                <span
+                                                    :class="[
+                                                        'inline-flex rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
+                                                        notificationStyle(notification.severity),
+                                                    ]"
+                                                >
+                                                    {{ notification.severity }}
+                                                </span>
+                                                <span class="mt-1 block text-sm font-semibold text-ink dark:text-white">
+                                                    {{ notification.title }}
+                                                </span>
+                                                <span class="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                                                    {{ notification.description }}
+                                                </span>
+                                            </span>
+                                        </Link>
+                                    </div>
+
+                                    <div v-else class="px-4 py-8 text-center">
+                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600/10 text-brand-600 dark:text-brand-300">
+                                            <i class="fa-solid fa-check" />
+                                        </div>
+                                        <p class="mt-3 text-sm font-semibold text-ink dark:text-white">Network synchronized</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                                            No operational alerts for your role.
+                                        </p>
+                                    </div>
+                                </div>
+                            </transition>
+                        </div>
 
                         <button
                             @click="toggleDarkMode"
@@ -210,14 +312,34 @@ onBeforeUnmount(() => {
                             <i :class="darkMode ? 'fas fa-moon' : 'fas fa-sun'" />
                         </button>
 
-                        <button
-                            type="button"
+                        <Link
+                            v-if="activePeriod && canManagePeriods"
+                            :href="route('academic-periods.index')"
                             class="hidden h-10 items-center gap-2 rounded-lg border border-border-light bg-surface px-3 font-mono text-xs font-medium text-slate-600 transition hover:border-brand-600 hover:text-brand-600 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300 dark:hover:border-brand-500 dark:hover:text-brand-300 sm:inline-flex"
                         >
                             <i class="fa-solid fa-calendar-days text-brand-600 dark:text-brand-300" />
-                            This Semester
-                            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400" />
-                        </button>
+                            <span>{{ activePeriod.name }}</span>
+                            <span class="rounded-full bg-brand-600/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-600 dark:text-brand-300">
+                                {{ activePeriod.status_label || activePeriod.status }}
+                            </span>
+                        </Link>
+
+                        <div
+                            v-else-if="activePeriod"
+                            class="hidden h-10 items-center gap-2 rounded-lg border border-border-light bg-surface px-3 font-mono text-xs font-medium text-slate-600 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300 sm:inline-flex"
+                        >
+                            <i class="fa-solid fa-calendar-days text-brand-600 dark:text-brand-300" />
+                            <span>{{ activePeriod.name }}</span>
+                        </div>
+
+                        <Link
+                            v-else-if="canManagePeriods"
+                            :href="route('academic-periods.index')"
+                            class="hidden h-10 items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 font-mono text-xs font-medium text-warning transition hover:border-warning sm:inline-flex"
+                        >
+                            <i class="fa-solid fa-calendar-xmark" />
+                            No active period
+                        </Link>
 
                         <div class="relative">
                             <button
