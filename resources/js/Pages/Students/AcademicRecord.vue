@@ -12,6 +12,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import { formatDate } from "@/Components/Composables/useDateTimeFormatter";
+import { printTableReport } from "@/Components/Composables/usePrintableReport";
 
 const props = defineProps({
     student: {
@@ -42,6 +43,17 @@ const columns = [
     { key: "enrollment_status", label: "Enrollment" },
 ];
 
+const exportColumns = [
+    { key: "period", label: "Academic Period" },
+    { key: "subject", label: "Subject" },
+    { key: "credits", label: "Credits" },
+    { key: "group", label: "Group" },
+    { key: "professor", label: "Professor" },
+    { key: "final_grade", label: "Final Grade" },
+    { key: "grade_status", label: "Grade Status" },
+    { key: "enrollment_status", label: "Enrollment Status" },
+];
+
 const periodRows = (period) =>
     period.courses.map((course) => ({
         ...course,
@@ -56,6 +68,30 @@ const backHref = computed(() => {
         return route("student.subjects");
     }
 });
+
+const exportRows = computed(() =>
+    props.record.periods.flatMap((period) =>
+        period.courses.map((course) => ({
+            period: period.name,
+            subject: [course.subject_code, course.subject_name].filter(Boolean).join(" - "),
+            credits: course.credits,
+            group: course.group ?? "-",
+            professor: course.professor ?? "Unassigned",
+            final_grade: course.final_grade ?? "Pending",
+            grade_status: course.grade_status_label ?? formatStatus(course.grade_status),
+            enrollment_status: course.enrollment_status_label ?? formatStatus(course.enrollment_status),
+        }))
+    )
+);
+
+const printMetrics = computed(() => [
+    { label: "Periods", value: props.record.summary.periods },
+    { label: "Subjects", value: props.record.summary.subjects },
+    { label: "Attempted Credits", value: props.record.summary.attempted_credits },
+    { label: "Approved Credits", value: props.record.summary.approved_credits },
+    { label: "Average", value: props.record.summary.weighted_average ?? "Pending" },
+    { label: "Completion", value: formatPercent(props.record.summary.completion_rate) },
+]);
 
 const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
@@ -76,6 +112,52 @@ const enrollmentVariant = (status) => ({
 
 const formatStatus = (status, fallback = "Pending") =>
     status ? status.replaceAll("_", " ").toUpperCase() : fallback;
+
+function printAcademicRecord() {
+    printTableReport({
+        title: "Academic Record",
+        subtitle: `${props.student.user?.name ?? "Student"} / ${props.student.program?.name ?? "Program not assigned"}`,
+        filters: [
+            { label: "Document", value: props.student.document },
+            { label: "Program", value: props.student.program?.name ?? "N/A" },
+            { label: "Curriculum", value: props.student.curriculum?.name ?? "N/A" },
+            { label: "Academic Status", value: formatStatus(props.student.academic_status, "N/A") },
+        ],
+        metrics: printMetrics.value,
+        columns: exportColumns,
+        rows: exportRows.value,
+        orientation: "landscape",
+    });
+}
+
+function csvValue(value) {
+    const text = String(value ?? "");
+
+    return /[",\n\r]/.test(text)
+        ? `"${text.replaceAll('"', '""')}"`
+        : text;
+}
+
+function exportAcademicRecordCsv() {
+    const csv = [
+        exportColumns.map((column) => csvValue(column.label)).join(","),
+        ...exportRows.value.map((row) =>
+            exportColumns.map((column) => csvValue(row[column.key])).join(",")
+        ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const studentName = String(props.student.user?.name ?? "student")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = `academic-record-${studentName || "student"}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
 </script>
 
 <template>
@@ -84,6 +166,16 @@ const formatStatus = (status, fallback = "Pending") =>
         subtitle="Official academic progress by period, credits and grades"
     >
         <template #actions>
+            <BaseButton variant="secondary" @click="exportAcademicRecordCsv">
+                <i class="fa-solid fa-file-csv mr-2" />
+                Export CSV
+            </BaseButton>
+
+            <BaseButton variant="primary" @click="printAcademicRecord">
+                <i class="fa-solid fa-print mr-2" />
+                Print Record
+            </BaseButton>
+
             <Link :href="backHref">
                 <BaseButton variant="secondary">
                     <i class="fa-solid fa-arrow-left mr-2" />
