@@ -5,6 +5,7 @@ import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import WeeklySchedule from "@/Pages/Students/Partials/WeeklySchedule.vue";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 defineProps({
     currentSchedules: {
@@ -25,21 +26,26 @@ defineProps({
     },
 });
 
+const { t } = useTranslations();
+
 function formatStatus(status) {
-    return status ? status.replaceAll("_", " ").toUpperCase() : "NOT ACTIVE";
+    return status ? status.replaceAll("_", " ").toUpperCase() : t("common.not_active");
 }
 </script>
 
 <template>
-    <CrudPageLayout title="My Schedule" subtitle="Weekly teaching schedule for the active academic period">
+    <CrudPageLayout
+        :title="t('professor_portal.my_schedule_title')"
+        :subtitle="t('professor_portal.my_schedule_subtitle')"
+    >
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-4">
-                    <StatCard title="Class Blocks" :value="summary.blocks" icon="fa-solid fa-calendar-week" />
-                    <StatCard title="Assigned Groups" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
-                    <StatCard title="Active Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
+                    <StatCard :title="t('professor_portal.class_blocks')" :value="summary.blocks" icon="fa-solid fa-calendar-week" />
+                    <StatCard :title="t('professor_portal.assigned_groups')" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
+                    <StatCard :title="t('professor_portal.active_students')" :value="summary.students" icon="fa-solid fa-user-graduate" />
                     <div class="rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
-                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">Period Status</p>
+                        <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">{{ t("professor_portal.period_status") }}</p>
                         <div class="mt-4">
                             <StatusBadge
                                 :label="formatStatus(currentPeriod?.state)"
@@ -52,18 +58,18 @@ function formatStatus(status) {
                 <SectionCard>
                     <div class="border-b border-border-light p-6 dark:border-border-dark">
                         <h2 class="text-lg font-semibold text-ink dark:text-white">
-                            Academic Week
+                            {{ t("professor_portal.academic_week") }}
                         </h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                            Review your assigned class blocks, classroom and building location.
+                            {{ t("professor_portal.academic_week_description") }}
                         </p>
                     </div>
 
                     <div class="p-6">
                         <WeeklySchedule
                             :schedules="currentSchedules"
-                            empty-title="No teaching schedule yet"
-                            empty-description="Published class schedules assigned to you will appear here."
+                            :empty-title="t('professor_portal.empty_schedule_title')"
+                            :empty-description="t('professor_portal.empty_schedule_description')"
                         />
                     </div>
                 </SectionCard>

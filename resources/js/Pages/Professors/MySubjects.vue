@@ -12,6 +12,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
 import { formatTime } from "@/Components/Composables/useDateTimeFormatter";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 const props = defineProps({
     groups: {
@@ -39,15 +40,17 @@ const props = defineProps({
     },
 });
 
-const columns = [
-    { key: "subject", label: "Subject" },
-    { key: "code", label: "Group" },
-    { key: "schedule_summary", label: "Schedule" },
-    { key: "modality_summary", label: "Mode" },
-    { key: "students_summary", label: "Students" },
-    { key: "grade_summary", label: "Grades" },
-    { key: "status", label: "Status" },
-];
+const { t } = useTranslations();
+
+const columns = computed(() => [
+    { key: "subject", label: t("common.subject") },
+    { key: "code", label: t("common.group") },
+    { key: "schedule_summary", label: t("common.schedule") },
+    { key: "modality_summary", label: t("professor_portal.mode") },
+    { key: "students_summary", label: t("common.students") },
+    { key: "grade_summary", label: t("common.grades") },
+    { key: "status", label: t("common.status") },
+]);
 
 const rows = computed(() =>
     props.groups.map((group) => ({
@@ -68,16 +71,16 @@ function formatDay(day) {
 }
 
 function formatStatus(status) {
-    return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
+    return status ? status.replaceAll("_", " ").toUpperCase() : t("common.pending");
 }
 
 function formatLabel(value) {
-    return value ? value.replaceAll("_", " ").toUpperCase() : "TBD";
+    return value ? value.replaceAll("_", " ").toUpperCase() : t("common.tbd");
 }
 
 function formatSchedules(schedules = []) {
     if (!schedules.length) {
-        return "Pending";
+        return t("common.pending");
     }
 
     return schedules
@@ -93,14 +96,14 @@ function formatSchedules(schedules = []) {
 
 function formatGradeProgress(enrollments = []) {
     if (!enrollments.length) {
-        return "No students";
+        return t("professor_portal.no_students");
     }
 
     const graded = enrollments.filter((enrollment) =>
         enrollment.grade?.final_grade !== null && enrollment.grade?.final_grade !== undefined
     ).length;
 
-    return `${graded}/${enrollments.length} graded`;
+    return t("professor_portal.graded_count", null, { count: `${graded}/${enrollments.length}` });
 }
 
 const groupStatusVariant = (status) => ({
@@ -112,31 +115,31 @@ const groupStatusVariant = (status) => ({
 </script>
 
 <template>
-    <CrudPageLayout title="My Class Groups" :subtitle="period
-        ? `Teaching workspace for ${period.name}`
-        : 'Teaching workspace for the active academic period'
+    <CrudPageLayout :title="t('professor_portal.my_groups_title')" :subtitle="period
+        ? t('professor_portal.my_groups_subtitle_with_period', null, { period: period.name })
+        : t('professor_portal.my_groups_subtitle')
         ">
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <StatCard title="Assigned Groups" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
-                    <StatCard title="Active Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
-                    <StatCard title="Credits Assigned" :value="summary.credits" icon="fa-solid fa-layer-group" />
+                    <StatCard :title="t('professor_portal.assigned_groups')" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
+                    <StatCard :title="t('professor_portal.active_students')" :value="summary.students" icon="fa-solid fa-user-graduate" />
+                    <StatCard :title="t('professor_portal.credits_assigned')" :value="summary.credits" icon="fa-solid fa-layer-group" />
                 </section>
 
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-lg font-semibold text-ink dark:text-white">
-                                Current Academic Period
+                                {{ t("professor_portal.current_period") }}
                             </h2>
 
                             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                                {{ period?.name ?? "No active academic period" }}
+                                {{ period?.name ?? t("professor_portal.no_active_period") }}
                             </p>
                         </div>
 
-                        <StatusBadge :label="period?.state ? formatStatus(period.state) : 'NOT ACTIVE'"
+                        <StatusBadge :label="period?.state ? formatStatus(period.state) : t('common.not_active')"
                             :variant="period?.can_edit_grades ? 'success' : 'gray'" />
                     </div>
                 </SectionCard>
@@ -144,11 +147,11 @@ const groupStatusVariant = (status) => ({
                 <SectionCard>
                     <div class="border-b border-border-light p-6 dark:border-border-dark">
                         <h2 class="text-lg font-semibold text-ink dark:text-white">
-                            Assigned Class Groups
+                            {{ t("professor_portal.assigned_groups_section") }}
                         </h2>
 
                         <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                            Teaching groups, schedules, enrolled students and grade entry for the active period.
+                            {{ t("professor_portal.assigned_groups_description") }}
                         </p>
                     </div>
 
@@ -187,29 +190,29 @@ const groupStatusVariant = (status) => ({
                                     <Link :href="route('admin.class-groups.enrollments', row.id)">
                                         <BaseButton size="sm" variant="secondary">
                                             <i class="fa-solid fa-users mr-2" />
-                                            Roster
+                                            {{ t("professor_portal.roster") }}
                                         </BaseButton>
                                     </Link>
 
                                     <Link v-if="row.source.can_view_grades" :href="route('groups.grades.index', row.id)">
                                         <BaseButton size="sm" :variant="row.source.can_edit_grades ? 'primary' : 'secondary'">
                                             <i class="fa-solid fa-clipboard-list mr-2" />
-                                            {{ row.source.can_edit_grades ? "Grades" : "View Grades" }}
+                                            {{ row.source.can_edit_grades ? t("common.grades") : t("professor_portal.view_grades") }}
                                         </BaseButton>
                                     </Link>
 
                                     <BaseButton v-else size="sm" variant="secondary" disabled>
                                         <i class="fa-solid fa-lock mr-2" />
-                                        Grades Unavailable
+                                        {{ t("professor_portal.grades_unavailable") }}
                                     </BaseButton>
                                 </div>
                             </template>
                         </DataTable>
 
-                        <EmptyState v-else title="No assigned groups"
+                        <EmptyState v-else :title="t('professor_portal.no_groups_title')"
                             :description="systemState === 'no_period'
-                                ? 'There is no active academic period. Assigned groups will appear when a period is activated.'
-                                : 'You have no assigned class groups in the active academic period.'"
+                                ? t('professor_portal.no_period_description')
+                                : t('professor_portal.no_groups_description')"
                             icon="fa-solid fa-users-rectangle" />
                     </div>
                 </SectionCard>

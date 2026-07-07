@@ -15,6 +15,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut, Line } from "vue-chartjs";
 import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 ChartJS.register(
     ArcElement,
@@ -43,28 +44,30 @@ const props = defineProps({
     },
 });
 
+const { t } = useTranslations();
+
 const metricCards = [
     {
         key: "active_enrollments",
-        label: "Active enrollments",
+        label: t("dashboard.metrics.active_enrollments"),
         icon: "fa-solid fa-user-check",
         tone: "text-success bg-success/10 dark:bg-success/10 dark:text-success",
     },
     {
         key: "published_groups",
-        label: "Published groups",
+        label: t("dashboard.metrics.published_groups"),
         icon: "fa-solid fa-layer-group",
         tone: "text-brand-600 bg-brand-50 dark:bg-brand-500/10 dark:text-brand-300",
     },
     {
         key: "schedule_conflicts",
-        label: "Schedule conflicts",
+        label: t("dashboard.metrics.schedule_conflicts"),
         icon: "fa-solid fa-triangle-exclamation",
         tone: "text-warning bg-warning/10 dark:bg-warning/10 dark:text-warning",
     },
     {
         key: "capacity_utilization",
-        label: "Seat utilization",
+        label: t("dashboard.metrics.capacity_utilization"),
         icon: "fa-solid fa-chart-simple",
         suffix: "%",
         tone: "text-accent bg-accent/10 dark:bg-accent/10 dark:text-accent",
@@ -72,10 +75,10 @@ const metricCards = [
 ];
 
 const professorMetricCards = [
-    { key: "assigned_groups", label: "Assigned groups", icon: "fa-solid fa-layer-group" },
-    { key: "active_students", label: "Active students", icon: "fa-solid fa-users" },
-    { key: "pending_grades", label: "Pending grades", icon: "fa-solid fa-clipboard-check" },
-    { key: "scheduled_blocks", label: "Scheduled blocks", icon: "fa-solid fa-calendar-days" },
+    { key: "assigned_groups", label: t("dashboard.metrics.assigned_groups"), icon: "fa-solid fa-layer-group" },
+    { key: "active_students", label: t("dashboard.metrics.active_students"), icon: "fa-solid fa-users" },
+    { key: "pending_grades", label: t("dashboard.metrics.pending_grades"), icon: "fa-solid fa-clipboard-check" },
+    { key: "scheduled_blocks", label: t("dashboard.metrics.scheduled_blocks"), icon: "fa-solid fa-calendar-days" },
 ];
 
 const chartColors = {
@@ -168,14 +171,14 @@ function capacityChartData(items) {
         labels: (items || []).map((item) => item.label),
         datasets: [
             {
-                label: "Used seats",
+                label: t("dashboard.used_seats"),
                 data: (items || []).map((item) => item.used),
                 backgroundColor: chartColors.brand,
                 borderRadius: 8,
                 maxBarThickness: 34,
             },
             {
-                label: "Capacity",
+                label: t("dashboard.capacity"),
                 data: (items || []).map((item) => item.capacity),
                 backgroundColor: chartColors.border,
                 borderRadius: 8,
@@ -205,7 +208,7 @@ function trendData(items) {
         labels: (items || []).map((item) => item.label),
         datasets: [
             {
-                label: "Enrollments",
+                label: t("dashboard.enrollments"),
                 data: (items || []).map((item) => item.value),
                 borderColor: chartColors.brand,
                 backgroundColor: chartColors.brandSoft,
@@ -223,13 +226,13 @@ function gradingProgressData(items) {
         labels: (items || []).map((item) => item.label),
         datasets: [
             {
-                label: "Graded",
+                label: t("dashboard.graded"),
                 data: (items || []).map((item) => item.graded),
                 backgroundColor: chartColors.success,
                 borderRadius: 8,
             },
             {
-                label: "Pending",
+                label: t("common.pending"),
                 data: (items || []).map((item) => item.pending),
                 backgroundColor: chartColors.warning,
                 borderRadius: 8,
@@ -240,7 +243,7 @@ function gradingProgressData(items) {
 </script>
 
 <template>
-    <AppLayout :title="dashboardType === 'professor' ? 'Teaching Dashboard' : 'Academic Dashboard'">
+    <AppLayout :title="dashboardType === 'professor' ? t('dashboard.professor_title') : t('dashboard.academic_page_title')">
         <template #header>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -248,12 +251,12 @@ function gradingProgressData(items) {
                         TARRAYA
                     </p>
                     <h1 class="text-2xl font-semibold text-ink dark:text-white">
-                        {{ dashboardType === "professor" ? "Teaching Dashboard" : "Academic Operations Dashboard" }}
+                        {{ dashboardType === "professor" ? t("dashboard.professor_title") : t("dashboard.academic_title") }}
                     </h1>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {{ dashboardType === "professor"
-                            ? "Your assigned groups, students and grading workload."
-                            : "Operational health for enrollment, capacity, schedules and academic activity." }}
+                            ? t("dashboard.professor_subtitle")
+                            : t("dashboard.academic_subtitle") }}
                     </p>
                 </div>
 
@@ -289,25 +292,25 @@ function gradingProgressData(items) {
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-8">
                         <div class="flex items-center justify-between gap-4">
                             <div>
-                                <h2 class="text-base font-semibold text-ink dark:text-white">Capacity Overview</h2>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Current seat usage across published groups.</p>
+                                <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.capacity_overview") }}</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.capacity_overview_description") }}</p>
                             </div>
                             <Link :href="route('class-groups.index')" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300">
-                                View groups
+                                {{ t("dashboard.view_groups") }}
                             </Link>
                         </div>
 
                         <div class="mt-5 grid gap-4 sm:grid-cols-3">
                             <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
-                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Used seats</p>
+                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t("dashboard.used_seats") }}</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.used_seats ?? 0 }}</p>
                             </div>
                             <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
-                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Available seats</p>
+                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t("dashboard.available_seats") }}</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.capacity?.available_seats ?? 0 }}</p>
                             </div>
                             <div class="rounded-xl border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
-                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Full groups</p>
+                                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t("dashboard.full_groups") }}</p>
                                 <p class="mt-2 text-2xl font-semibold text-ink dark:text-white">{{ academicDashboard.metrics?.full_groups ?? 0 }}</p>
                             </div>
                         </div>
@@ -323,14 +326,14 @@ function gradingProgressData(items) {
                                 </div>
                             </div>
                             <p v-if="!(academicDashboard.capacity?.high_occupancy_groups || []).length" class="text-sm text-slate-500 dark:text-slate-400">
-                                No high-occupancy groups detected.
+                                {{ t("dashboard.no_high_occupancy") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Status</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Distribution by academic enrollment state.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.enrollment_status") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.enrollment_status_description") }}</p>
 
                         <div class="mt-5 space-y-3">
                             <div v-for="status in academicDashboard.enrollmentStatus || []" :key="status.label" class="flex items-center justify-between rounded-xl border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
@@ -338,7 +341,7 @@ function gradingProgressData(items) {
                                 <span class="text-sm font-semibold text-ink dark:text-white">{{ status.value }}</span>
                             </div>
                             <p v-if="!(academicDashboard.enrollmentStatus || []).length" class="text-sm text-slate-500 dark:text-slate-400">
-                                No enrollment records yet.
+                                {{ t("dashboard.no_enrollment_records") }}
                             </p>
                         </div>
                     </article>
@@ -348,8 +351,8 @@ function gradingProgressData(items) {
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-8">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <h2 class="text-base font-semibold text-ink dark:text-white">Enrollment Trend</h2>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">New enrollment activity for the active academic period.</p>
+                                <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.enrollment_trend") }}</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.enrollment_trend_description") }}</p>
                             </div>
                         </div>
 
@@ -360,23 +363,23 @@ function gradingProgressData(items) {
                                 :options="axisChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No enrollment activity to chart yet.
+                                {{ t("dashboard.no_enrollment_activity") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Status Mix</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Enrollment states at a glance.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.status_mix") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.status_mix_description") }}</p>
 
                         <div class="mt-5 h-72">
                             <Doughnut
                                 v-if="(academicDashboard.charts?.status_distribution || []).length"
-                                :data="doughnutData(academicDashboard.charts.status_distribution, 'Enrollments')"
+                                :data="doughnutData(academicDashboard.charts.status_distribution, t('dashboard.enrollments'))"
                                 :options="baseChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No enrollment status data yet.
+                                {{ t("dashboard.no_status_data") }}
                             </p>
                         </div>
                     </article>
@@ -384,8 +387,8 @@ function gradingProgressData(items) {
 
                 <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Capacity By Group</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Used seats compared with configured group capacity.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.capacity_by_group") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.capacity_by_group_description") }}</p>
 
                         <div class="mt-5 h-72">
                             <Bar
@@ -394,23 +397,23 @@ function gradingProgressData(items) {
                                 :options="axisChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No published group capacity data yet.
+                                {{ t("dashboard.no_capacity_data") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Subject Areas</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Academic offering distribution by knowledge area.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.subject_areas") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.subject_areas_description") }}</p>
 
                         <div class="mt-5 h-72">
                             <Bar
                                 v-if="(academicDashboard.charts?.subject_areas || []).length"
-                                :data="simpleBarData(academicDashboard.charts.subject_areas, 'Subjects')"
+                                :data="simpleBarData(academicDashboard.charts.subject_areas, t('dashboard.subjects'))"
                                 :options="axisChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No subject area data yet.
+                                {{ t("dashboard.no_subject_area_data") }}
                             </p>
                         </div>
                     </article>
@@ -418,42 +421,42 @@ function gradingProgressData(items) {
 
                 <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Schedule Conflicts</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Overlaps by classroom or professor.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.schedule_conflicts_title") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.schedule_conflicts_description") }}</p>
 
                         <div class="mt-5 space-y-4">
                             <div v-for="conflict in academicDashboard.scheduleConflicts || []" :key="conflict.id" class="rounded-xl border border-warning/30 bg-warning/10 p-4 dark:border-warning/30 dark:bg-warning/10">
                                 <p class="text-sm font-semibold text-amber-900 dark:text-warning">{{ conflict.day }} · {{ conflict.time }}</p>
                                 <p class="mt-1 text-sm text-amber-800 dark:text-warning">{{ conflict.first_group }} conflicts with {{ conflict.second_group }}</p>
-                                <p class="mt-1 text-xs text-amber-700 dark:text-warning">{{ conflict.classroom || "Professor overlap" }}</p>
+                                <p class="mt-1 text-xs text-amber-700 dark:text-warning">{{ conflict.classroom || t("dashboard.professor_overlap") }}</p>
                             </div>
                             <p v-if="!(academicDashboard.scheduleConflicts || []).length" class="text-sm text-slate-500 dark:text-slate-400">
-                                No schedule conflicts detected.
+                                {{ t("dashboard.no_schedule_conflicts") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Professor Load</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Groups and active students by professor.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.professor_load") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.professor_load_description") }}</p>
 
                         <div class="mt-5 space-y-3">
                             <div v-for="professor in academicDashboard.professorLoad || []" :key="professor.name" class="flex items-center justify-between rounded-xl border border-border-light bg-slate-50 px-4 py-3 dark:border-border-dark dark:bg-dark-bg">
                                 <div>
                                     <p class="text-sm font-medium text-slate-800 dark:text-zinc-200">{{ professor.name }}</p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ professor.groups }} groups</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t("dashboard.groups_count", null, { count: professor.groups }) }}</p>
                                 </div>
-                                <span class="text-sm font-semibold text-ink dark:text-white">{{ professor.students }} students</span>
+                                <span class="text-sm font-semibold text-ink dark:text-white">{{ t("dashboard.students_count", null, { count: professor.students }) }}</span>
                             </div>
                             <p v-if="!(academicDashboard.professorLoad || []).length" class="text-sm text-slate-500 dark:text-slate-400">
-                                No assigned professor load yet.
+                                {{ t("dashboard.no_professor_load") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-4">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Needs Attention</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Operational issues to resolve first.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.needs_attention") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.needs_attention_description") }}</p>
 
                         <div class="mt-5 space-y-3">
                             <div v-for="item in academicDashboard.attentionItems || []" :key="`${item.type}-${item.description}`" class="rounded-xl border border-border-light p-4 dark:border-border-dark">
@@ -461,7 +464,7 @@ function gradingProgressData(items) {
                                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
                             </div>
                             <p v-if="!(academicDashboard.attentionItems || []).length" class="text-sm text-slate-500 dark:text-slate-400">
-                                No critical attention items found.
+                                {{ t("dashboard.no_attention_items") }}
                             </p>
                         </div>
                     </article>
@@ -470,22 +473,22 @@ function gradingProgressData(items) {
                 <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-ink dark:text-white">Recent Academic Events</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Latest audited operations across the academic workflow.</p>
+                            <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.recent_events") }}</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.recent_events_description") }}</p>
                         </div>
                         <Link :href="route('academic-audit-logs.index')" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300">
-                            View audit logs
+                            {{ t("dashboard.view_audit_logs") }}
                         </Link>
                     </div>
 
                     <div class="mt-5 divide-y divide-border-light dark:divide-border-dark">
                         <div v-for="event in academicDashboard.recentEvents || []" :key="event.id" class="grid gap-2 py-4 sm:grid-cols-[10rem_1fr_10rem] sm:items-center">
                             <p class="text-sm font-medium text-ink dark:text-white">{{ event.action }}</p>
-                            <p class="text-sm text-slate-600 dark:text-zinc-300">{{ event.summary || "No summary available" }}</p>
+                            <p class="text-sm text-slate-600 dark:text-zinc-300">{{ event.summary || t("dashboard.no_summary") }}</p>
                             <p class="text-sm text-slate-500 dark:text-slate-400 sm:text-right">{{ formatDateTime(event.created_at) }}</p>
                         </div>
                         <p v-if="!(academicDashboard.recentEvents || []).length" class="py-4 text-sm text-slate-500 dark:text-slate-400">
-                            No audited events yet.
+                            {{ t("dashboard.no_audited_events") }}
                         </p>
                     </div>
                 </section>
@@ -493,13 +496,13 @@ function gradingProgressData(items) {
                 <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-ink dark:text-white">Student Assignments Overview</h2>
+                            <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.student_assignments_overview") }}</h2>
                             <p class="text-sm text-slate-500 dark:text-slate-400">
-                                Quick view of active student loads and assigned groups. Use the full report for filtering and exports.
+                                {{ t("dashboard.student_assignments_description") }}
                             </p>
                         </div>
                         <Link :href="route('reports.student-assignments.index')" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300">
-                            Open full report
+                            {{ t("dashboard.open_full_report") }}
                         </Link>
                     </div>
 
@@ -507,10 +510,10 @@ function gradingProgressData(items) {
                         <table v-if="(academicDashboard.assignmentPreview || []).length" class="min-w-full text-sm">
                             <thead class="border-b border-border-light text-left text-xs uppercase text-slate-500 dark:border-border-dark dark:text-slate-400">
                                 <tr>
-                                    <th class="px-4 py-3 font-semibold">Student</th>
-                                    <th class="px-4 py-3 font-semibold">Document</th>
-                                    <th class="px-4 py-3 font-semibold">Credits</th>
-                                    <th class="px-4 py-3 font-semibold">Recent assignments</th>
+                                    <th class="px-4 py-3 font-semibold">{{ t("academic_requests.student") }}</th>
+                                    <th class="px-4 py-3 font-semibold">{{ t("dashboard.document") }}</th>
+                                    <th class="px-4 py-3 font-semibold">{{ t("common.credits") }}</th>
+                                    <th class="px-4 py-3 font-semibold">{{ t("dashboard.recent_assignments") }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border-light dark:divide-border-dark">
@@ -524,7 +527,7 @@ function gradingProgressData(items) {
                                                 ? 'border-success/30 bg-success/10 text-emerald-800 dark:border-success/30 dark:bg-success/15 dark:text-success'
                                                 : 'border-warning/30 bg-warning/10 text-amber-800 dark:border-warning/30 dark:bg-warning/15 dark:text-warning'
                                         ]">
-                                            {{ student.credits }} credits
+                                            {{ t("dashboard.credits_count", null, { count: student.credits }) }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-4">
@@ -535,13 +538,13 @@ function gradingProgressData(items) {
                                                     {{ assignment.code }} - {{ assignment.subject }}
                                                 </p>
                                                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                                                    {{ assignment.professor }} - {{ assignment.group || "No group" }}
+                                                    {{ assignment.professor }} - {{ assignment.group || t("common.no_group") }}
                                                 </p>
                                             </div>
                                             <details v-if="student.subjects.length > 3"
                                                 class="rounded-xl border border-border-light bg-slate-50 px-3 py-2 dark:border-border-dark dark:bg-dark-bg">
                                                 <summary class="cursor-pointer text-xs font-semibold text-brand-600 dark:text-brand-300">
-                                                    {{ student.subjects.length - 3 }} more in full report
+                                                    {{ t("dashboard.more_in_full_report", null, { count: student.subjects.length - 3 }) }}
                                                 </summary>
                                                 <div class="mt-2 space-y-2">
                                                     <div v-for="assignment in student.subjects.slice(3)"
@@ -551,7 +554,7 @@ function gradingProgressData(items) {
                                                             {{ assignment.code }} - {{ assignment.subject }}
                                                         </p>
                                                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                                                            {{ assignment.professor }} - {{ assignment.group || "No group" }}
+                                                            {{ assignment.professor }} - {{ assignment.group || t("common.no_group") }}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -563,7 +566,7 @@ function gradingProgressData(items) {
                         </table>
 
                         <p v-else class="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                            No student assignments available yet.
+                            {{ t("dashboard.no_assignments") }}
                         </p>
                     </div>
                 </section>
@@ -589,24 +592,24 @@ function gradingProgressData(items) {
 
                 <section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Students By Group</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Active students across your assigned groups.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.students_by_group") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.students_by_group_description") }}</p>
 
                         <div class="mt-5 h-72">
                             <Bar
                                 v-if="(professorDashboard.charts?.students_by_group || []).length"
-                                :data="simpleBarData(professorDashboard.charts.students_by_group, 'Students')"
+                                :data="simpleBarData(professorDashboard.charts.students_by_group, t('common.students'))"
                                 :options="axisChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No assigned student load yet.
+                                {{ t("dashboard.no_student_load") }}
                             </p>
                         </div>
                     </article>
 
                     <article class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark xl:col-span-6">
-                        <h2 class="text-base font-semibold text-ink dark:text-white">Grading Progress</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Completed and pending grades by group.</p>
+                        <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.grading_progress") }}</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.grading_progress_description") }}</p>
 
                         <div class="mt-5 h-72">
                             <Bar
@@ -615,7 +618,7 @@ function gradingProgressData(items) {
                                 :options="axisChartOptions"
                             />
                             <p v-else class="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No grading workload to chart yet.
+                                {{ t("dashboard.no_grading_workload") }}
                             </p>
                         </div>
                     </article>
@@ -624,11 +627,11 @@ function gradingProgressData(items) {
                 <section class="rounded-xl border border-border-light bg-surface p-5 dark:border-border-dark dark:bg-surface-dark">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-ink dark:text-white">Assigned Groups</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Your current teaching workload and grading queue.</p>
+                            <h2 class="text-base font-semibold text-ink dark:text-white">{{ t("dashboard.assigned_groups") }}</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t("dashboard.assigned_groups_description") }}</p>
                         </div>
                         <Link :href="route('professor.subjects')" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300">
-                            My subjects
+                            {{ t("dashboard.my_subjects") }}
                         </Link>
                     </div>
 
@@ -645,11 +648,11 @@ function gradingProgressData(items) {
                             </div>
                             <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
                                 <div>
-                                    <dt class="text-slate-500 dark:text-slate-400">Students</dt>
+                                    <dt class="text-slate-500 dark:text-slate-400">{{ t("common.students") }}</dt>
                                     <dd class="font-semibold text-ink dark:text-white">{{ group.students }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-slate-500 dark:text-slate-400">Pending grades</dt>
+                                    <dt class="text-slate-500 dark:text-slate-400">{{ t("dashboard.metrics.pending_grades") }}</dt>
                                     <dd class="font-semibold text-ink dark:text-white">{{ group.pending_grades }}</dd>
                                 </div>
                             </dl>

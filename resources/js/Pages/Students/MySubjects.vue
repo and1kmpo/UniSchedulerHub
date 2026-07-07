@@ -12,6 +12,7 @@ import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
 import { formatDate, formatTime } from "@/Components/Composables/useDateTimeFormatter";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 const props = defineProps({
     subjects: {
@@ -35,15 +36,17 @@ const props = defineProps({
 
 });
 
-const columns = [
-    { key: "name", label: "Subject" },
-    { key: "credits", label: "Credits" },
-    { key: "group", label: "Group" },
-    { key: "professor_name", label: "Professor" },
-    { key: "schedule_summary", label: "Schedule" },
-    { key: "status", label: "Status" },
-    { key: "final_grade", label: "Final Grade" },
-];
+const { t } = useTranslations();
+
+const columns = computed(() => [
+    { key: "name", label: t("common.subject") },
+    { key: "credits", label: t("common.credits") },
+    { key: "group", label: t("common.group") },
+    { key: "professor_name", label: t("common.professor") },
+    { key: "schedule_summary", label: t("common.schedule") },
+    { key: "status", label: t("common.status") },
+    { key: "final_grade", label: t("student_portal.final_grade") },
+]);
 
 const selectedGrade = ref(null);
 const selectedSubject = ref(null);
@@ -59,8 +62,8 @@ const rows = computed(() =>
     props.subjects.map((subject) => ({
         ...subject,
         schedule_summary: formatSchedules(subject.schedules),
-        final_grade: subject.grade?.final_grade ?? "Pending",
-        grade_state_label: subject.grade_state?.label ?? "Pending",
+        final_grade: subject.grade?.final_grade ?? t("common.pending"),
+        grade_state_label: subject.grade_state?.label ?? t("common.pending"),
     }))
 );
 
@@ -80,7 +83,7 @@ const gradeVariant = (state) => ({
 }[state] || "gray");
 
 function formatStatus(status) {
-    return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
+    return status ? status.replaceAll("_", " ").toUpperCase() : t("common.pending");
 }
 
 function formatDay(day) {
@@ -89,7 +92,7 @@ function formatDay(day) {
 
 function formatSchedules(schedules = []) {
     if (!schedules.length) {
-        return "Pending";
+        return t("common.pending");
     }
 
     return schedules
@@ -112,7 +115,7 @@ const viewGrades = async (subject) => {
         selectedGrade.value = response.data.grade;
     } catch (error) {
         selectedGrade.value = null;
-        gradesError.value = "Grades could not be loaded. Try again later.";
+        gradesError.value = t("student_portal.grades_load_error");
     } finally {
         gradesLoading.value = false;
     }
@@ -136,7 +139,7 @@ const loadAllGrades = async () => {
         allGrades.value = response.data.grades;
     } catch (error) {
         allGrades.value = [];
-        summaryError.value = "Grade summary could not be loaded. Try again later.";
+        summaryError.value = t("student_portal.summary_load_error");
     } finally {
         summaryLoading.value = false;
     }
@@ -149,12 +152,15 @@ const handleOpenSummary = async () => {
 </script>
 
 <template>
-    <CrudPageLayout title="My Subjects" subtitle="Current enrollments, schedule and academic progress">
+    <CrudPageLayout
+        :title="t('student_portal.my_subjects_title')"
+        :subtitle="t('student_portal.my_subjects_subtitle')"
+    >
         <template #actions>
             <div class="flex flex-col gap-2 sm:flex-row">
                 <BaseButton variant="secondary" @click="handleOpenSummary">
                     <i class="fa-solid fa-list mr-2" />
-                    Grade Summary
+                    {{ t("student_portal.grade_summary") }}
                 </BaseButton>
             </div>
         </template>
@@ -162,45 +168,45 @@ const handleOpenSummary = async () => {
         <CrudContainer>
             <div class="space-y-6">
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <StatCard title="Active Subjects" :value="summary.active_subjects" icon="fa-solid fa-book-open" />
-                    <StatCard title="Current Credits" :value="summary.current_credits" icon="fa-solid fa-layer-group" />
-                    <StatCard title="With Grades" :value="summary.graded_subjects" icon="fa-solid fa-chart-line" />
+                    <StatCard :title="t('student_portal.active_subjects')" :value="summary.active_subjects" icon="fa-solid fa-book-open" />
+                    <StatCard :title="t('student_portal.current_credits')" :value="summary.current_credits" icon="fa-solid fa-layer-group" />
+                    <StatCard :title="t('student_portal.with_grades')" :value="summary.graded_subjects" icon="fa-solid fa-chart-line" />
                 </section>
 
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-lg font-semibold text-ink dark:text-white">
-                                Current Academic Period
+                                {{ t("student_portal.current_period") }}
                             </h2>
 
                             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                                {{ currentPeriod?.name ?? "No active academic period" }}
+                                {{ currentPeriod?.name ?? t("student_portal.no_active_period") }}
                             </p>
                         </div>
 
-                        <StatusBadge :label="currentPeriod?.state ? formatStatus(currentPeriod.state) : 'NOT ACTIVE'"
+                        <StatusBadge :label="currentPeriod?.state ? formatStatus(currentPeriod.state) : t('common.not_active')"
                             :variant="currentPeriod?.can_enroll ? 'success' : 'gray'" />
                     </div>
 
                     <div v-if="currentPeriod" class="grid gap-4 border-t border-border-light p-6 text-sm dark:border-border-dark md:grid-cols-2">
                         <div>
                             <p class="font-medium text-slate-500 dark:text-zinc-400">
-                                Enrollment deadline
+                                {{ t("student_portal.enrollment_deadline") }}
                             </p>
 
                             <p class="mt-1 text-ink dark:text-white">
-                            {{ formatDate(currentPeriod.enrollment_deadline, "Not defined") }}
+                            {{ formatDate(currentPeriod.enrollment_deadline, t("common.not_defined")) }}
                             </p>
                         </div>
 
                         <div>
                             <p class="font-medium text-slate-500 dark:text-zinc-400">
-                                Unenrollment deadline
+                                {{ t("student_portal.unenrollment_deadline") }}
                             </p>
 
                             <p class="mt-1 text-ink dark:text-white">
-                                {{ formatDate(currentPeriod.unenrollment_deadline, "Not defined") }}
+                                {{ formatDate(currentPeriod.unenrollment_deadline, t("common.not_defined")) }}
                             </p>
                         </div>
                     </div>
@@ -209,11 +215,11 @@ const handleOpenSummary = async () => {
                 <SectionCard>
                     <div class="border-b border-border-light p-6 dark:border-border-dark">
                         <h2 class="text-lg font-semibold text-ink dark:text-white">
-                            Enrolled Subjects
+                            {{ t("student_portal.enrolled_subjects") }}
                         </h2>
 
                         <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                            Subjects assigned to your current academic period.
+                            {{ t("student_portal.enrolled_subjects_description") }}
                         </p>
                     </div>
 
@@ -226,10 +232,10 @@ const handleOpenSummary = async () => {
                             <template #cell-group="{ row }">
                                 <div class="space-y-1">
                                     <p class="font-medium text-ink dark:text-white">
-                                        {{ row.group || "Pending" }}
+                                        {{ row.group || t("common.pending") }}
                                     </p>
                                     <p class="text-xs text-slate-500 dark:text-zinc-400">
-                                        {{ row.modality || "TBD" }} / {{ row.shift || "TBD" }}
+                                        {{ row.modality || t("common.tbd") }} / {{ row.shift || t("common.tbd") }}
                                     </p>
                                 </div>
                             </template>
@@ -256,13 +262,13 @@ const handleOpenSummary = async () => {
                             <template #actions="{ row }">
                                 <BaseButton size="sm" variant="secondary" @click="viewGrades(row)">
                                     <i class="fa-solid fa-eye mr-2" />
-                                    Grades
+                                    {{ t("common.grades") }}
                                 </BaseButton>
                             </template>
                         </DataTable>
 
-                        <EmptyState v-else title="No subjects enrolled"
-                            description="When enrollment is open, use the enrollment workflow to select available subjects and groups."
+                        <EmptyState v-else :title="t('student_portal.no_subjects_title')"
+                            :description="t('student_portal.no_subjects_description')"
                             icon="fa-solid fa-book" />
                     </div>
                 </SectionCard>
@@ -270,20 +276,20 @@ const handleOpenSummary = async () => {
         </CrudContainer>
 
         <div v-if="isGradeModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            role="dialog" aria-label="Subject grades modal">
+            role="dialog" :aria-label="t('student_portal.subject_grades_modal')">
             <div class="w-full max-w-md rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <h2 class="text-lg font-semibold text-ink dark:text-white">
                         {{ selectedSubject?.name }}
                     </h2>
 
-                    <button class="text-slate-500 hover:text-danger" @click="closeGradeModal" aria-label="Close">
+                    <button class="text-slate-500 hover:text-danger" @click="closeGradeModal" :aria-label="t('common.close')">
                         <i class="fa-solid fa-xmark" />
                     </button>
                 </div>
 
                 <div v-if="gradesLoading" class="py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
-                    Loading grades...
+                    {{ t("student_portal.loading_grades") }}
                 </div>
 
                 <div v-else-if="gradesError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
@@ -292,58 +298,58 @@ const handleOpenSummary = async () => {
 
                 <dl v-else class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">First Exam</dt>
-                        <dd>{{ selectedGrade?.partial_1 ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.first_exam") }}</dt>
+                        <dd>{{ selectedGrade?.partial_1 ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Second Exam</dt>
-                        <dd>{{ selectedGrade?.partial_2 ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.second_exam") }}</dt>
+                        <dd>{{ selectedGrade?.partial_2 ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Third Exam</dt>
-                        <dd>{{ selectedGrade?.partial_3 ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.third_exam") }}</dt>
+                        <dd>{{ selectedGrade?.partial_3 ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Activities</dt>
-                        <dd>{{ selectedGrade?.activities ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.activities") }}</dt>
+                        <dd>{{ selectedGrade?.activities ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Attendance</dt>
-                        <dd>{{ selectedGrade?.attendance ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.attendance") }}</dt>
+                        <dd>{{ selectedGrade?.attendance ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Final Grade</dt>
-                        <dd>{{ selectedGrade?.final_grade ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("student_portal.final_grade") }}</dt>
+                        <dd>{{ selectedGrade?.final_grade ?? t("common.pending") }}</dd>
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <dt class="font-medium text-slate-500 dark:text-zinc-400">Status</dt>
-                        <dd>{{ selectedGrade?.state?.label ?? "Pending" }}</dd>
+                        <dt class="font-medium text-slate-500 dark:text-zinc-400">{{ t("common.status") }}</dt>
+                        <dd>{{ selectedGrade?.state?.label ?? t("common.pending") }}</dd>
                     </div>
                 </dl>
             </div>
         </div>
 
         <div v-if="showSummary" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            role="dialog" aria-label="Grades summary modal">
+            role="dialog" :aria-label="t('student_portal.grades_summary_modal')">
             <div class="w-full max-w-5xl rounded-lg border border-border-light bg-surface p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark dark:text-zinc-200">
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <h2 class="text-lg font-semibold text-ink dark:text-white">
-                        Grade Summary
+                        {{ t("student_portal.grade_summary") }}
                     </h2>
 
-                    <button class="text-slate-500 hover:text-danger" @click="showSummary = false" aria-label="Close">
+                    <button class="text-slate-500 hover:text-danger" @click="showSummary = false" :aria-label="t('common.close')">
                         <i class="fa-solid fa-xmark" />
                     </button>
                 </div>
 
                 <div v-if="summaryLoading" class="py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
-                    Loading grade summary...
+                    {{ t("student_portal.loading_summary") }}
                 </div>
 
                 <div v-else-if="summaryError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
@@ -351,15 +357,15 @@ const handleOpenSummary = async () => {
                 </div>
 
                 <DataTable v-else :columns="[
-                    { key: 'subject_name', label: 'Subject' },
-                    { key: 'group', label: 'Group' },
-                    { key: 'partial_1', label: 'First Exam' },
-                    { key: 'partial_2', label: 'Second Exam' },
-                    { key: 'partial_3', label: 'Third Exam' },
-                    { key: 'activities', label: 'Activities' },
-                    { key: 'attendance', label: 'Attendance' },
-                    { key: 'final_grade', label: 'Final' },
-                    { key: 'state', label: 'Status' },
+                    { key: 'subject_name', label: t('common.subject') },
+                    { key: 'group', label: t('common.group') },
+                    { key: 'partial_1', label: t('student_portal.first_exam') },
+                    { key: 'partial_2', label: t('student_portal.second_exam') },
+                    { key: 'partial_3', label: t('student_portal.third_exam') },
+                    { key: 'activities', label: t('student_portal.activities') },
+                    { key: 'attendance', label: t('student_portal.attendance') },
+                    { key: 'final_grade', label: t('student_portal.final_grade') },
+                    { key: 'state', label: t('common.status') },
                 ]" :rows="allGrades.map((grade) => ({
                     id: grade.subject.id,
                     subject_name: grade.subject.name,
@@ -370,7 +376,7 @@ const handleOpenSummary = async () => {
                     activities: grade.activities ?? '-',
                     attendance: grade.attendance ?? '-',
                     final_grade: grade.final_grade ?? '-',
-                    state: grade.state?.label ?? 'Pending',
+                    state: grade.state?.label ?? t('common.pending'),
                 }))" />
             </div>
         </div>

@@ -9,10 +9,13 @@ function valueFromPath(source, path) {
 export function useTranslations() {
     const page = usePage();
 
-    const t = (key, fallback = null) => {
+    const t = (key, fallback = null, replacements = {}) => {
         const value = valueFromPath(page.props.i18n?.messages ?? {}, key);
 
-        return value ?? fallback ?? key;
+        return Object.entries(replacements).reduce(
+            (text, [name, replacement]) => String(text).replaceAll(`:${name}`, replacement),
+            value ?? fallback ?? key
+        );
     };
 
     return {

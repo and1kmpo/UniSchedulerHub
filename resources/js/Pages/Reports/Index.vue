@@ -10,6 +10,7 @@ import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import TableSearch from "@/Components/UI/Table/TableSearch.vue";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 const props = defineProps({
     reports: {
@@ -20,6 +21,7 @@ const props = defineProps({
 
 const search = ref("");
 const selectedCategory = ref("");
+const { t } = useTranslations();
 
 const categoryOptions = computed(() => {
     const categories = [...new Set(props.reports.map((report) => report.category).filter(Boolean))];
@@ -53,49 +55,49 @@ function resetFilters() {
 
 <template>
     <CrudPageLayout
-        title="Reports"
-        subtitle="Select an academic report to analyze, export or print operational data"
+        :title="t('reports_index.title')"
+        :subtitle="t('reports_index.subtitle')"
     >
         <CrudContainer>
             <SectionCard class="mb-6">
                 <div class="space-y-5 p-5">
                     <ContextHelp
-                        title="How to use the report bank"
-                        description="Use reports for detailed analysis, exports and print-ready evidence. Dashboards show operational status; reports answer specific institutional questions."
+                        :title="t('reports_index.help_title')"
+                        :description="t('reports_index.help_description')"
                         icon="fa-solid fa-compass"
                     />
 
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-ink dark:text-white">
-                                Report Bank
+                                {{ t("reports_index.bank_title") }}
                             </h2>
                             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Search by operational goal, category, actor or report name.
+                                {{ t("reports_index.bank_description") }}
                             </p>
                         </div>
 
                         <span class="inline-flex w-fit items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-200">
                             <i class="fa-solid fa-chart-line" />
-                            {{ reports.length }} reports available
+                            {{ t("reports_index.available", null, { count: reports.length }) }}
                         </span>
                     </div>
 
                     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-end">
                         <div>
                             <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-200">
-                                Search
+                                {{ t("common.search") }}
                             </label>
                             <TableSearch
                                 v-model="search"
-                                placeholder="Search reports..."
+                                :placeholder="t('reports_index.search_placeholder')"
                             />
                         </div>
 
                         <BaseSelect
                             v-model="selectedCategory"
-                            label="Category"
-                            placeholder="All categories"
+                            :label="t('common.category')"
+                            :placeholder="t('reports_index.all_categories')"
                             :options="categoryOptions"
                         />
 
@@ -106,7 +108,7 @@ function resetFilters() {
                             @click="resetFilters"
                         >
                             <i class="fa-solid fa-rotate-left mr-2" />
-                            Reset
+                            {{ t("common.reset") }}
                         </BaseButton>
                     </div>
                 </div>
@@ -141,7 +143,7 @@ function resetFilters() {
                                 :href="route(report.route)"
                             >
                                 <i class="fa-solid fa-arrow-right mr-2" />
-                                Open report
+                                {{ t("reports_index.open_report") }}
                             </BaseButton>
                         </div>
                     </div>
@@ -150,8 +152,8 @@ function resetFilters() {
 
             <EmptyState
                 v-if="filteredReports.length === 0"
-                title="No reports found"
-                description="Adjust the search or category filters to find an available academic report."
+                :title="t('reports_index.empty_title')"
+                :description="t('reports_index.empty_description')"
                 icon="fa-solid fa-file-circle-question"
             />
         </CrudContainer>
