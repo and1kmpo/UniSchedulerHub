@@ -6,6 +6,7 @@ use App\Models\AcademicPeriod;
 use App\Models\AcademicPeriodStatus;
 use App\Models\AcademicAuditLog;
 use App\Models\ClassGroup;
+use App\Models\Classroom;
 use App\Models\ClassSchedule;
 use App\Models\Curriculum;
 use App\Models\Grade;
@@ -286,6 +287,64 @@ class AcademicFlowTest extends TestCase
             'created_by' => $this->admin->id,
             'updated_by' => $this->admin->id,
         ]);
+    }
+
+    public function test_full_academic_flow_exposes_schedule_enrollment_to_admin_student_and_professor_portals(): void
+    {
+        [$student, $subject, $group] = $this->academicFixture();
+        $classroom = Classroom::factory()->create([
+            'name' => 'Lab 201',
+        ]);
+
+        $group->schedules()->first()->update([
+            'classroom_id' => $classroom->id,
+            'day' => 'monday',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->enroll($student, $group);
+
+        $adminResponse = $this->actingAs($this->admin)
+            ->get(route('class-groups.show', $group))
+            ->assertOk();
+
+        $adminGroup = $adminResponse->viewData('page')['props']['classGroup'];
+        $this->assertSame($group->id, $adminGroup['id']);
+        $this->assertSame($subject->name, $adminGroup['subject']['name']);
+        $this->assertSame('Lab 201', $adminGroup['schedules'][0]['classroom']);
+        $this->assertSame('monday', $adminGroup['schedules'][0]['day']);
+        $this->assertSame($student->id, $adminGroup['students'][0]['id']);
+
+        $this->flushSession();
+
+        $studentResponse = $this->actingAs($student->user)
+            ->get(route('student.subjects'))
+            ->assertOk();
+
+        $studentSubject = collect($studentResponse->viewData('page')['props']['subjects'])
+            ->firstWhere('id', $subject->id);
+
+        $this->assertNotNull($studentSubject);
+        $this->assertSame($this->professor->name, $studentSubject['professor_name']);
+        $this->assertSame($group->code, $studentSubject['group']);
+        $this->assertSame('Lab 201', $studentSubject['schedules'][0]['classroom']);
+        $this->assertSame('monday', $studentSubject['schedules'][0]['day']);
+
+        $this->flushSession();
+
+        $professorResponse = $this->actingAs($this->professor)
+            ->get(route('professor.subjects'))
+            ->assertOk();
+
+        $professorGroup = collect($professorResponse->viewData('page')['props']['groups'])
+            ->firstWhere('id', $group->id);
+
+        $this->assertNotNull($professorGroup);
+        $this->assertSame($subject->id, $professorGroup['subject']['id']);
+        $this->assertSame('Lab 201', $professorGroup['schedules'][0]['classroom']);
+        $this->assertSame($enrollment->id, $professorGroup['subject_enrollments'][0]['id']);
+        $this->assertSame($student->id, $professorGroup['subject_enrollments'][0]['student']['id']);
     }
 
     public function test_grade_endpoint_rejects_values_outside_allowed_ranges(): void
