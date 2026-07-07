@@ -15,11 +15,11 @@ defineProps({
 
             <div>
 
-                <p class="text-sm text-gray-500">
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                     Academic Period
                 </p>
 
-                <h3 class="mt-1 text-lg font-semibold">
+                <h3 class="mt-1 text-lg font-semibold text-ink dark:text-white">
                     {{ period.name }}
                 </h3>
 
@@ -38,3 +38,4 @@ defineProps({
     </SectionCard>
 
 </template>
+

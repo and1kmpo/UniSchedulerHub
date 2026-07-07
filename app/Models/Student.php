@@ -84,6 +84,11 @@ class Student extends Model
         return $this->enrollments();
     }
 
+    public function academicRequests()
+    {
+        return $this->hasMany(AcademicRequest::class);
+    }
+
     public function curriculum()
     {
         return $this->belongsTo(Curriculum::class)->withTrashed();

@@ -134,31 +134,31 @@ const destroy = async (classroom) => {
         <CrudContainer>
             <div class="mb-6 grid gap-4 md:grid-cols-3">
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Total Classrooms
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{ classrooms.total }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Active On Page
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{ activeCount }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Capacity On Page
                     </p>
 
-                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                    <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                         {{ totalCapacity }}
                     </h3>
                 </SectionCard>
@@ -196,11 +196,11 @@ const destroy = async (classroom) => {
                 sortable>
                 <template #cell-building="{ row }">
                     <div>
-                        <p class="font-medium text-gray-900 dark:text-white">
+                        <p class="font-medium text-ink dark:text-white">
                             {{ row.building?.name || "Unassigned" }}
                         </p>
 
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <p class="text-xs text-slate-500 dark:text-zinc-400">
                             {{ row.building?.code || "No code" }}
                         </p>
                     </div>
@@ -217,7 +217,7 @@ const destroy = async (classroom) => {
                         </Link>
 
                         <Link :href="route('classrooms.edit', row.id)">
-                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit classroom" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen-to-square" label="Edit classroom" color="brand" />
                         </Link>
 
                         <Link :href="route('classrooms.schedule', row.id)">
@@ -243,3 +243,5 @@ const destroy = async (classroom) => {
         </CrudContainer>
     </CrudPageLayout>
 </template>
+
+

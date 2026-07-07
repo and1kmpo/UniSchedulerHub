@@ -28,11 +28,11 @@ defineProps({
 
                 <div>
 
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 class="text-2xl font-bold text-ink dark:text-white">
                         {{ title }}
                     </h1>
 
-                    <p v-if="subtitle" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p v-if="subtitle" class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                         {{ subtitle }}
                     </p>
 
@@ -50,7 +50,7 @@ defineProps({
 
             <div class="mx-auto max-w-5xl">
 
-                <div class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+                <div class="overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
 
                     <slot />
 

@@ -7,26 +7,26 @@ defineProps({
 
 <template>
 
-    <button type="button" class="w-full rounded-xl border p-4 text-left transition" :class="selected
-        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
-        : 'border-gray-200 hover:border-indigo-300 dark:border-gray-700'
+    <button type="button" class="w-full rounded-lg border p-4 text-left transition-colors duration-200" :class="selected
+        ? 'border-brand-600 bg-brand-50 dark:bg-brand-500/10'
+        : 'border-border-light bg-surface hover:border-brand-300 hover:bg-brand-50/40 dark:border-border-dark dark:bg-dark-bg dark:hover:border-brand-500 dark:hover:bg-brand-500/10'
         ">
 
         <div class="flex items-center justify-between">
 
             <div>
 
-                <h4 class="font-semibold">
+                <h4 class="font-semibold text-ink dark:text-white">
                     {{ student.name }}
                 </h4>
 
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
                     {{ student.document }}
                 </p>
 
             </div>
 
-            <div v-if="selected" class="text-indigo-600">
+            <div v-if="selected" class="text-brand-600">
                 <i class="fa-solid fa-check" />
             </div>
 
@@ -35,3 +35,4 @@ defineProps({
     </button>
 
 </template>
+

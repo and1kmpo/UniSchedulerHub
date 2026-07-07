@@ -18,6 +18,7 @@ import InfoGrid from "@/Components/UI/Show/InfoGrid.vue";
 import InfoItem from "@/Components/UI/Show/InfoItem.vue";
 import StatsGrid from "@/Components/UI/Show/StatsGrid.vue";
 import RelatedSection from "@/Components/UI/Show/RelatedSection.vue";
+import { formatDate } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     building: {
@@ -77,10 +78,10 @@ const rows = computed(() =>
 
                 <StatCard title="Code" :value="building.code" icon="fa-solid fa-barcode" />
 
-                <StatCard title="Created" :value="new Date(building.created_at).toLocaleDateString()"
+                <StatCard title="Created" :value="formatDate(building.created_at)"
                     icon="fa-solid fa-calendar-days" />
 
-                <StatCard title="Updated" :value="new Date(building.updated_at).toLocaleDateString()"
+                <StatCard title="Updated" :value="formatDate(building.updated_at)"
                     icon="fa-solid fa-clock" />
 
             </StatsGrid>

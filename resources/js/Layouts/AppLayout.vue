@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
-import ApplicationMark from "@/Components/ApplicationMark.vue";
+import ApplicationCompactMark from "@/Components/ApplicationCompactMark.vue";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 defineProps({
     title: {
@@ -12,19 +13,93 @@ defineProps({
 
 // Acceso a la página actual de Inertia
 const page = usePage();
+const { t } = useTranslations();
 
 const darkMode = ref(false);
-const showingMenu = ref(false);
-const userDropdownOpen = ref(null);
-const dropdownOpen = ref(null);
+const sidebarOpen = ref(false);
+const userDropdownOpen = ref(false);
+const notificationDropdownOpen = ref(false);
 
-const userRole = computed(() => {
-    return page.props.auth?.user?.roles?.[0]?.name || null;
-});
+const iconMap = {
+    Insights: "fa-solid fa-chart-line",
+    Core: "fa-solid fa-layer-group",
+    Sync: "fa-solid fa-calendar-check",
+    Rooms: "fa-solid fa-door-open",
+    Admin: "fa-solid fa-shield-halved",
+    Teaching: "fa-solid fa-chalkboard-user",
+    "Student Flow": "fa-solid fa-route",
+    Account: "fa-solid fa-user-gear",
+    Dashboard: "fa-solid fa-gauge-high",
+    Reports: "fa-solid fa-file-lines",
+    "Audit Logs": "fa-solid fa-clock-rotate-left",
+    Programs: "fa-solid fa-diagram-project",
+    Subjects: "fa-solid fa-book-open",
+    Professors: "fa-solid fa-chalkboard-user",
+    Students: "fa-solid fa-user-graduate",
+    "Class Groups": "fa-solid fa-users-rectangle",
+    "Enrollment Management": "fa-solid fa-user-plus",
+    "Academic Requests": "fa-solid fa-inbox",
+    "Academic Periods": "fa-solid fa-calendar-days",
+    Buildings: "fa-solid fa-building",
+    Classrooms: "fa-solid fa-door-closed",
+    "Identity & Access": "fa-solid fa-users-gear",
+    "My Subjects": "fa-solid fa-book",
+    "My Schedule": "fa-solid fa-calendar-week",
+    "Academic Record": "fa-solid fa-scroll",
+    "Group Enrollments": "fa-solid fa-list-check",
+    "Subject Enrollment": "fa-solid fa-clipboard-list",
+    Profile: "fa-solid fa-id-card",
+};
+
+const navGroups = computed(() => page.props.navigation?.main ?? []);
+const currentLocale = computed(() => page.props.i18n?.locale ?? "en");
+const supportedLocales = computed(() => page.props.i18n?.supported ?? []);
+const activePeriod = computed(() => page.props.academicContext?.activePeriod ?? null);
+const notifications = computed(() => page.props.notifications?.items ?? []);
+const notificationCount = computed(() => page.props.notifications?.unread_count ?? notifications.value.length);
+const userRoles = computed(() => page.props.user?.roles ?? []);
+const canManagePeriods = computed(() => userRoles.value.includes("admin") || userRoles.value.includes("academic_coordinator"));
+
+const severityClasses = {
+    danger: "border-danger/20 bg-danger/10 text-danger",
+    warning: "border-warning/30 bg-warning/10 text-warning",
+    info: "border-brand-600/20 bg-brand-600/10 text-brand-600 dark:text-brand-300",
+};
+
+const severityIconClasses = {
+    danger: "bg-danger/10 text-danger",
+    warning: "bg-warning/10 text-warning",
+    info: "bg-brand-600/10 text-brand-600 dark:text-brand-300",
+};
+
+const notificationStyle = (severity) => severityClasses[severity] ?? severityClasses.info;
+const notificationIconStyle = (severity) => severityIconClasses[severity] ?? severityIconClasses.info;
+
+const isRouteActive = (routeName) => {
+    if (!routeName) return false;
+
+    try {
+        return route().current(routeName);
+    } catch {
+        return false;
+    }
+};
 
 const logout = () => {
     router.post(route("logout"));
 };
+
+function switchLocale(locale) {
+    if (locale === currentLocale.value) return;
+
+    router.post(
+        route("locale.update"),
+        { locale },
+        {
+            preserveScroll: true,
+        }
+    );
+}
 
 function toggleDarkMode() {
     darkMode.value = !darkMode.value;
@@ -41,13 +116,11 @@ function updateDarkClass() {
     }
 }
 
-function toggleDropdown(id) {
-    dropdownOpen.value = dropdownOpen.value === id ? null : id;
-}
-
 function handleClickOutside(event) {
     const dropdown = document.getElementById("user-dropdown");
     const avatarBtn = document.getElementById("avatar-button");
+    const notificationDropdown = document.getElementById("notification-dropdown");
+    const notificationButton = document.getElementById("notification-button");
 
     if (
         userDropdownOpen.value &&
@@ -60,12 +133,15 @@ function handleClickOutside(event) {
     }
 
     if (
-        dropdownOpen.value &&
-        !event.target.closest(".dropdown-toggle") &&
-        !event.target.closest(".dropdown-menu")
+        notificationDropdownOpen.value &&
+        notificationDropdown &&
+        notificationButton &&
+        !notificationDropdown.contains(event.target) &&
+        !notificationButton.contains(event.target)
     ) {
-        dropdownOpen.value = null;
+        notificationDropdownOpen.value = false;
     }
+
 }
 
 onMounted(() => {
@@ -86,344 +162,284 @@ onBeforeUnmount(() => {
 
 
 <template>
-    <div>
-
+    <div class="min-h-screen bg-slate-50 text-ink dark:bg-dark-bg dark:text-zinc-100">
         <Head :title="$props.title" />
 
-        <nav class="bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700 relative z-50">
-            <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-                <Link href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
-                    <ApplicationMark class="h-9 w-9" />
-                    <span class="hidden text-sm font-bold text-slate-900 dark:text-white sm:block">
-                        UniSchedulerHub
-                    </span>
-                </Link>
+        <transition name="fade">
+            <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/50 lg:hidden" @click="sidebarOpen = false" />
+        </transition>
 
-                <div class="flex items-center md:order-2 space-x-3 rtl:space-x-reverse relative">
+        <aside
+            :class="[
+                'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border-light bg-surface text-ink transition-transform duration-200 dark:border-border-dark dark:bg-dark-bg dark:text-white lg:translate-x-0',
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+            ]"
+        >
+            <div class="flex h-20 items-center gap-3 border-b border-border-light px-5 dark:border-border-dark">
+                <ApplicationCompactMark class="h-11 w-11 shrink-0" />
+                <div class="min-w-0">
+                    <Link href="/" class="block text-lg font-bold leading-none tracking-tight text-ink dark:text-white" @click="sidebarOpen = false">
+                        TARRAYA
+                    </Link>
+                    <p class="mt-2 font-mono text-[9px] uppercase leading-3 tracking-wider text-slate-500">
+                        {{ t("layout.brand_descriptor") }}
+                    </p>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto px-3 py-4">
+                <div v-for="group in navGroups" :key="group.label" class="mb-5">
+                    <div class="mb-2 flex items-center gap-2 px-3">
+                        <i :class="[iconMap[group.label] || 'fa-solid fa-circle-nodes', 'w-4 text-xs text-slate-500']" />
+                        <p
+                            class="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+                            :title="t(`nav_help.${group.label}`, '')"
+                        >
+                            {{ group.display_label || group.label }}
+                        </p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <Link
+                            v-for="child in group.children || [group]"
+                            :key="child.route ?? child.label"
+                            :href="child.route ? route(child.route) : '#'"
+                            :title="t(`nav_help.${child.label}`, '')"
+                            :class="[
+                                'group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition',
+                                isRouteActive(child.route)
+                                    ? 'border-brand-600 bg-brand-600/10 text-brand-700 dark:text-white'
+                                    : 'border-transparent text-slate-500 hover:border-brand-600/60 hover:bg-brand-600/10 hover:text-brand-700 dark:text-slate-400 dark:hover:text-white',
+                            ]"
+                            @click="sidebarOpen = false"
+                        >
+                            <i :class="[iconMap[child.label] || iconMap[group.label] || 'fa-regular fa-circle', 'w-4 text-sm']" />
+                            <span>{{ child.display_label || child.label }}</span>
+                        </Link>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <div class="lg:pl-64">
+            <header class="sticky top-0 z-30 border-b border-border-light bg-surface/95 backdrop-blur dark:border-border-dark dark:bg-dark-bg/95">
+                <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
                     <button
-                        @click="toggleDarkMode"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-blue-600 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                        :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10 lg:hidden"
+                        @click="sidebarOpen = true"
                     >
-                        <i :class="[
-                            darkMode ? 'fas fa-moon' : 'fas fa-sun',
-                            'transition-transform ease-in-out duration-300',
-                        ]"></i>
+                        <i class="fa-solid fa-bars" />
+                        <span class="sr-only">{{ t("layout.open_navigation") }}</span>
                     </button>
 
-                    <button id="avatar-button" @click="userDropdownOpen = !userDropdownOpen" type="button"
-                        class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
-                        <img class="w-8 h-8 rounded-full object-cover" :src="page.props.auth.user.profile_photo_url"
-                            :alt="page.props.auth.user.name" />
-                    </button>
+                    <div class="hidden min-w-0 flex-1 md:block">
+                        <label class="relative block max-w-md">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                                <i class="fa-solid fa-magnifying-glass text-xs" />
+                            </span>
+                            <input
+                                type="search"
+                                disabled
+                                :placeholder="t('layout.global_search_disabled')"
+                                :title="t('layout.global_search_title')"
+                                class="w-full cursor-not-allowed rounded-lg border border-border-light bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-500 outline-none transition placeholder:text-slate-400 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-500 dark:placeholder:text-zinc-600"
+                            />
+                        </label>
+                    </div>
 
-                    <transition name="fade">
-                        <div v-show="userDropdownOpen" id="user-dropdown"
-                            class="absolute right-0 top-12 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600 min-w-[12rem]">
-                            <div class="px-4 py-3">
-                                <span class="block text-sm text-gray-900 dark:text-white">{{ page.props.auth.user.name
-                                    }}</span>
-                                <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{
-                                    page.props.auth.user.email }}</span>
-                            </div>
-                            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
-                                <li>
-                                    <Link :href="route('profile.show')"
-                                        class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                    Profile
-                                    </Link>
-                                </li>
-                                <li>
-                                    <button @click="logout"
-                                        class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                        Sign out
-                                    </button>
-                                </li>
-                            </ul>
+                    <div class="ml-auto flex items-center gap-2">
+                        <div class="relative">
+                            <button
+                                id="notification-button"
+                                type="button"
+                                class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
+                                :aria-label="t('layout.notifications')"
+                                @click="notificationDropdownOpen = !notificationDropdownOpen"
+                            >
+                                <i class="fa-regular fa-bell" />
+                                <span
+                                    v-if="notificationCount > 0"
+                                    class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold text-ink ring-2 ring-surface dark:ring-dark-bg"
+                                >
+                                    {{ notificationCount > 9 ? "9+" : notificationCount }}
+                                </span>
+                            </button>
+
+                            <transition name="fade">
+                                <div
+                                    v-show="notificationDropdownOpen"
+                                    id="notification-dropdown"
+                                    class="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark sm:w-96"
+                                >
+                                    <div class="border-b border-border-light px-4 py-3 dark:border-border-dark">
+                                        <p class="text-sm font-semibold text-ink dark:text-white">{{ t("layout.operational_notifications") }}</p>
+                                        <p class="mt-1 font-mono text-[11px] text-slate-500 dark:text-zinc-400">
+                                            {{ t("layout.academic_network_signals") }}
+                                        </p>
+                                    </div>
+
+                                    <div v-if="notifications.length" class="max-h-96 overflow-y-auto p-2">
+                                        <Link
+                                            v-for="notification in notifications"
+                                            :key="notification.id"
+                                            :href="notification.route ? route(notification.route) : '#'"
+                                            class="flex gap-3 rounded-lg border border-transparent p-3 transition hover:border-brand-600/20 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+                                            @click="notificationDropdownOpen = false"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                                                    notificationIconStyle(notification.severity),
+                                                ]"
+                                            >
+                                                <i :class="[notification.icon, 'text-sm']" />
+                                            </span>
+                                            <span class="min-w-0">
+                                                <span
+                                                    :class="[
+                                                        'inline-flex rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
+                                                        notificationStyle(notification.severity),
+                                                    ]"
+                                                >
+                                                    {{ notification.severity }}
+                                                </span>
+                                                <span class="mt-1 block text-sm font-semibold text-ink dark:text-white">
+                                                    {{ notification.title }}
+                                                </span>
+                                                <span class="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                                                    {{ notification.description }}
+                                                </span>
+                                            </span>
+                                        </Link>
+                                    </div>
+
+                                    <div v-else class="px-4 py-8 text-center">
+                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600/10 text-brand-600 dark:text-brand-300">
+                                            <i class="fa-solid fa-check" />
+                                        </div>
+                                        <p class="mt-3 text-sm font-semibold text-ink dark:text-white">{{ t("layout.network_synchronized") }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                                            {{ t("layout.no_operational_alerts") }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </transition>
                         </div>
-                    </transition>
 
-                    <button @click="showingMenu = !showingMenu" type="button"
-                        class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-transform hover:rotate-90">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M1 1h15M1 7h15M1 13h15" />
-                        </svg>
-                    </button>
-
-                </div>
-
-                <div class="hidden lg:block w-full lg:w-auto lg:order-1">
-                    <ul
-                        class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-                        <li v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
-                            <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
-                        </li>
-
-                        <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
-                            <li>
-                                <Link :href="route('programs.index')" class="nav-link">Programs</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('professors.index')" class="nav-link">Professors</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('students.index')" class="nav-link">Students</Link>
-                            </li>
-
-                            <li>
-                                <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
-                            </li>
-                            <li v-if="userRole === 'admin'">
-                                <Link :href="route('users.index')" class="nav-link">Admin</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
-                            </li>
-                        </template>
-
-                        <template v-if="userRole === 'professor'">
-                            <li>
-                                <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
-                                Enrollments</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                            </li>
-                        </template>
-
-                        <template v-if="userRole === 'student'">
-                            <li>
-                                <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
-                                Enrollment</Link>
-                            </li>
-                            <li>
-                                <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                            </li>
-                        </template>
-
-                    </ul>
-                </div>
-
-                <transition name="fade">
-                    <div v-if="showingMenu" @click="showingMenu = false"
-                        class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
-                </transition>
-
-                <transition name="slide">
-                    <div v-if="showingMenu"
-                        class="lg:hidden fixed top-0 right-0 z-50 w-64 h-full bg-white dark:bg-gray-800 shadow-lg p-6 overflow-y-auto">
-
-                        <button @click="showingMenu = false"
-                            class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none text-3xl z-50">
-                            &times;
+                        <button
+                            @click="toggleDarkMode"
+                            type="button"
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
+                            :aria-label="darkMode ? t('layout.switch_to_light') : t('layout.switch_to_dark')"
+                        >
+                            <i :class="darkMode ? 'fas fa-moon' : 'fas fa-sun'" />
                         </button>
 
+                        <div class="hidden items-center rounded-lg border border-border-light bg-surface p-1 dark:border-border-dark dark:bg-surface-dark sm:flex">
+                            <button
+                                v-for="localeOption in supportedLocales"
+                                :key="localeOption.code"
+                                type="button"
+                                :title="t('language.switch_to')"
+                                :class="[
+                                    'rounded-md px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition',
+                                    currentLocale === localeOption.code
+                                        ? 'bg-brand-600 text-white'
+                                        : 'text-slate-500 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-white',
+                                ]"
+                                @click="switchLocale(localeOption.code)"
+                            >
+                                {{ localeOption.code }}
+                            </button>
+                        </div>
 
-                        <ul class="space-y-4 mt-10">
-                            <template v-if="['admin', 'academic_coordinator', 'professor'].includes(userRole)">
-                                <li>
-                                    <Link :href="route('dashboard')" class="nav-link">Dashboard</Link>
-                                </li>
-                            </template>
+                        <Link
+                            v-if="activePeriod && canManagePeriods"
+                            :href="route('academic-periods.index')"
+                            class="hidden h-10 items-center gap-2 rounded-lg border border-border-light bg-surface px-3 font-mono text-xs font-medium text-slate-600 transition hover:border-brand-600 hover:text-brand-600 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300 dark:hover:border-brand-500 dark:hover:text-brand-300 sm:inline-flex"
+                        >
+                            <i class="fa-solid fa-calendar-days text-brand-600 dark:text-brand-300" />
+                            <span>{{ activePeriod.name }}</span>
+                            <span class="rounded-full bg-brand-600/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-600 dark:text-brand-300">
+                                {{ activePeriod.status_label || activePeriod.status }}
+                            </span>
+                        </Link>
 
-                            <template v-if="userRole === 'admin' || userRole === 'academic_coordinator'">
-                                <li>
-                                    <Link :href="route('programs.index')" class="nav-link">Programs</Link>
-                                </li>
+                        <div
+                            v-else-if="activePeriod"
+                            class="hidden h-10 items-center gap-2 rounded-lg border border-border-light bg-surface px-3 font-mono text-xs font-medium text-slate-600 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300 sm:inline-flex"
+                        >
+                            <i class="fa-solid fa-calendar-days text-brand-600 dark:text-brand-300" />
+                            <span>{{ activePeriod.name }}</span>
+                        </div>
 
-                                <li>
-                                    <Link :href="route('professors.index')" class="nav-link">Professors</Link>
-                                </li>
+                        <Link
+                            v-else-if="canManagePeriods"
+                            :href="route('academic-periods.index')"
+                            class="hidden h-10 items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 font-mono text-xs font-medium text-warning transition hover:border-warning sm:inline-flex"
+                        >
+                            <i class="fa-solid fa-calendar-xmark" />
+                            {{ t("layout.no_active_period") }}
+                        </Link>
 
-                                <li>
-                                    <Link :href="route('students.index')" class="nav-link">Students</Link>
-                                </li>
+                        <div class="relative">
+                            <button
+                                id="avatar-button"
+                                @click="userDropdownOpen = !userDropdownOpen"
+                                type="button"
+                                class="flex rounded-full border border-border-light bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:bg-surface-dark"
+                            >
+                                <img class="h-9 w-9 rounded-full object-cover" :src="page.props.auth.user.profile_photo_url" :alt="page.props.auth.user.name" />
+                            </button>
 
-                                <li>
-                                    <Link :href="route('subjects.index')" class="nav-link">Subjects</Link>
-                                </li>
-                                <li v-if="userRole === 'admin'">
-                                    <Link :href="route('users.index')" class="nav-link">Admin</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('class-groups.index')" class="nav-link">Class Groups</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Enrollment Management</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('buildings.index')" class="nav-link">Buildings</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('classrooms.index')" class="nav-link">Classrooms</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('academic-periods.index')" class="nav-link">Academic Periods
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('academic-audit-logs.index')" class="nav-link">Audit Logs</Link>
-                                </li>
-                            </template>
-
-                            <template v-if="userRole === 'professor'">
-                                <li>
-                                    <Link :href="route('professor.subjects')" class="nav-link">My Subjects</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('admin.group-enrollments.index')" class="nav-link">Group
-                                    Enrollments</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                                </li>
-                            </template>
-
-                            <template v-if="userRole === 'student'">
-                                <li>
-                                    <Link :href="route('student.subjects')" class="nav-link">My Subjects</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('student.subject-enrollment.index')" class="nav-link">Subject
-                                    Enrollment</Link>
-                                </li>
-                                <li>
-                                    <Link :href="route('profile.show')" class="nav-link">Profile</Link>
-                                </li>
-                            </template>
-                        </ul>
+                            <transition name="fade">
+                                <div v-show="userDropdownOpen" id="user-dropdown"
+                                    class="absolute right-0 top-12 z-50 min-w-[13rem] list-none divide-y divide-slate-100 rounded-lg border border-border-light bg-surface text-base dark:divide-border-dark dark:border-border-dark dark:bg-surface-dark">
+                                    <div class="px-4 py-3">
+                                        <span class="block text-sm font-medium text-ink dark:text-white">{{ page.props.auth.user.name }}</span>
+                                        <span class="block truncate text-sm text-slate-500 dark:text-zinc-400">{{ page.props.auth.user.email }}</span>
+                                    </div>
+                                    <ul class="py-2 text-sm text-slate-700 dark:text-zinc-200">
+                                        <li>
+                                            <Link :href="route('profile.show')" class="block px-4 py-2 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
+                                                {{ t("layout.profile") }}
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <button @click="logout" class="block w-full px-4 py-2 text-left hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
+                                                {{ t("layout.sign_out") }}
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </transition>
+                        </div>
                     </div>
-                </transition>
-            </div>
-        </nav>
+                </div>
+            </header>
 
-        <header class="bg-white shadow dark:bg-gray-800">
-            <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-                <slot name="header"></slot>
-            </div>
-        </header>
+            <section v-if="$slots.header" class="border-b border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
+                <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+                    <slot name="header" />
+                </div>
+            </section>
 
-        <main>
-            <slot />
-        </main>
+            <main>
+                <slot />
+            </main>
+        </div>
     </div>
 </template>
 
 <style scoped>
-body {
-    transition: background-color 1s ease, color 1s ease;
-}
-
-.nav-link {
-    @apply block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent;
-}
-
-/* Haciendo que el dropdown flote por encima de otros elementos */
-/* Para asegurarse de que el submenú no mueva otros elementos */
-.dropdown-menu {
-    @apply mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 9999;
-    visibility: hidden;
-    /* Inicialmente oculto */
-    opacity: 0;
-    transition: visibility 0.3s, opacity 0.3s ease-in-out;
-    /* Agregar transición para la visibilidad */
-}
-
-/* Cuando el dropdown está abierto */
-.dropdown-menu.show {
-    visibility: visible;
-    opacity: 1;
-}
-
-.dropdown-item {
-    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white;
-}
-
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
-}
-
-.slide-enter-active {
-    transition: transform 0.3s ease-out;
-}
-
-.slide-enter-from {
-    transform: translateX(100%);
-}
-
-.slide-leave-active {
-    transition: transform 0.3s ease-in;
-}
-
-.slide-leave-to {
-    transform: translateX(100%);
-}
-
-.dropdown-fade-enter-active,
-.dropdown-fade-leave-active {
-    transition: all 0.2s ease;
-}
-
-.dropdown-fade-enter-from,
-.dropdown-fade-leave-to {
-    opacity: 0;
-    transform: translateY(0.5rem);
-    /* hacia abajo */
-}
-
-@media (min-width: 768px) and (max-width: 1050px) {
-    .dropdown-toggle svg {
-        margin-left: 0.25rem;
-        flex-shrink: 0;
-    }
-
-    .dropdown-toggle {
-        gap: 0.25rem;
-        white-space: nowrap;
-    }
-}
-
-@media (min-width: 768px) and (max-width: 1024px) {
-    .nav-link {
-        font-size: 0.875rem;
-        /* reduce tamaño fuente */
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
 }
 </style>

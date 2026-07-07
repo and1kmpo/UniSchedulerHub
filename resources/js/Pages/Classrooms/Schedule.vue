@@ -1,47 +1,91 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue'
+import { Link } from "@inertiajs/vue3";
+import { route } from "ziggy-js";
+
+import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
+import CrudContainer from "@/Layouts/CrudContainerLayout.vue";
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import DataTable from "@/Components/UI/Table/DataTable.vue";
+import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
+import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
+import { formatTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
-    classroom: Object
-})
+    classroom: {
+        type: Object,
+        required: true,
+    },
+});
 
+const columns = [
+    { key: "day", label: "Day" },
+    { key: "time", label: "Time" },
+    { key: "class_group", label: "Class Group" },
+    { key: "subject", label: "Subject" },
+    { key: "professor", label: "Professor" },
+    { key: "status", label: "Status" },
+];
 
+const rows = props.classroom.schedules.map((schedule) => ({
+    id: schedule.id,
+    day: schedule.day,
+    time: `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}`,
+    class_group: schedule.class_group?.name || schedule.class_group?.code || "Unassigned",
+    subject: schedule.class_group?.subject?.name || "Unassigned",
+    professor: schedule.class_group?.professor?.name || "Unassigned",
+    status: schedule.status || "published",
+}));
 </script>
 
 <template>
-    <AppLayout>
-        <template #header>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Schedule for {{ classroom.name }}
-            </h1>
+    <CrudPageLayout
+        :title="`Classroom Schedule - ${classroom.name}`"
+        subtitle="Review classroom occupancy by class group, subject and professor"
+    >
+        <template #actions>
+            <Link :href="route('classrooms.index')">
+                <BaseButton variant="secondary">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Classrooms
+                </BaseButton>
+            </Link>
         </template>
 
-        <div class="p-6 bg-white dark:bg-gray-900 rounded shadow">
-            <table class="min-w-full text-sm text-center">
-                <thead>
-                    <tr
-                        class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase text-xs tracking-wider">
-                        <th class="px-4 py-3">Day</th>
-                        <th class="px-4 py-3">Start</th>
-                        <th class="px-4 py-3">End</th>
-                        <th class="px-4 py-3">Class Group</th>
-                        <th class="px-4 py-3">Subject</th>
-                        <th class="px-4 py-3">Professor</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr v-for="sched in classroom.schedules" :key="sched.id"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                        <td class="px-4 py-3 capitalize">{{ sched.day }}</td>
-                        <td class="px-4 py-3">{{ sched.start_time }}</td>
-                        <td class="px-4 py-3">{{ sched.end_time }}</td>
-                        <td class="px-4 py-3">{{ sched.class_group?.name || '—' }}</td>
-                        <td class="px-4 py-3">{{ sched.class_group?.subject?.name || '—' }}</td>
-                        <td class="px-4 py-3">{{ sched.class_group?.professor?.name || '—' }}</td>
-                    </tr>
-                </tbody>
+        <CrudContainer>
+            <DataTable v-if="rows.length" :columns="columns" :rows="rows">
+                <template #cell-day="{ value }">
+                    <span class="font-medium capitalize text-ink dark:text-white">
+                        {{ value }}
+                    </span>
+                </template>
 
-            </table>
-        </div>
-    </AppLayout>
+                <template #cell-time="{ value }">
+                    <span class="font-mono text-sm text-slate-700 dark:text-zinc-300">
+                        {{ value }}
+                    </span>
+                </template>
+
+                <template #cell-class_group="{ value }">
+                    <span class="font-medium text-ink dark:text-white">
+                        {{ value }}
+                    </span>
+                </template>
+
+                <template #cell-status="{ value }">
+                    <StatusBadge
+                        :label="value"
+                        :variant="value === 'published' ? 'success' : value === 'draft' ? 'warning' : 'gray'"
+                    />
+                </template>
+            </DataTable>
+
+            <EmptyState
+                v-else
+                title="No scheduled blocks"
+                description="This classroom does not have assigned class schedules yet."
+                icon="fa-solid fa-calendar-days"
+            />
+        </CrudContainer>
+    </CrudPageLayout>
 </template>
+

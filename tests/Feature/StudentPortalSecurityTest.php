@@ -101,6 +101,22 @@ class StudentPortalSecurityTest extends TestCase
         $this->assertNotSame($firstStudent->id, $secondStudent->id);
     }
 
+    public function test_student_schedule_only_contains_authenticated_student_active_schedules(): void
+    {
+        [$firstStudent, $firstSubject] = $this->studentWithEnrollment('Computer Networks');
+        [$secondStudent, $secondSubject] = $this->studentWithEnrollment('Artificial Intelligence');
+
+        $response = $this->actingAs($firstStudent->user)
+            ->get(route('student.schedule'))
+            ->assertOk();
+
+        $schedules = collect($response->viewData('page')['props']['currentSchedules']);
+
+        $this->assertTrue($schedules->contains(fn($schedule) => $schedule['subject']['id'] === $firstSubject->id));
+        $this->assertFalse($schedules->contains(fn($schedule) => $schedule['subject']['id'] === $secondSubject->id));
+        $this->assertNotSame($firstStudent->id, $secondStudent->id);
+    }
+
     public function test_student_grade_summary_only_contains_authenticated_student_grades(): void
     {
         [$firstStudent, $firstSubject, $firstEnrollment] = $this->studentWithEnrollment('Software Testing');
@@ -116,6 +132,27 @@ class StudentPortalSecurityTest extends TestCase
 
         $this->assertTrue($grades->contains(fn($grade) => $grade['subject']['id'] === $firstSubject->id));
         $this->assertFalse($grades->contains(fn($grade) => $grade['subject']['id'] === $secondSubject->id));
+        $this->assertNotSame($firstStudent->id, $secondStudent->id);
+    }
+
+    public function test_student_academic_record_only_contains_authenticated_student_history(): void
+    {
+        [$firstStudent, $firstSubject, $firstEnrollment] = $this->studentWithEnrollment('Distributed Systems');
+        [$secondStudent, $secondSubject, $secondEnrollment] = $this->studentWithEnrollment('Compiler Design');
+        $this->grade($firstEnrollment, 4.1);
+        $this->grade($secondEnrollment, 3.7);
+
+        $response = $this->actingAs($firstStudent->user)
+            ->get(route('student.academic-record'))
+            ->assertOk();
+
+        $record = $response->viewData('page')['props']['record'];
+        $courses = collect($record['periods'])
+            ->flatMap(fn($period) => $period['courses']);
+
+        $this->assertTrue($courses->contains(fn($course) => $course['subject_code'] === $firstSubject->code));
+        $this->assertFalse($courses->contains(fn($course) => $course['subject_code'] === $secondSubject->code));
+        $this->assertSame(3, $record['summary']['approved_credits']);
         $this->assertNotSame($firstStudent->id, $secondStudent->id);
     }
 

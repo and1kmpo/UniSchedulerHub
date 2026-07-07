@@ -30,10 +30,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('professor.subjects');
         } elseif ($user->hasRole('student')) {
             return redirect()->route('student.subjects');
-        } elseif ($user->hasRole('admin')) {
-            return redirect()->route('dashboard'); // o lo que tengas para admin
+        } elseif ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
+            return redirect()->route('dashboard');
         } else {
-            return redirect('/'); // fallback
+            return redirect('/');
         }
     }
 

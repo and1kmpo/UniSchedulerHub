@@ -24,9 +24,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::middleware(['auth:sanctum', 'role:admin|academic_coordinator'])->group(function () {
-    Route::apiResource('students', StudentApiController::class);
-    Route::apiResource('professors', ProfessorApiController::class);
-    Route::apiResource('subjects', SubjectApiController::class);
+    Route::apiResource('students', StudentApiController::class)->names('api.students');
+    Route::apiResource('professors', ProfessorApiController::class)->names('api.professors');
+    Route::apiResource('subjects', SubjectApiController::class)->names('api.subjects');
 
     Route::get('reports/student-assignments', [StudentAssignmentReportController::class, 'index'])
         ->name('api.reports.student-assignments.index');

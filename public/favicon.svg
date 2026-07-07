@@ -1,6 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="128" fill="#0F172A"/>
-  <rect x="116" y="116" width="180" height="180" rx="42" stroke="#38BDF8" stroke-width="44" stroke-linejoin="round"/>
-  <rect x="216" y="216" width="180" height="180" rx="42" stroke="#22C55E" stroke-width="44" stroke-linejoin="round"/>
-  <path d="M170 360H360" stroke="#F8FAFC" stroke-width="44" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="TARRAYA">
+  <!-- TARRAYA Official Favicon Module (Micro-scale Optimization) -->
+  <g id="favicon-core">
+    <!-- El Escudo Central se expande para ocupar el área visible -->
+    <circle cx="50" cy="50" r="48" fill="#0F172A" />
+    <circle cx="50" cy="50" r="41" fill="#2563EB" />
+
+    <!-- La letra T con trazos gruesos corregidos para alineación perfecta a 16px/32px -->
+    <path d="M 23 25
+             H 77
+             V 40
+             H 58
+             V 82
+             H 42
+             V 40
+             H 23
+             Z"
+          fill="#FFFFFF" />
+  </g>
 </svg>

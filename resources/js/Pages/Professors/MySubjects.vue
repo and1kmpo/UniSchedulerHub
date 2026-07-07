@@ -11,6 +11,7 @@ import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import StatCard from "@/Components/UI/Feedback/StatCard.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import { formatTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     groups: {
@@ -43,18 +44,20 @@ const columns = [
     { key: "code", label: "Group" },
     { key: "schedule_summary", label: "Schedule" },
     { key: "modality_summary", label: "Mode" },
-    { key: "capacity_summary", label: "Capacity" },
+    { key: "students_summary", label: "Students" },
+    { key: "grade_summary", label: "Grades" },
     { key: "status", label: "Status" },
 ];
 
 const rows = computed(() =>
     props.groups.map((group) => ({
         id: group.id,
-        subject: group.subject?.name ?? "N/A",
+        subject: `${group.subject?.code ?? "N/A"} - ${group.subject?.name ?? "N/A"}`,
         code: group.code ?? group.name,
         schedule_summary: formatSchedules(group.schedules),
-        modality_summary: `${group.modality ?? "TBD"} · ${group.shift ?? "TBD"}`,
-        capacity_summary: `${group.subject_enrollments_count}/${group.capacity}`,
+        modality_summary: `${formatLabel(group.modality)} / ${formatLabel(group.shift)}`,
+        students_summary: `${group.subject_enrollments_count}/${group.capacity}`,
+        grade_summary: formatGradeProgress(group.subject_enrollments),
         status: group.status,
         source: group,
     }))
@@ -68,6 +71,10 @@ function formatStatus(status) {
     return status ? status.replaceAll("_", " ").toUpperCase() : "PENDING";
 }
 
+function formatLabel(value) {
+    return value ? value.replaceAll("_", " ").toUpperCase() : "TBD";
+}
+
 function formatSchedules(schedules = []) {
     if (!schedules.length) {
         return "Pending";
@@ -75,11 +82,25 @@ function formatSchedules(schedules = []) {
 
     return schedules
         .map((schedule) => {
-            const room = schedule.classroom ? ` - ${schedule.classroom}` : "";
+            const room = (schedule.classroom_location || schedule.classroom)
+                ? ` - ${schedule.classroom_location || schedule.classroom}`
+                : "";
 
-            return `${formatDay(schedule.day)} ${schedule.start_time}-${schedule.end_time}${room}`;
+            return `${formatDay(schedule.day)} ${formatTime(schedule.start_time)}-${formatTime(schedule.end_time)}${room}`;
         })
         .join("; ");
+}
+
+function formatGradeProgress(enrollments = []) {
+    if (!enrollments.length) {
+        return "No students";
+    }
+
+    const graded = enrollments.filter((enrollment) =>
+        enrollment.grade?.final_grade !== null && enrollment.grade?.final_grade !== undefined
+    ).length;
+
+    return `${graded}/${enrollments.length} graded`;
 }
 
 const groupStatusVariant = (status) => ({
@@ -100,17 +121,17 @@ const groupStatusVariant = (status) => ({
                 <section class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <StatCard title="Assigned Groups" :value="summary.groups" icon="fa-solid fa-users-rectangle" />
                     <StatCard title="Active Students" :value="summary.students" icon="fa-solid fa-user-graduate" />
-                    <StatCard title="Subject Credits" :value="summary.credits" icon="fa-solid fa-layer-group" />
+                    <StatCard title="Credits Assigned" :value="summary.credits" icon="fa-solid fa-layer-group" />
                 </section>
 
                 <SectionCard>
                     <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 class="text-lg font-semibold text-ink dark:text-white">
                                 Current Academic Period
                             </h2>
 
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                                 {{ period?.name ?? "No active academic period" }}
                             </p>
                         </div>
@@ -121,26 +142,38 @@ const groupStatusVariant = (status) => ({
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Assigned Class Groups
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Groups, schedules, roster access and grading access for the active period.
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                            Teaching groups, schedules, enrolled students and grade entry for the active period.
                         </p>
                     </div>
 
                     <div class="p-6">
                         <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                             <template #cell-schedule_summary="{ value }">
-                                <span class="block max-w-md whitespace-normal text-sm text-gray-700 dark:text-gray-300">
+                                <span class="block max-w-md whitespace-normal text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
 
                             <template #cell-modality_summary="{ value }">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                <span class="text-sm text-slate-700 dark:text-zinc-300">
+                                    {{ value }}
+                                </span>
+                            </template>
+
+                            <template #cell-students_summary="{ value }">
+                                <span class="font-medium text-ink dark:text-white">
+                                    {{ value }}
+                                </span>
+                            </template>
+
+                            <template #cell-grade_summary="{ value }">
+                                <span class="text-sm text-slate-700 dark:text-zinc-300">
                                     {{ value }}
                                 </span>
                             </template>
@@ -158,16 +191,16 @@ const groupStatusVariant = (status) => ({
                                         </BaseButton>
                                     </Link>
 
-                                    <Link v-if="row.source.can_manage_grades" :href="route('groups.grades.index', row.id)">
-                                        <BaseButton size="sm" variant="primary">
+                                    <Link v-if="row.source.can_view_grades" :href="route('groups.grades.index', row.id)">
+                                        <BaseButton size="sm" :variant="row.source.can_edit_grades ? 'primary' : 'secondary'">
                                             <i class="fa-solid fa-clipboard-list mr-2" />
-                                            Grades
+                                            {{ row.source.can_edit_grades ? "Grades" : "View Grades" }}
                                         </BaseButton>
                                     </Link>
 
                                     <BaseButton v-else size="sm" variant="secondary" disabled>
                                         <i class="fa-solid fa-lock mr-2" />
-                                        Grades Locked
+                                        Grades Unavailable
                                     </BaseButton>
                                 </div>
                             </template>
@@ -185,3 +218,5 @@ const groupStatusVariant = (status) => ({
 
     </CrudPageLayout>
 </template>
+
+

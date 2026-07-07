@@ -57,7 +57,7 @@ class ClassroomController extends Controller
     {
         $validated = $request->validate([
             'building_id' => ['required', 'exists:buildings,id'],
-            'floor' => ['required', 'integer', 'min:0'],
+            'floor' => ['required', 'integer', 'min:-5'],
         ]);
 
         $building = Building::findOrFail($validated['building_id']);

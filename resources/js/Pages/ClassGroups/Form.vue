@@ -115,7 +115,7 @@ const removeSchedule = (index) => {
 </script>
 
 <template>
-    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
         <FormSection :title="updating ? 'Update Class Group' : 'Create Class Group'" :description="updating
             ? 'Update academic group information.'
             : 'Create a group with its initial schedule block.'
@@ -140,34 +140,34 @@ const removeSchedule = (index) => {
                     required />
             </FormGrid>
 
-            <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="mt-6 rounded-lg border border-border-light bg-slate-50 p-4 text-sm dark:border-border-dark dark:bg-zinc-950">
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div>
-                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                        <p class="text-xs font-medium uppercase text-slate-500 dark:text-zinc-400">
                             Code preview
                         </p>
 
-                        <p class="mt-1 font-mono font-semibold text-indigo-700 dark:text-indigo-300">
+                        <p class="mt-1 font-mono font-semibold text-brand dark:text-brand">
                             {{ generatedCodePreview }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                        <p class="text-xs font-medium uppercase text-slate-500 dark:text-zinc-400">
                             Semester
                         </p>
 
-                        <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                        <p class="mt-1 font-semibold text-ink dark:text-white">
                             {{ generatedSemester }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+                        <p class="text-xs font-medium uppercase text-slate-500 dark:text-zinc-400">
                             Group code
                         </p>
 
-                        <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                        <p class="mt-1 font-semibold text-ink dark:text-white">
                             Assigned automatically
                         </p>
                     </div>
@@ -179,7 +179,7 @@ const removeSchedule = (index) => {
             description="Add the first schedule blocks for this group. More detailed scheduling can be handled later from the scheduler.">
             <div class="space-y-4">
                 <div v-for="(schedule, index) in form.schedules" :key="index"
-                    class="grid gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700 md:grid-cols-[1fr_1fr_1fr_auto]">
+                    class="grid gap-4 rounded-lg border border-border-light p-4 dark:border-border-dark md:grid-cols-[1fr_1fr_1fr_auto]">
                     <BaseSelect v-model="schedule.day" label="Day" :options="dayOptions"
                         :error="form.errors[`schedules.${index}.day`]" required />
 
@@ -221,3 +221,6 @@ const removeSchedule = (index) => {
         </FormActions>
     </form>
 </template>
+
+
+

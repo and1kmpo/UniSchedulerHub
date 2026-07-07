@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Subject;
 use App\Models\SubjectEnrollmentStatus;
 use App\Models\User;
-use App\Models\Program;
+use App\Services\AcademicAuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -21,7 +22,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $query = User::with(['professor', 'student', 'roles']);
-    
+
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
@@ -29,17 +30,63 @@ class UserController extends Controller
                   ->orWhere('email', 'LIKE', "%$search%");
             });
         }
-    
+
+        if ($request->filled('role')) {
+            $query->whereHas('roles', fn($roles) => $roles->where('name', $request->role));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc') === 'desc' ? 'desc' : 'asc';
+        $sortable = ['name', 'email', 'status', 'created_at'];
+
+        if (! in_array($sort, $sortable, true)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
         $users = $query->paginate(10);
-    
+
         if ($request->wantsJson()) {
             return response()->json([
                 'users' => $users
             ]);
         }
-    
+
         return inertia('Users/Index', [
-            'users' => $users
+            'users' => $users,
+            'filters' => $request->only(['search', 'role', 'status', 'sort', 'direction']),
+            'roles' => Role::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($role) => [
+                    'label' => str($role->name)->replace('_', ' ')->title()->toString(),
+                    'value' => $role->name,
+                ])
+                ->values(),
+            'identityRoleOptions' => collect($this->identityRoles())
+                ->map(fn($role) => [
+                    'label' => str($role)->replace('_', ' ')->title()->toString(),
+                    'value' => $role,
+                ])
+                ->values(),
+            'statusOptions' => [
+                ['label' => 'Active', 'value' => User::STATUS_ACTIVE],
+                ['label' => 'Inactive', 'value' => User::STATUS_INACTIVE],
+            ],
+            'metrics' => [
+                'users' => User::count(),
+                'active' => User::where('status', User::STATUS_ACTIVE)->count(),
+                'inactive' => User::where('status', User::STATUS_INACTIVE)->count(),
+                'roles' => Role::count(),
+                'academicProfiles' => User::whereHas('student')
+                    ->orWhereHas('professor')
+                    ->count(),
+            ],
         ]);
     }
     
@@ -65,13 +112,7 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'role' => 'required|in:professor,student,admin',
-                'document' => 'required|string|unique:students,document|unique:professors,document',
-                'phone' => 'required|string|min:7|max:15',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:50',
-                'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
-                'program_id' => 'nullable|required_if:role,student|exists:programs,id',
+                'role' => ['required', Rule::in($this->identityRoles())],
             ]);
 
             // Crear el usuario
@@ -79,29 +120,11 @@ class UserController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => bcrypt('123'),
+                'status' => User::STATUS_ACTIVE,
             ]);
 
             // Asignar rol al usuario
             $user->assignRole($validated['role']);
-
-            // Crear el registro correspondiente dependiendo del rol
-            if ($validated['role'] === 'professor') {
-                $user->professor()->create([
-                    'document' => $validated['document'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'city' => $validated['city'],
-                ]);
-            } elseif ($validated['role'] === 'student') {
-                $user->student()->create([
-                    'document' => $validated['document'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'city' => $validated['city'],
-                    'semester' => $validated['semester'],
-                    'program_id' => $validated['program_id'],
-                ]);
-            }
 
             // Si todo está bien, se hace commit de la transacción
             DB::commit();
@@ -139,59 +162,38 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
+            $user = User::with(['professor', 'student', 'roles'])->findOrFail($id);
+            $academicRole = $this->academicProfileRole($user);
+
+            if ($academicRole && $request->input('role') !== $academicRole) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'This user has academic history. Deactivate the account instead of changing its academic role.',
+                ], 422);
+            }
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'role' => 'required|in:professor,student,admin',
-                'document' => [
+                'role' => [
                     'required',
-                    'string',
-                    Rule::unique('students', 'document')->ignore($id, 'user_id'),
-                    Rule::unique('professors', 'document')->ignore($id, 'user_id'),
+                    Rule::in($academicRole ? [$academicRole] : $this->identityRoles()),
                 ],
-                'phone' => 'required|string|min:7|max:15',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:50',
-                'semester' => 'nullable|required_if:role,student|integer|min:1|max:10',
-                'program_id' => 'nullable|required_if:role,student|exists:programs,id',
             ]);
 
-            $user = User::findOrFail($id);
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
             ]);
-            $user->syncRoles($validated['role']);
 
-            if ($validated['role'] === 'professor') {
-                $user->professor()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'document' => $validated['document'],
-                        'phone' => $validated['phone'],
-                        'address' => $validated['address'],
-                        'city' => $validated['city'],
-                    ]
-                );
-                $user->student()->delete();
-            } elseif ($validated['role'] === 'student') {
-                $user->student()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'document' => $validated['document'],
-                        'phone' => $validated['phone'],
-                        'address' => $validated['address'],
-                        'city' => $validated['city'],
-                        'semester' => $validated['semester'],
-                        'program_id' => $validated['program_id'],
-                    ]
-                );
-                $user->professor()->delete();
+            if (! $academicRole) {
+                $user->syncRoles($validated['role']);
             }
 
             DB::commit();
 
-            // Retornar el usuario actualizado con relaciones necesarias
+            // Return the updated user with the relationships needed by the UI.
             return response()->json(
                 User::with(['roles:id,name', 'professor', 'student'])->find($user->id),
                 200
@@ -214,10 +216,17 @@ class UserController extends Controller
         DB::beginTransaction(); // Inicia la transacción
 
         try {
-            // Encontrar al usuario
             $user = User::findOrFail($id);
 
-            User::destroy($id);
+            if ($this->hasAcademicHistory($user)) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'This user has academic history. Deactivate the account instead of deleting it.',
+                ], 422);
+            }
+
+            $user->delete();
 
             // Si todo está bien, se hace commit de la transacción
             DB::commit();
@@ -264,6 +273,38 @@ class UserController extends Controller
             DB::rollBack();
             return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function resetTemporaryPassword(User $user, AcademicAuditService $audit)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json([
+                'message' => 'You cannot reset your own password from this action. Use your profile security settings instead.',
+            ], 422);
+        }
+
+        $temporaryPassword = $this->generateTemporaryPassword();
+
+        $user->forceFill([
+            'password' => Hash::make($temporaryPassword),
+        ])->save();
+
+        $audit->record(
+            'identity.password_reset',
+            $user,
+            [
+                'target_user_id' => $user->id,
+                'target_user_email' => $user->email,
+                'target_user_roles' => $user->roles()->pluck('name')->values()->all(),
+                'temporary_password_issued' => true,
+            ],
+            "Temporary password issued for {$user->email}."
+        );
+
+        return response()->json([
+            'message' => 'Temporary password generated successfully. Share it through an institutional channel and ask the user to change it after login.',
+            'temporary_password' => $temporaryPassword,
+        ]);
     }
 
     public function getUserAssignments(Request $request)
@@ -327,5 +368,53 @@ class UserController extends Controller
         }
 
         return response()->json(['error' => 'Role not supported'], 403);
+    }
+
+    private function academicProfileRole(User $user): ?string
+    {
+        $user->loadMissing(['student', 'professor']);
+
+        if ($user->student) {
+            return 'student';
+        }
+
+        if ($user->professor) {
+            return 'professor';
+        }
+
+        return null;
+    }
+
+    private function hasAcademicHistory(User $user): bool
+    {
+        $user->loadMissing(['student', 'professor']);
+
+        if ($user->student) {
+            return $user->student->enrollments()->exists()
+                || $user->student->enrollmentGrades()->exists();
+        }
+
+        if ($user->professor) {
+            return $user->professor->classGroups()->exists()
+                || $user->professor->grades()->exists();
+        }
+
+        return false;
+    }
+
+    private function identityRoles(): array
+    {
+        return ['admin', 'academic_coordinator'];
+    }
+
+    private function generateTemporaryPassword(): string
+    {
+        return implode('', [
+            Str::random(4),
+            random_int(10, 99),
+            '!',
+            Str::upper(Str::random(2)),
+            Str::lower(Str::random(4)),
+        ]);
     }
 }

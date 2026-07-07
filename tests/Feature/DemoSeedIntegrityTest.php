@@ -22,15 +22,15 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertDemoUser('admin@unischedulerhub.test', 'admin');
-        $this->assertDemoUser('coordinator@unischedulerhub.test', 'academic_coordinator');
-        $this->assertDemoUser('professor@unischedulerhub.test', 'professor');
-        $this->assertDemoUser('professor.math@unischedulerhub.test', 'professor');
-        $this->assertDemoUser('student@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.enrolled@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.probation@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.suspended@unischedulerhub.test', 'student');
-        $this->assertDemoUser('student.graded@unischedulerhub.test', 'student');
+        $this->assertDemoUser('admin@tarraya.test', 'admin');
+        $this->assertDemoUser('coordinator@tarraya.test', 'academic_coordinator');
+        $this->assertDemoUser('professor@tarraya.test', 'professor');
+        $this->assertDemoUser('professor.math@tarraya.test', 'professor');
+        $this->assertDemoUser('student@tarraya.test', 'student');
+        $this->assertDemoUser('student.enrolled@tarraya.test', 'student');
+        $this->assertDemoUser('student.probation@tarraya.test', 'student');
+        $this->assertDemoUser('student.suspended@tarraya.test', 'student');
+        $this->assertDemoUser('student.graded@tarraya.test', 'student');
 
         $this->assertSame(1, AcademicPeriod::where('is_active', true)->count());
         $this->assertGreaterThanOrEqual(5, Subject::count());
@@ -47,7 +47,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $admin = User::where('email', 'admin@unischedulerhub.test')->firstOrFail();
+        $admin = User::where('email', 'admin@tarraya.test')->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('dashboard'))
@@ -58,7 +58,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $professor = User::where('email', 'professor@unischedulerhub.test')->firstOrFail();
+        $professor = User::where('email', 'professor@tarraya.test')->firstOrFail();
 
         $this->actingAs($professor)
             ->get(route('professor.subjects'))
@@ -69,7 +69,7 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $student = User::where('email', 'student@unischedulerhub.test')->firstOrFail();
+        $student = User::where('email', 'student@tarraya.test')->firstOrFail();
 
         $this->actingAs($student)
             ->get(route('student.subject-enrollment.index'))
@@ -80,8 +80,8 @@ class DemoSeedIntegrityTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $coordinator = User::where('email', 'coordinator@unischedulerhub.test')->firstOrFail();
-        $student = User::where('email', 'student@unischedulerhub.test')->firstOrFail();
+        $coordinator = User::where('email', 'coordinator@tarraya.test')->firstOrFail();
+        $student = User::where('email', 'student@tarraya.test')->firstOrFail();
         $subject = Subject::where('code', 'SWE101')->firstOrFail();
 
         $this->actingAs($coordinator)
@@ -94,6 +94,200 @@ class DemoSeedIntegrityTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.student_id', $student->student->id)
             ->assertJsonCount(2, 'data');
+    }
+
+    public function test_seeded_demo_users_can_open_operational_role_workspaces(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::where('email', 'admin@tarraya.test')->firstOrFail();
+        $professor = User::where('email', 'professor@tarraya.test')->firstOrFail();
+        $student = User::where('email', 'student.enrolled@tarraya.test')->firstOrFail();
+
+        $adminResponse = $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk();
+
+        $adminProps = $adminResponse->viewData('page')['props'];
+
+        $this->assertSame('academic', $adminProps['dashboardType']);
+        $this->assertGreaterThan(0, $adminProps['academicDashboard']['metrics']['published_groups']);
+        $this->assertGreaterThan(0, $adminProps['academicDashboard']['capacity']['total_capacity']);
+        $this->assertNotEmpty($adminProps['academicDashboard']['charts']['capacity_by_group']);
+
+        $reportsIndexResponse = $this->actingAs($admin)
+            ->get(route('reports.index'))
+            ->assertOk();
+
+        $reportsIndexProps = $reportsIndexResponse->viewData('page')['props'];
+
+        $this->assertCount(6, $reportsIndexProps['reports']);
+
+        $reportResponse = $this->actingAs($admin)
+            ->get(route('reports.student-assignments.index'))
+            ->assertOk();
+
+        $reportProps = $reportResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $reportProps['summary']['students']);
+        $this->assertNotEmpty($reportProps['students']['data']);
+
+        $csvResponse = $this->actingAs($admin)
+            ->get(route('reports.student-assignments.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $csv = $csvResponse->streamedContent();
+
+        $this->assertStringContainsString('Student document', $csv);
+        $this->assertStringContainsString('Subject code', $csv);
+        $this->assertStringContainsString('Professor', $csv);
+
+        $professorLoadResponse = $this->actingAs($admin)
+            ->get(route('reports.professor-load.index'))
+            ->assertOk();
+
+        $professorLoadProps = $professorLoadResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $professorLoadProps['summary']['professors']);
+        $this->assertGreaterThan(0, $professorLoadProps['summary']['groups']);
+        $this->assertNotEmpty($professorLoadProps['professors']['data']);
+
+        $professorLoadCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.professor-load.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $professorLoadCsv = $professorLoadCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Professor document', $professorLoadCsv);
+        $this->assertStringContainsString('Pending grades', $professorLoadCsv);
+
+        $classroomOccupancyResponse = $this->actingAs($admin)
+            ->get(route('reports.classroom-occupancy.index'))
+            ->assertOk();
+
+        $classroomOccupancyProps = $classroomOccupancyResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $classroomOccupancyProps['summary']['classrooms']);
+        $this->assertGreaterThan(0, $classroomOccupancyProps['summary']['scheduled_blocks']);
+        $this->assertNotEmpty($classroomOccupancyProps['classrooms']['data']);
+
+        $classroomOccupancyCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.classroom-occupancy.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $classroomOccupancyCsv = $classroomOccupancyCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Classroom capacity', $classroomOccupancyCsv);
+        $this->assertStringContainsString('Seat utilization %', $classroomOccupancyCsv);
+
+        $groupCapacityResponse = $this->actingAs($admin)
+            ->get(route('reports.group-capacity-conflicts.index'))
+            ->assertOk();
+
+        $groupCapacityProps = $groupCapacityResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $groupCapacityProps['summary']['groups']);
+        $this->assertGreaterThan(0, $groupCapacityProps['summary']['total_capacity']);
+        $this->assertNotEmpty($groupCapacityProps['groups']['data']);
+
+        $groupCapacityCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.group-capacity-conflicts.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $groupCapacityCsv = $groupCapacityCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Class group', $groupCapacityCsv);
+        $this->assertStringContainsString('Utilization %', $groupCapacityCsv);
+        $this->assertStringContainsString('Alerts', $groupCapacityCsv);
+
+        $gradeOperationsResponse = $this->actingAs($admin)
+            ->get(route('reports.grade-operations.index'))
+            ->assertOk();
+
+        $gradeOperationsProps = $gradeOperationsResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $gradeOperationsProps['summary']['groups']);
+        $this->assertArrayHasKey('pending_grades', $gradeOperationsProps['summary']);
+        $this->assertNotEmpty($gradeOperationsProps['groups']['data']);
+
+        $gradeOperationsCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.grade-operations.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $gradeOperationsCsv = $gradeOperationsCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Grade progress %', $gradeOperationsCsv);
+        $this->assertStringContainsString('Grade editing', $gradeOperationsCsv);
+        $this->assertStringContainsString('Lock reason', $gradeOperationsCsv);
+
+        $academicEventsResponse = $this->actingAs($admin)
+            ->get(route('reports.academic-events.index'))
+            ->assertOk();
+
+        $academicEventsProps = $academicEventsResponse->viewData('page')['props'];
+
+        $this->assertArrayHasKey('events', $academicEventsProps['summary']);
+        $this->assertArrayHasKey('actors', $academicEventsProps['summary']);
+        $this->assertNotEmpty($academicEventsProps['events']['data']);
+
+        $academicEventsCsvResponse = $this->actingAs($admin)
+            ->get(route('reports.academic-events.export'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $academicEventsCsv = $academicEventsCsvResponse->streamedContent();
+
+        $this->assertStringContainsString('Event type', $academicEventsCsv);
+        $this->assertStringContainsString('Actor email', $academicEventsCsv);
+        $this->assertStringContainsString('Context', $academicEventsCsv);
+
+        $this->flushSession();
+
+        $professorResponse = $this->actingAs($professor)
+            ->get(route('professor.subjects'))
+            ->assertOk();
+
+        $professorProps = $professorResponse->viewData('page')['props'];
+
+        $this->assertSame('ready', $professorProps['systemState']);
+        $this->assertGreaterThan(0, $professorProps['summary']['groups']);
+        $this->assertNotEmpty($professorProps['groups']);
+
+        $professorScheduleResponse = $this->actingAs($professor)
+            ->get(route('professor.schedule'))
+            ->assertOk();
+
+        $professorScheduleProps = $professorScheduleResponse->viewData('page')['props'];
+
+        $this->assertNotEmpty($professorScheduleProps['currentSchedules']);
+        $this->assertGreaterThan(0, $professorScheduleProps['summary']['blocks']);
+
+        $this->flushSession();
+
+        $studentResponse = $this->actingAs($student)
+            ->get(route('student.subjects'))
+            ->assertOk();
+
+        $studentProps = $studentResponse->viewData('page')['props'];
+
+        $this->assertGreaterThan(0, $studentProps['summary']['active_subjects']);
+        $this->assertGreaterThanOrEqual(7, $studentProps['summary']['current_credits']);
+        $this->assertNotEmpty($studentProps['subjects']);
+        $this->assertNotNull($studentProps['currentPeriod']);
+
+        $scheduleResponse = $this->actingAs($student)
+            ->get(route('student.schedule'))
+            ->assertOk();
+
+        $scheduleProps = $scheduleResponse->viewData('page')['props'];
+
+        $this->assertNotEmpty($scheduleProps['currentSchedules']);
+        $this->assertSame($studentProps['currentPeriod']['id'], $scheduleProps['currentPeriod']['id']);
     }
 
     private function assertDemoUser(string $email, string $role): void

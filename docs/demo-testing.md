@@ -1,6 +1,6 @@
 # Demo Testing Guide
 
-This guide explains how to validate UniSchedulerHub after installing it from scratch. It is meant for demos, interviews, QA passes, and functional reviews.
+This guide explains how to validate TARRAYA after installing it from scratch. It is meant for demos, interviews, QA passes, and functional reviews.
 
 ## 1. Fresh Setup
 
@@ -9,6 +9,8 @@ Run:
 ```bash
 composer install
 npm install
+cp .env.example .env
+php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan check:seed-integrity
 npm run dev
@@ -31,15 +33,15 @@ password
 
 | Role | Email | Purpose |
 | --- | --- | --- |
-| Admin | `admin@unischedulerhub.test` | Full system and academic administration. |
-| Academic Coordinator | `coordinator@unischedulerhub.test` | Academic operations without security administration. |
-| Professor | `professor@unischedulerhub.test` | Assigned software engineering groups and grading demo. |
-| Professor | `professor.math@unischedulerhub.test` | Assigned math/general education groups. |
-| Student | `student@unischedulerhub.test` | Open enrollment scenario. |
-| Student | `student.enrolled@unischedulerhub.test` | Already enrolled scenario. |
-| Student | `student.probation@unischedulerhub.test` | Probation academic load scenario. |
-| Student | `student.suspended@unischedulerhub.test` | Blocked enrollment scenario. |
-| Student | `student.graded@unischedulerhub.test` | Historical grades scenario. |
+| Admin | `admin@tarraya.test` | Full system and academic administration. |
+| Academic Coordinator | `coordinator@tarraya.test` | Academic operations without security administration. |
+| Professor | `professor@tarraya.test` | Assigned software engineering groups and grading demo. |
+| Professor | `professor.math@tarraya.test` | Assigned math/general education groups. |
+| Student | `student@tarraya.test` | Open enrollment scenario. |
+| Student | `student.enrolled@tarraya.test` | Already enrolled scenario. |
+| Student | `student.probation@tarraya.test` | Probation academic load scenario. |
+| Student | `student.suspended@tarraya.test` | Blocked enrollment scenario. |
+| Student | `student.graded@tarraya.test` | Historical grades scenario. |
 
 ## 3. Demo Data Map
 
@@ -97,7 +99,7 @@ Expected result:
 Login as:
 
 ```text
-admin@unischedulerhub.test
+admin@tarraya.test
 ```
 
 Go to:
@@ -125,7 +127,7 @@ The system should validate:
 Login as:
 
 ```text
-coordinator@unischedulerhub.test
+coordinator@tarraya.test
 ```
 
 Validate:
@@ -144,7 +146,7 @@ The system should validate:
 Login as:
 
 ```text
-student@unischedulerhub.test
+student@tarraya.test
 ```
 
 Go to:
@@ -178,7 +180,7 @@ The system should validate:
 Login as:
 
 ```text
-student.enrolled@unischedulerhub.test
+student.enrolled@tarraya.test
 ```
 
 Go to:
@@ -204,7 +206,7 @@ The system should validate:
 Login as:
 
 ```text
-student@unischedulerhub.test
+student@tarraya.test
 ```
 
 Find the small-capacity demo group:
@@ -229,7 +231,7 @@ The system should validate:
 Login as:
 
 ```text
-student.enrolled@unischedulerhub.test
+student.enrolled@tarraya.test
 ```
 
 Validate:
@@ -249,7 +251,7 @@ The system should validate:
 Login as:
 
 ```text
-student.suspended@unischedulerhub.test
+student.suspended@tarraya.test
 ```
 
 Go to:
@@ -274,7 +276,7 @@ The system should validate:
 Login as:
 
 ```text
-professor@unischedulerhub.test
+professor@tarraya.test
 ```
 
 Go to:
@@ -301,7 +303,7 @@ The system should validate:
 Login as:
 
 ```text
-professor@unischedulerhub.test
+professor@tarraya.test
 ```
 
 Use the grading demo period/group.
@@ -324,7 +326,7 @@ The system should validate:
 Login as:
 
 ```text
-student.graded@unischedulerhub.test
+student.graded@tarraya.test
 ```
 
 Go to:
@@ -413,4 +415,4 @@ At the end of the demo, the system should prove:
 - Professors see and manage only their assigned academic workload.
 - Grades and academic history are preserved.
 - Dashboards and reports use real academic data.
-- REST API exists and supports the core challenge requirements.
+- REST API exists and supports the core academic product requirements.

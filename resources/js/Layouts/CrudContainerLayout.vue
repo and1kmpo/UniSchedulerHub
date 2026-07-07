@@ -7,7 +7,7 @@ defineProps({
 
     shadow: {
         type: Boolean,
-        default: true,
+        default: false,
     },
 
     bordered: {
@@ -19,16 +19,16 @@ defineProps({
 
 <template>
     <div :class="[
-        'overflow-hidden rounded-2xl bg-white transition-all duration-300 dark:bg-gray-800',
+        'overflow-hidden rounded-xl bg-surface transition duration-200 dark:bg-surface-dark',
 
         padded ? 'p-4 sm:p-6' : '',
 
         shadow
-            ? 'shadow-sm hover:shadow-md'
+            ? 'shadow-sm'
             : '',
 
         bordered
-            ? 'border border-gray-200 dark:border-gray-700'
+            ? 'border border-border-light dark:border-border-dark'
             : '',
     ]">
         <slot />

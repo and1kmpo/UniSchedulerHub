@@ -1,6 +1,6 @@
 # Production Readiness Checklist
 
-This checklist is for preparing UniSchedulerHub for a demo deploy, interview presentation, or controlled pilot environment.
+This checklist is for preparing TARRAYA for a demo deploy, interview presentation, or controlled pilot environment.
 
 ## Environment
 
@@ -10,6 +10,7 @@ Required production values:
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.example
+APP_TIMEZONE=America/Bogota
 ```
 
 Validate:
@@ -19,6 +20,10 @@ Validate:
 - `.env.example` documents required variables without secrets.
 - Database credentials use a non-root database user.
 - `LOG_LEVEL` is appropriate for the environment.
+- `APP_TIMEZONE` matches the institution's operating timezone.
+- User-facing dates render as `04 Jun 2026`.
+- User-facing date-times render as `04 Jun 2026, 11:36 AM`.
+- FullCalendar time-grid labels may keep their own calendar-specific formatting.
 
 ## Build And Cache
 
@@ -39,7 +44,7 @@ After deploy smoke check:
 
 ```bash
 php artisan about
-php artisan check:seed-integrity
+php artisan route:list
 ```
 
 Use `check:seed-integrity` only in demo/seeded environments.
@@ -90,12 +95,56 @@ Validate:
 - `academic_coordinator` can access academic operations, not security administration.
 - `professor` can access teaching workspace only.
 - `student` can access own subjects, enrollment, schedules, and grades only.
+- Role navigation shows only the actions each role can execute.
+- Admin and coordinator navigation is grouped by operational domain instead of one long flat list.
+- Desktop and mobile navigation use the same role-aware menu contract.
 
 Run:
 
 ```bash
 php artisan test tests/Feature/RoleAccessTest.php
 ```
+
+Direct URL access must remain protected. Test at least:
+
+- Student cannot open admin CRUD routes.
+- Student cannot open grade management routes.
+- Professor cannot open reports or student CRUD routes.
+- Academic coordinator cannot open users, roles, or permissions.
+
+UI smoke checklist by role:
+
+- Admin: dashboard, Academics, People, Operations, Campus and Identity & Access are visible.
+- Academic coordinator: Academics, People, Operations and Campus are visible; Identity & Access is hidden and forbidden by direct URL.
+- Professor: dashboard, my subjects, my schedule and group enrollments are visible; reports/admin CRUDs are hidden and forbidden.
+- Student: my subjects, my schedule and subject enrollment are visible; dashboard/reports/admin routes are hidden and forbidden.
+- Menus match on desktop and mobile.
+- Blocked actions show a clear message instead of failing silently.
+
+## Identity And Access Policy
+
+- `/users` remains an admin-only Identity & Access module. It should not replace Students or Professors.
+- Students and Professors are academic/person records: document, contact data, program, semester, academic status and teaching profile.
+- Users are login/security records: email, password, status, roles and permissions.
+- In a production university flow, students and professors should usually be created or imported by an administrator/admissions/HR process, then linked to their academic profile.
+- Public self-registration is disabled for institutional users unless a controlled admissions workflow exists.
+- Coordinators should manage academic data, not global roles or permissions.
+- Admins can create operational users such as academic coordinators and security administrators.
+- Role assignment should be explicit, audited and limited to admins.
+- `/users` uses the standard CRUD table, filters, status badges and modal-based user creation/editing.
+- Roles and permissions are managed by code through `PermissionCatalog` and `RolSeeder`.
+- `/roles` and `/permissions` are read-only admin inspection endpoints; permission mutation is not available from the UI/web routes.
+- Academic coordinators create Students and Professors through their academic CRUDs. Those flows create the linked user account and assign `student` or `professor` automatically.
+- Admins create Academic Coordinators and Admins through Identity & Access.
+- Destructive user deletes should be blocked or converted to deactivation for accounts with academic history.
+
+## Theme And Accessibility Smoke
+
+- Every updated screen must be checked in light and dark mode.
+- Text on dark backgrounds must include a `dark:text-*` class or inherit from a dark-safe parent.
+- White cards, modals and tables must include a dark background equivalent.
+- Legacy Jetstream/shared modal components must remain readable in dark mode.
+- Use color plus text/icon for status, not color alone.
 
 ## Enrollment Engine
 
@@ -121,6 +170,7 @@ Validate:
 
 - API routes require authenticated users.
 - Admin/coordinator can access CRUD APIs.
+- Students, professors, and subjects can be created through REST APIs.
 - Student assignment report works.
 - Available groups API returns professor comparison data.
 - Student self-service API is scoped to the authenticated student.
@@ -143,15 +193,16 @@ Validate:
 - CRUD tables are searchable/filterable/sortable where expected.
 - Main pages work on desktop and mobile.
 - Error states are understandable.
+- Dates and times follow the shared display format.
+- Report print/PDF templates include institutional header, filters, metrics and readable tables.
 
 Known non-blocking warnings:
 
 - Browserslist data may be outdated.
-- Some chunks may be larger than 500 kB.
 
 Future improvement:
 
-- Add manual chunks/code splitting for dashboard/chart-heavy pages.
+- Keep reviewing bundle size when adding charting, calendar, or UI libraries.
 
 ## Demo Verification
 
@@ -159,6 +210,7 @@ Run:
 
 ```bash
 php artisan test tests/Feature/DemoSeedIntegrityTest.php
+php artisan check:seed-integrity
 ```
 
 Then manually follow:
@@ -173,9 +225,11 @@ Demo should prove:
 - Student enrollment flow.
 - Professor assignment flow.
 - Student assignment report.
+- Academic functional scope documented in `docs/functional-scope.md`.
 - Capacity and schedule conflict validation.
 - Role-based access.
 - Dashboards with real data.
+- Reports bank with student assignments, professor load, classroom occupancy, group capacity/conflicts, grade operations, and academic events.
 - REST API support.
 
 ## Monitoring And Logs
@@ -186,6 +240,7 @@ Validate:
 - Log rotation is configured on the server.
 - Scheduler/queue logs are monitored if queues are enabled.
 - Critical academic operations are recorded in `academic_audit_logs`.
+- Academic Events Report shows enrollment, schedule, grade and academic period audit events in seeded demo data.
 
 Recommended:
 
@@ -212,3 +267,11 @@ Ready for demo/pilot when:
 - Seeded demo flow is documented and reproducible.
 - Roles are validated.
 - Database diagram and API docs are available.
+- Branch, commit, PR, and database safety workflow is documented.
+
+Recommended final validation command set:
+
+```bash
+npm run build
+php artisan test tests/Feature/DemoSeedIntegrityTest.php tests/Feature/RoleAccessTest.php tests/Feature/ApiAcademicResourcesTest.php tests/Feature/EnrollmentApiTest.php tests/Feature/AcademicFlowTest.php
+```

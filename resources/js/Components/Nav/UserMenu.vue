@@ -21,16 +21,16 @@ const user = computed(() => page.props.auth.user)
     <Dropdown v-model:showing="showing" align="right" width="48">
         <template #trigger>
             <button v-if="managesProfilePhotos"
-                class="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
+                class="flex rounded-full border-2 border-transparent text-sm transition focus:border-brand focus:outline-none">
                 <img class="h-8 w-8 rounded-full object-cover" :src="user.profile_photo_url" :alt="user.name" />
             </button>
 
             <span v-else class="inline-flex rounded-md">
                 <button type="button" :class="[
-                    'inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition ease-in-out duration-150',
+                    'inline-flex items-center rounded-lg border px-3 py-2 text-sm font-medium leading-4 transition duration-150 ease-in-out',
                     showing
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white'
-                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-200 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        ? 'border-brand bg-brand/10 text-brand dark:border-brand dark:bg-brand/15 dark:text-brand'
+                        : 'border-border-light bg-surface text-slate-600 hover:bg-slate-100 hover:text-ink dark:border-border-dark dark:bg-surface-dark dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white'
                 ]">
                     {{ user.name }}
                     <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -43,12 +43,12 @@ const user = computed(() => page.props.auth.user)
 
         <template #content>
             <!-- Cuenta -->
-            <div class="block px-4 py-2 text-xs text-gray-400">Manage Account</div>
+            <div class="block px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-500">Manage Account</div>
 
             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
             <DropdownLink v-if="hasApiFeatures" :href="route('api-tokens.index')">API Tokens</DropdownLink>
 
-            <div class="border-t border-gray-200 dark:border-gray-600" />
+            <div class="border-t border-border-light dark:border-border-dark" />
 
             <!-- Logout -->
             <form @submit.prevent="logout">

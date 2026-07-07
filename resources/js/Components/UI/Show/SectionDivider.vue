@@ -1,3 +1,3 @@
 <template>
-    <div class="h-px w-full bg-gray-200 dark:bg-gray-800"></div>
+    <div class="h-px w-full bg-border-light dark:bg-border-dark"></div>
 </template>

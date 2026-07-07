@@ -17,7 +17,7 @@ class RoleController extends Controller
         if (request()->wantsJson()) {
             return response()->json($roles);
         }
-        return response()->json($roles, 201);
+        return response()->json($roles);
     }
 
     // Crear un nuevo rol

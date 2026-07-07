@@ -316,6 +316,8 @@ class AcademicFlowTest extends TestCase
         $this->assertSame('monday', $adminGroup['schedules'][0]['day']);
         $this->assertSame($student->id, $adminGroup['students'][0]['id']);
 
+        $this->flushSession();
+
         $studentResponse = $this->actingAs($student->user)
             ->get(route('student.subjects'))
             ->assertOk();
@@ -328,6 +330,8 @@ class AcademicFlowTest extends TestCase
         $this->assertSame($group->code, $studentSubject['group']);
         $this->assertSame('Lab 201', $studentSubject['schedules'][0]['classroom']);
         $this->assertSame('monday', $studentSubject['schedules'][0]['day']);
+
+        $this->flushSession();
 
         $professorResponse = $this->actingAs($this->professor)
             ->get(route('professor.subjects'))

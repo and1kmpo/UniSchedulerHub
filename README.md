@@ -1,8 +1,6 @@
-# UniSchedulerHub
+# TARRAYA
 
-UniSchedulerHub is an academic scheduling and enrollment management system built with Laravel, Inertia, Vue, and Tailwind CSS.
-
-The project started from a junior developer challenge about assigning university subjects to students and professors, and has evolved into a broader academic operations platform.
+TARRAYA is an academic operating system for scheduling, enrollment and institutional academic operations, built with Laravel, Inertia, Vue, and Tailwind CSS.
 
 ## Current Scope
 
@@ -35,17 +33,22 @@ The project started from a junior developer challenge about assigning university
 
 See [docs/api.md](docs/api.md) for the current academic REST API documentation.
 
+See [docs/functional-scope.md](docs/functional-scope.md) for the current academic capabilities and validation references.
+
 See [docs/demo-testing.md](docs/demo-testing.md) for the functional demo testing guide.
 
 See [docs/database.md](docs/database.md) for the database model reference used to generate ER diagrams.
 
 See [docs/production-checklist.md](docs/production-checklist.md) for deployment and production readiness checks.
 
+See [docs/development-workflow.md](docs/development-workflow.md) for the branch, commit, PR, and database safety workflow.
+
 Covered API areas:
 
 - Students CRUD
 - Professors CRUD
 - Subjects CRUD
+- Academic resource creation through REST
 - Student assignment report
 - Available class groups
 - Enrollment
@@ -57,7 +60,7 @@ Covered API areas:
 Recommended functional test set:
 
 ```bash
-php artisan test tests/Feature/EnrollmentApiTest.php tests/Feature/ApiAcademicResourcesTest.php tests/Feature/StudentSubjectEnrollmentGroupsTest.php tests/Feature/AcademicFlowTest.php tests/Feature/RoleAccessTest.php
+php artisan test tests/Feature/ApiAcademicResourcesTest.php tests/Feature/EnrollmentApiTest.php tests/Feature/StudentSubjectEnrollmentGroupsTest.php tests/Feature/AcademicFlowTest.php tests/Feature/RoleAccessTest.php
 ```
 
 Frontend build:
@@ -73,6 +76,8 @@ Fresh local setup:
 ```bash
 composer install
 npm install
+cp .env.example .env
+php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan check:seed-integrity
 npm run dev
@@ -89,15 +94,15 @@ Demo credentials use the password `password`.
 
 | Role | Email |
 | --- | --- |
-| Admin | `admin@unischedulerhub.test` |
-| Academic Coordinator | `coordinator@unischedulerhub.test` |
-| Professor | `professor@unischedulerhub.test` |
-| Professor | `professor.math@unischedulerhub.test` |
-| Student | `student@unischedulerhub.test` |
-| Student | `student.enrolled@unischedulerhub.test` |
-| Student | `student.probation@unischedulerhub.test` |
-| Student | `student.suspended@unischedulerhub.test` |
-| Student | `student.graded@unischedulerhub.test` |
+| Admin | `admin@tarraya.test` |
+| Academic Coordinator | `coordinator@tarraya.test` |
+| Professor | `professor@tarraya.test` |
+| Professor | `professor.math@tarraya.test` |
+| Student | `student@tarraya.test` |
+| Student | `student.enrolled@tarraya.test` |
+| Student | `student.probation@tarraya.test` |
+| Student | `student.suspended@tarraya.test` |
+| Student | `student.graded@tarraya.test` |
 
 ## Academic Design Principles
 

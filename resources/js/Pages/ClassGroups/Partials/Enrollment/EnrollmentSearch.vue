@@ -12,10 +12,10 @@ defineEmits([
 
     <div class="relative">
 
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
 
         <input :value="modelValue" type="text" placeholder="Search students..."
-            class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            class="w-full rounded-lg border border-border-light bg-surface py-2.5 pl-10 pr-4 text-sm text-ink shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-dark-bg dark:text-white dark:placeholder:text-slate-500"
             @input="
                 $emit(
                     'update:modelValue',
@@ -26,3 +26,4 @@ defineEmits([
     </div>
 
 </template>
+

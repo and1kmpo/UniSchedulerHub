@@ -627,7 +627,6 @@ classroom_id FK -> classrooms.id nullable
 day
 start_time
 end_time
-classroom legacy nullable
 status
 created_by FK -> users.id nullable
 updated_by FK -> users.id nullable

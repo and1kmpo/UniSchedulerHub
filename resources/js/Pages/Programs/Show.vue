@@ -17,6 +17,7 @@ import InfoGrid from "@/Components/UI/Show/InfoGrid.vue";
 import InfoItem from "@/Components/UI/Show/InfoItem.vue";
 import StatsGrid from "@/Components/UI/Show/StatsGrid.vue";
 import RelatedSection from "@/Components/UI/Show/RelatedSection.vue";
+import { formatDateTime } from "@/Components/Composables/useDateTimeFormatter";
 
 const props = defineProps({
     program: {
@@ -102,7 +103,7 @@ const mappedStudents = computed(() => {
 
                     <InfoItem label="Active Curriculum" :value="program.active_curriculum?.name ?? 'N/A'" />
 
-                    <InfoItem label="Created At" :value="new Date(program.created_at).toLocaleString()" />
+                    <InfoItem label="Created At" :value="formatDateTime(program.created_at)" />
 
                     <InfoItem label="Description" :value="program.description" class="md:col-span-2 xl:col-span-3" />
 

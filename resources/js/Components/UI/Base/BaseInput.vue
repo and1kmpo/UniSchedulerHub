@@ -1,4 +1,10 @@
 <script setup>
+import { computed, onMounted, ref, useAttrs } from "vue";
+
+defineOptions({
+    inheritAttrs: false,
+});
+
 defineProps({
     modelValue: {
         type: [String, Number],
@@ -37,28 +43,58 @@ defineProps({
 });
 
 defineEmits(["update:modelValue"]);
+
+const attrs = useAttrs();
+const input = ref(null);
+
+const rootClass = computed(() => attrs.class);
+
+const inputAttrs = computed(() => {
+    const { class: _class, ...rest } = attrs;
+
+    return rest;
+});
+
+onMounted(() => {
+    if (input.value?.hasAttribute("autofocus")) {
+        input.value.focus();
+    }
+});
+
+defineExpose({ focus: () => input.value?.focus() });
 </script>
 
 <template>
-    <div class="space-y-2">
-        <label v-if="label" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+    <div class="space-y-2" :class="rootClass">
+        <label v-if="label" class="block text-sm font-medium text-slate-700 dark:text-zinc-200">
             {{ label }}
 
-            <span v-if="required" class="ml-1 text-red-500">
+            <span v-if="required" class="ml-1 text-danger">
                 *
             </span>
         </label>
 
-        <input :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
+        <input ref="input" v-bind="inputAttrs" :value="modelValue" :type="type" :placeholder="placeholder" :disabled="disabled"
             @input="$emit('update:modelValue', $event.target.value)"
-            class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-indigo-400"
+            class="base-input w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:disabled:bg-zinc-900"
             :class="{
-                'border-red-500 focus:border-red-500 focus:ring-red-500/20':
+                'border-danger focus:border-danger focus:ring-danger/20':
                     error,
             }" />
 
-        <p v-if="error" class="text-sm text-red-500">
+        <p v-if="error" class="text-sm text-danger">
             {{ error }}
         </p>
     </div>
 </template>
+
+<style scoped>
+.base-input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.75;
+}
+
+.dark .base-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.85;
+}
+</style>

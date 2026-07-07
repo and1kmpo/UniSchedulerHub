@@ -10,15 +10,15 @@ defineProps({
 <template>
     <div v-if="warnings.length" class="space-y-3">
         <div v-for="(warning, index) in warnings" :key="index" class="
-                rounded-xl
+                rounded-lg
                 border
-                border-amber-200
-                bg-amber-50
+                border-warning/30
+                bg-warning/10
                 p-4
                 text-amber-700
-                dark:border-amber-500/20
-                dark:bg-amber-500/10
-                dark:text-amber-300
+                dark:border-warning/30
+                dark:bg-warning/10
+                dark:text-warning
             ">
             <div class="flex items-start gap-3">
 

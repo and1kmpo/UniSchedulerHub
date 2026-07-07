@@ -6,6 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 
 const props = defineProps({
@@ -110,9 +111,6 @@ const calendarEvents = computed(() => {
             ],
             extendedProps: {
                 raw: schedule,
-                classroom: displayValue(schedule.classroom, "No classroom"),
-                professor: displayValue(schedule.professor, "No professor"),
-                status: schedule.status || "published",
             },
         }));
 });
@@ -141,6 +139,17 @@ const calendarOptions = computed(() => ({
     slotDuration: "00:30:00",
     snapDuration: "00:30:00",
     slotLabelInterval: "01:00:00",
+    slotLabelFormat: {
+        hour: "numeric",
+        meridiem: "short",
+        hour12: true,
+    },
+    eventTimeFormat: {
+        hour: "numeric",
+        minute: "2-digit",
+        meridiem: "short",
+        hour12: true,
+    },
     dayHeaderFormat: {
         weekday: "short",
     },
@@ -150,14 +159,13 @@ const calendarOptions = computed(() => ({
     eventDurationEditable: props.canEdit && editable.value,
     eventResizableFromStart: true,
     dragRevertDuration: 180,
-    eventMinHeight: 36,
+    eventMinHeight: 52,
     events: calendarEvents.value,
-    eventAllow: (dropInfo) => {
-        return minutesBetween(dropInfo.start, dropInfo.end) >= 30;
-    },
+    eventAllow: (dropInfo) => minutesBetween(dropInfo.start, dropInfo.end) >= 30,
     dateClick: handleDateClick,
     select: handleDateSelect,
     eventContent: renderEventContent,
+    eventDidMount: addEventTitle,
     eventClick: handleEventClick,
     eventDrop: persistCalendarChange,
     eventResize: persistCalendarChange,
@@ -169,8 +177,15 @@ function normalizeTime(time) {
     return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
 }
 
-function formatDisplayTime(time) {
-    return normalizeTime(time);
+function formatTime(time) {
+    const [hours = "0", minutes = "0"] = normalizeTime(time).split(":");
+    const date = new Date(2026, 0, 5, Number(hours), Number(minutes));
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: Number(minutes) === 0 ? undefined : "2-digit",
+        hour12: true,
+    }).format(date);
 }
 
 function displayValue(value, fallback = "Not assigned") {
@@ -229,8 +244,10 @@ function readableSchedule(schedule) {
         classroom: displayValue(schedule?.classroom, "No classroom"),
         status: schedule?.status || "published",
         day: schedule?.day || "monday",
-        start_time: formatDisplayTime(schedule?.start_time),
-        end_time: formatDisplayTime(schedule?.end_time),
+        start_time: normalizeTime(schedule?.start_time),
+        end_time: normalizeTime(schedule?.end_time),
+        start_label: formatTime(schedule?.start_time),
+        end_label: formatTime(schedule?.end_time),
     };
 }
 
@@ -238,6 +255,15 @@ function readableStatus(status) {
     return String(status || "published")
         .replaceAll("_", " ")
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function statusVariant(status) {
+    return {
+        published: "success",
+        draft: "warning",
+        cancelled: "danger",
+        closed: "gray",
+    }[status] || "brand";
 }
 
 function renderEventContent(arg) {
@@ -249,7 +275,7 @@ function renderEventContent(arg) {
         html: `
             <div class="uh-calendar-event-body">
                 <div class="uh-calendar-event-topline">
-                    <span class="uh-calendar-event-time">${escapeHtml(schedule.start_time)} - ${escapeHtml(schedule.end_time)}</span>
+                    <span class="uh-calendar-event-time">${escapeHtml(schedule.start_label)} - ${escapeHtml(schedule.end_label)}</span>
                     <span class="uh-calendar-event-status">${escapeHtml(readableStatus(schedule.status))}</span>
                 </div>
                 <div class="uh-calendar-event-title">${escapeHtml(schedule.subject)}</div>
@@ -260,6 +286,15 @@ function renderEventContent(arg) {
             </div>
         `,
     };
+}
+
+function addEventTitle(info) {
+    const schedule = readableSchedule(info.event.extendedProps.raw);
+
+    info.el.setAttribute(
+        "title",
+        `${schedule.subject}\n${schedule.start_label} - ${schedule.end_label}\n${schedule.classroom}\n${schedule.professor}\n${readableStatus(schedule.status)}`
+    );
 }
 
 function escapeHtml(value) {
@@ -367,15 +402,24 @@ async function persistCalendarChange(info) {
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+    <div class="overflow-hidden rounded-lg border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
+        <div class="border-b border-border-light p-4 dark:border-border-dark">
+            <ContextHelp
+                title="Scheduler interaction"
+                description="Use the calendar as the official weekly schedule surface. When editing is enabled, drag blocks to move them or resize their edges; every change is persisted only after backend validation."
+                icon="fa-solid fa-calendar-week"
+                tone="neutral"
+            />
+        </div>
+
+        <div class="border-b border-border-light px-6 py-4 dark:border-border-dark">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 class="text-lg font-semibold text-ink dark:text-white">
                         Smart Scheduler
                     </h3>
 
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {{ !canEdit ? "Schedule editing is locked" : editable ? "Drag or resize official blocks" : "Official academic week overview" }}
                     </p>
                 </div>
@@ -388,22 +432,22 @@ async function persistCalendarChange(info) {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 sm:w-72">
-                    <div class="rounded-xl border border-gray-200 p-3 text-center dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="rounded-lg border border-border-light p-3 text-center dark:border-border-dark">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Score
                         </p>
 
-                        <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        <p class="text-xl font-bold text-ink dark:text-white">
                             {{ score.value }}
                         </p>
                     </div>
 
-                    <div class="rounded-xl border border-gray-200 p-3 text-center dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="rounded-lg border border-border-light p-3 text-center dark:border-border-dark">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Conflicts
                         </p>
 
-                        <p class="text-xl font-bold" :class="conflicts.length ? 'text-red-600' : 'text-emerald-600'">
+                        <p class="text-xl font-bold" :class="conflicts.length ? 'text-danger' : 'text-success'">
                             {{ conflicts.length }}
                         </p>
                     </div>
@@ -412,46 +456,46 @@ async function persistCalendarChange(info) {
         </div>
 
         <div class="space-y-4 p-6">
-            <div v-if="saveError" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div v-if="saveError" class="rounded-lg border border-danger/20 bg-danger/10 p-4 text-sm text-danger">
                 {{ saveError }}
             </div>
 
-            <div v-if="saving" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-700">
+            <div v-if="saving" class="rounded-lg border border-brand-200 bg-brand-50 p-4 text-sm text-brand-700">
                 Saving schedule change...
             </div>
 
             <FullCalendar class="uh-full-calendar" :options="calendarOptions" />
 
-            <div v-if="selectedSchedule" class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+            <div v-if="selectedSchedule" class="rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-dark-bg">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        <h4 class="text-sm font-semibold text-ink dark:text-white">
                             {{ selectedSchedule.subject }}
                         </h4>
 
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            {{ selectedSchedule.start_time }} - {{ selectedSchedule.end_time }}
+                        <p class="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+                            {{ selectedSchedule.start_label }} - {{ selectedSchedule.end_label }}
                         </p>
                     </div>
 
-                    <StatusBadge :status="selectedSchedule.status" />
+                    <StatusBadge :label="readableStatus(selectedSchedule.status)" :variant="statusVariant(selectedSchedule.status)" />
                 </div>
 
                 <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                     <div>
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Professor
                         </p>
-                        <p class="mt-1 text-gray-700 dark:text-gray-200">
+                        <p class="mt-1 text-slate-700 dark:text-zinc-200">
                             {{ selectedSchedule.professor }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Classroom
                         </p>
-                        <p class="mt-1 text-gray-700 dark:text-gray-200">
+                        <p class="mt-1 text-slate-700 dark:text-zinc-200">
                             {{ selectedSchedule.classroom }}
                         </p>
                     </div>
@@ -467,8 +511,8 @@ async function persistCalendarChange(info) {
     --fc-page-bg-color: transparent;
     --fc-neutral-bg-color: rgb(249 250 251);
     --fc-today-bg-color: rgb(238 242 255);
-    --fc-event-bg-color: rgb(79 70 229);
-    --fc-event-border-color: rgb(67 56 202);
+    --fc-event-bg-color: rgb(37 99 235);
+    --fc-event-border-color: rgb(29 78 216);
     --fc-event-text-color: white;
     color: rgb(17 24 39);
 }
@@ -490,34 +534,33 @@ async function persistCalendarChange(info) {
 }
 
 .uh-full-calendar .fc-timegrid-slot {
-    height: 2.5rem;
+    height: 3rem;
 }
 
 .uh-full-calendar .fc-timegrid-event {
     border-radius: 0.5rem;
-    box-shadow: 0 10px 24px rgb(37 99 235 / 18%);
     overflow: hidden;
 }
 
 .uh-full-calendar .uh-calendar-event {
-    background: linear-gradient(135deg, rgb(37 99 235), rgb(79 70 229));
+    background: rgb(37 99 235);
     border: 1px solid rgb(29 78 216);
     border-left: 4px solid rgb(191 219 254);
 }
 
 .uh-full-calendar .uh-calendar-event-cancelled {
-    background: linear-gradient(135deg, rgb(107 114 128), rgb(75 85 99));
+    background: rgb(92 107 115);
     border-color: rgb(75 85 99);
     opacity: 0.75;
 }
 
 .uh-full-calendar .uh-calendar-event-draft {
-    background: linear-gradient(135deg, rgb(217 119 6), rgb(180 83 9));
+    background: rgb(245 158 11);
     border-color: rgb(146 64 14);
 }
 
 .uh-full-calendar .uh-calendar-event-closed {
-    background: linear-gradient(135deg, rgb(15 118 110), rgb(13 148 136));
+    background: rgb(16 185 129);
     border-color: rgb(15 118 110);
 }
 
@@ -529,9 +572,9 @@ async function persistCalendarChange(info) {
     display: grid;
     height: 100%;
     align-content: start;
-    gap: 0.2rem;
-    padding: 0.35rem 0.45rem;
-    line-height: 1.15;
+    gap: 0.28rem;
+    padding: 0.45rem 0.55rem;
+    line-height: 1.2;
 }
 
 .uh-calendar-event-topline {
@@ -543,10 +586,11 @@ async function persistCalendarChange(info) {
 }
 
 .uh-calendar-event-title {
+    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.78rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.84rem;
     font-weight: 700;
     letter-spacing: 0;
 }
@@ -555,7 +599,7 @@ async function persistCalendarChange(info) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
     opacity: 0.95;
 }
@@ -568,17 +612,17 @@ async function persistCalendarChange(info) {
     border-radius: 999px;
     background: rgb(255 255 255 / 18%);
     padding: 0.1rem 0.35rem;
-    font-size: 0.58rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
 }
 
 .uh-calendar-event-meta {
     display: grid;
-    gap: 0.05rem;
+    gap: 0.1rem;
     min-width: 0;
-    font-size: 0.66rem;
-    opacity: 0.9;
+    font-size: 0.7rem;
+    opacity: 0.95;
 }
 
 .uh-calendar-event-meta span {
@@ -587,3 +631,4 @@ async function persistCalendarChange(info) {
     white-space: nowrap;
 }
 </style>
+

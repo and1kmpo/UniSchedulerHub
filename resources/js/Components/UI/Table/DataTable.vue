@@ -61,18 +61,44 @@ const sortBy = (column) => {
         }
     );
 };
+
+const columnKey = (column) => String(column.key || "").toLowerCase();
+
+const cellClass = (column) => {
+    const key = columnKey(column);
+
+    if (column.cellClass) return column.cellClass;
+
+    if (["student_id", "studentid", "document", "code", "id"].includes(key) || key.endsWith("_code")) {
+        return "font-mono text-slate-500 dark:text-slate-400";
+    }
+
+    if (["name", "student", "professor", "subject"].includes(key)) {
+        return "font-sans font-medium text-ink dark:text-white";
+    }
+
+    if (["program", "period", "group", "group_code"].includes(key)) {
+        return "font-mono text-slate-600 dark:text-slate-300";
+    }
+
+    if (["cgpa", "average", "promedio", "grade", "final_grade"].includes(key)) {
+        return "font-mono text-accent dark:text-accent";
+    }
+
+    return "text-slate-700 dark:text-zinc-300";
+};
 </script>
 
 <template>
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/80">
+            <thead class="border-b border-border-light bg-slate-50 dark:border-border-dark dark:bg-zinc-900">
                 <tr>
                     <th v-for="column in columns" :key="column.key" @click="sortBy(column)" :class="[
-                        'whitespace-nowrap px-4 py-3 text-left font-semibold sm:px-6 sm:py-4',
+                        'whitespace-nowrap px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider',
                         column.sortable
-                            ? 'cursor-pointer select-none text-gray-700 hover:text-indigo-600 dark:text-gray-200'
-                            : 'text-gray-700 dark:text-gray-200'
+                            ? 'cursor-pointer select-none text-slate-500 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-300'
+                            : 'text-slate-500 dark:text-slate-500'
                     ]">
 
                         <div class="flex items-center gap-2">
@@ -89,24 +115,24 @@ const sortBy = (column) => {
                     </th>
 
                     <th v-if="$slots.actions"
-                        class="whitespace-nowrap px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-200 sm:px-6 sm:py-4">
+                        class="whitespace-nowrap px-4 py-3 text-center font-sans text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                         Actions
                     </th>
 
                 </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900">
+            <tbody class="bg-surface dark:bg-surface-dark">
                 <tr v-for="(row, index) in rows" :key="row[rowKey] ?? index"
-                    class="transition hover:bg-gray-50 dark:hover:bg-gray-800/70">
+                    class="border-b border-border-light transition last:border-b-0 hover:bg-slate-50 dark:border-border-dark dark:hover:bg-zinc-900/70">
                     <td v-for="column in columns" :key="column.key"
-                        class="max-w-[18rem] px-4 py-4 align-middle text-gray-700 dark:text-gray-300 sm:px-6">
+                        :class="['max-w-[18rem] px-4 py-4 align-middle', cellClass(column)]">
                         <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :column="column">
                             {{ row[column.key] ?? "-" }}
                         </slot>
                     </td>
 
-                    <td v-if="$slots.actions" class="px-4 py-4 text-center align-middle sm:px-6">
+                    <td v-if="$slots.actions" class="px-4 py-4 text-center align-middle">
                         <slot name="actions" :row="row" />
                     </td>
                 </tr>

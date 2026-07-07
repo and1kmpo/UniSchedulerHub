@@ -36,23 +36,23 @@ defineEmits(["update:modelValue"]);
 
 <template>
     <div class="space-y-2">
-        <label v-if="label" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+        <label v-if="label" class="block text-sm font-medium text-slate-700 dark:text-zinc-200">
             {{ label }}
 
-            <span v-if="required" class="ml-1 text-red-500">
+            <span v-if="required" class="ml-1 text-danger">
                 *
             </span>
         </label>
 
         <textarea :value="modelValue" :placeholder="placeholder" :rows="rows"
             @input="$emit('update:modelValue', $event.target.value)"
-            class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="w-full rounded-lg border border-border-light bg-surface px-4 py-2.5 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-100 dark:placeholder:text-zinc-500"
             :class="{
-                'border-red-500 focus:border-red-500 focus:ring-red-500/20':
+                'border-danger focus:border-danger focus:ring-danger/20':
                     error,
             }" />
 
-        <p v-if="error" class="text-sm text-red-500">
+        <p v-if="error" class="text-sm text-danger">
             {{ error }}
         </p>
     </div>

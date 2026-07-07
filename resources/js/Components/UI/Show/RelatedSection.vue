@@ -14,14 +14,14 @@ defineProps({
 
 <template>
     <div
-        class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-gray-800">
+        class="overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark">
+        <div class="flex items-center justify-between border-b border-border-light px-6 py-5 dark:border-border-dark">
             <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h2 class="text-lg font-semibold text-ink dark:text-white">
                     {{ title }}
                 </h2>
 
-                <p v-if="description" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p v-if="description" class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                     {{ description }}
                 </p>
             </div>

@@ -46,27 +46,27 @@ const columns = [
         <CrudContainer>
             <div class="grid gap-6 lg:grid-cols-3">
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Building
                     </p>
 
-                    <h3 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                    <h3 class="mt-2 text-xl font-semibold text-ink dark:text-white">
                         {{ classroom.building?.name || "Unassigned" }}
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Capacity
                     </p>
 
-                    <h3 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                    <h3 class="mt-2 text-xl font-semibold text-ink dark:text-white">
                         {{ classroom.capacity }} students
                     </h3>
                 </SectionCard>
 
                 <SectionCard class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-slate-500 dark:text-zinc-400">
                         Status
                     </p>
 
@@ -78,17 +78,17 @@ const columns = [
             </div>
 
             <SectionCard class="mt-6 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 class="text-lg font-semibold text-ink dark:text-white">
                     Description
                 </h3>
 
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                <p class="mt-2 text-sm text-slate-600 dark:text-zinc-300">
                     {{ classroom.description || "No description registered." }}
                 </p>
             </SectionCard>
 
             <SectionCard class="mt-6 p-6">
-                <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 class="mb-4 text-lg font-semibold text-ink dark:text-white">
                     Scheduled Classes
                 </h3>
 
@@ -106,10 +106,11 @@ const columns = [
                     </template>
                 </DataTable>
 
-                <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+                <p v-else class="text-sm text-slate-500 dark:text-zinc-400">
                     No schedules assigned to this classroom.
                 </p>
             </SectionCard>
         </CrudContainer>
     </CrudPageLayout>
 </template>
+

@@ -78,7 +78,7 @@ class AcademicAuditLogController extends Controller
                     'email' => $log->user->email,
                 ] : null,
                 'metadata' => $log->metadata ?? [],
-                'created_at' => $log->created_at?->format('Y-m-d H:i'),
+                'created_at' => $log->created_at?->toISOString(),
             ]);
 
         return Inertia::render('Admin/AcademicAuditLogs/Index', [

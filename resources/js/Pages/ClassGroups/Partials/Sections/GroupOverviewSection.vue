@@ -28,3 +28,4 @@ defineProps({
         <EnrollmentCapacityCard :class-group="classGroup" />
     </section>
 </template>
+

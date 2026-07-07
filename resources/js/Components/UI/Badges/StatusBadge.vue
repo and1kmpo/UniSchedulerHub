@@ -9,44 +9,73 @@ defineProps({
         type: String,
         default: "gray",
     },
+
+    type: {
+        type: String,
+        default: "",
+    },
 });
 
 const variants = {
     gray: `
-        bg-gray-100
-        text-gray-700
-        dark:bg-gray-800
-        dark:text-gray-300
+        bg-slate-100 text-slate-600
+        dark:bg-slate-400/10 dark:text-slate-400
+    `,
+
+    brand: `
+        bg-brand-500/10 text-brand-700
+        dark:bg-brand-500/15 dark:text-brand-300
+    `,
+
+    info: `
+        bg-accent/10 text-cyan-700
+        dark:bg-accent/15 dark:text-accent
     `,
 
     success: `
-        bg-emerald-100
-        text-emerald-700
-        dark:bg-emerald-500/15
-        dark:text-emerald-300
+        bg-success/10 text-success
+        dark:bg-success/15 dark:text-success
     `,
 
     danger: `
-        bg-red-100
-        text-red-700
-        dark:bg-red-500/15
-        dark:text-red-300
+        bg-danger/10 text-danger
+        dark:bg-danger/15 dark:text-danger
     `,
 
     warning: `
-        bg-amber-100
-        text-amber-700
-        dark:bg-amber-500/15
-        dark:text-amber-300
+        bg-warning/10 text-amber-700
+        dark:bg-warning/15 dark:text-warning
     `,
+};
+
+const typeVariantMap = {
+    active: "success",
+    "in-progress": "brand",
+    in_progress: "brand",
+    progress: "brand",
+    completed: "gray",
+    cancelled: "danger",
+    canceled: "danger",
+};
+
+const dotVariants = {
+    gray: "bg-slate-400",
+    brand: "bg-brand-600",
+    info: "bg-accent",
+    success: "bg-success",
+    danger: "bg-danger",
+    warning: "bg-warning",
 };
 </script>
 
 <template>
-    <span :class="[
-        'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
-        variants[variant],
-    ]">
+    <span
+        :class="[
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider',
+            variants[typeVariantMap[type] || variant] || variants.gray,
+        ]"
+    >
+        <span :class="['h-1.5 w-1.5 rounded-full', dotVariants[typeVariantMap[type] || variant] || dotVariants.gray]" />
         {{ label }}
     </span>
 </template>

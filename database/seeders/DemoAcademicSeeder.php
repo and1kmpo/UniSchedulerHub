@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AcademicPeriod;
+use App\Models\AcademicAuditLog;
 use App\Models\AcademicPeriodStatus;
 use App\Models\Building;
 use App\Models\ClassGroup;
@@ -38,6 +39,7 @@ class DemoAcademicSeeder extends Seeder
             $this->teachingAssignments($people['professors'], $subjects);
             $groups = $this->classGroups($periods, $campus, $people['professors'], $subjects);
             $this->enrollmentsAndGrades($people['students'], $people['professors'], $subjects, $groups, $periods);
+            $this->auditLogs($people['students'], $groups, $periods);
         });
     }
 
@@ -263,16 +265,16 @@ class DemoAcademicSeeder extends Seeder
     private function people(Program $program, Curriculum $curriculum): array
     {
         $professors = [
-            'primary' => $this->professor('professor@unischedulerhub.test', 'Ada Lovelace', 'P1001'),
-            'secondary' => $this->professor('professor.math@unischedulerhub.test', 'Katherine Johnson', 'P1002'),
+            'primary' => $this->professor('professor@tarraya.test', 'Ada Lovelace', 'P1001'),
+            'secondary' => $this->professor('professor.math@tarraya.test', 'Katherine Johnson', 'P1002'),
         ];
 
         $students = [
-            'open' => $this->student('student@unischedulerhub.test', 'Grace Hopper Student', 'S1001', $program, $curriculum, Student::STATUS_ACTIVE, 1),
-            'enrolled' => $this->student('student.enrolled@unischedulerhub.test', 'Alan Turing Student', 'S1002', $program, $curriculum, Student::STATUS_ACTIVE, 1),
-            'probation' => $this->student('student.probation@unischedulerhub.test', 'Barbara Liskov Student', 'S1003', $program, $curriculum, Student::STATUS_PROBATION, 2),
-            'suspended' => $this->student('student.suspended@unischedulerhub.test', 'Suspended Demo Student', 'S1004', $program, $curriculum, Student::STATUS_SUSPENDED, 1),
-            'graded' => $this->student('student.graded@unischedulerhub.test', 'Margaret Hamilton Student', 'S1005', $program, $curriculum, Student::STATUS_ACTIVE, 3),
+            'open' => $this->student('student@tarraya.test', 'Grace Hopper Student', 'S1001', $program, $curriculum, Student::STATUS_ACTIVE, 1),
+            'enrolled' => $this->student('student.enrolled@tarraya.test', 'Alan Turing Student', 'S1002', $program, $curriculum, Student::STATUS_ACTIVE, 1),
+            'probation' => $this->student('student.probation@tarraya.test', 'Barbara Liskov Student', 'S1003', $program, $curriculum, Student::STATUS_PROBATION, 2),
+            'suspended' => $this->student('student.suspended@tarraya.test', 'Suspended Demo Student', 'S1004', $program, $curriculum, Student::STATUS_SUSPENDED, 1),
+            'graded' => $this->student('student.graded@tarraya.test', 'Margaret Hamilton Student', 'S1005', $program, $curriculum, Student::STATUS_ACTIVE, 3),
         ];
 
         return compact('professors', 'students');
@@ -426,6 +428,8 @@ class DemoAcademicSeeder extends Seeder
         $statuses = SubjectEnrollmentStatus::query()->pluck('id', 'code');
 
         $this->enrollment($students['enrolled'], $subjects['programming'], $groups['programmingA'], $periods['enrollment'], $statuses['pre_enrolled']);
+        $this->enrollment($students['enrolled'], $subjects['dataStructures'], $groups['dataStructuresA'], $periods['enrollment'], $statuses['pre_enrolled']);
+        $this->enrollment($students['enrolled'], $subjects['ethics'], $groups['ethicsA'], $periods['enrollment'], $statuses['pre_enrolled']);
         $this->enrollment($students['probation'], $subjects['databases'], $groups['databasesA'], $periods['enrollment'], $statuses['enrolled']);
 
         $gradedEnrollment = $this->enrollment($students['graded'], $subjects['programming'], $groups['gradingProgramming'], $periods['grading'], $statuses['enrolled']);
@@ -441,8 +445,8 @@ class DemoAcademicSeeder extends Seeder
                 'attendance' => 92,
                 'final_grade' => 4.08,
                 'grade_status_id' => GradeStatus::where('code', 'passed')->value('id'),
-                'created_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
-                'updated_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
+                'created_by' => User::where('email', 'admin@tarraya.test')->value('id'),
+                'updated_by' => User::where('email', 'admin@tarraya.test')->value('id'),
             ]
         );
     }
@@ -459,7 +463,121 @@ class DemoAcademicSeeder extends Seeder
                 'class_group_id' => $group->id,
                 'status_id' => $statusId,
                 'enrolled_at' => now(),
-                'enrolled_by' => User::where('email', 'admin@unischedulerhub.test')->value('id'),
+                'enrolled_by' => User::where('email', 'admin@tarraya.test')->value('id'),
+            ]
+        );
+    }
+
+    private function auditLogs(array $students, array $groups, array $periods): void
+    {
+        $adminId = User::where('email', 'admin@tarraya.test')->value('id');
+        $enrollment = SubjectEnrollment::query()
+            ->where('student_id', $students['enrolled']->id)
+            ->where('class_group_id', $groups['programmingA']->id)
+            ->first();
+        $schedule = ClassSchedule::query()
+            ->where('class_group_id', $groups['programmingA']->id)
+            ->where('day', 'monday')
+            ->first();
+        $grade = Grade::query()
+            ->whereHas('enrollment', fn($query) => $query->where('class_group_id', $groups['gradingProgramming']->id))
+            ->first();
+
+        if ($enrollment) {
+            AcademicAuditLog::updateOrCreate(
+                [
+                    'action' => 'enrollment.created',
+                    'auditable_type' => SubjectEnrollment::class,
+                    'auditable_id' => $enrollment->id,
+                ],
+                [
+                    'user_id' => $adminId,
+                    'summary' => 'Student enrolled in class group',
+                    'metadata' => [
+                        'student_id' => $enrollment->student_id,
+                        'subject_id' => $enrollment->subject_id,
+                        'class_group_id' => $enrollment->class_group_id,
+                        'academic_period_id' => $enrollment->academic_period_id,
+                    ],
+                    'created_at' => now()->subDays(2),
+                ]
+            );
+        }
+
+        if ($schedule) {
+            AcademicAuditLog::updateOrCreate(
+                [
+                    'action' => 'schedule.updated',
+                    'auditable_type' => ClassSchedule::class,
+                    'auditable_id' => $schedule->id,
+                ],
+                [
+                    'user_id' => $adminId,
+                    'summary' => 'Class schedule updated',
+                    'metadata' => [
+                        'class_group_id' => $schedule->class_group_id,
+                        'before' => [
+                            'day' => 'monday',
+                            'start_time' => '07:00',
+                            'end_time' => '09:00',
+                            'classroom_id' => $schedule->classroom_id,
+                            'status' => ClassSchedule::STATUS_PUBLISHED,
+                        ],
+                        'after' => [
+                            'day' => $schedule->day,
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'classroom_id' => $schedule->classroom_id,
+                            'status' => $schedule->status,
+                        ],
+                    ],
+                    'created_at' => now()->subDay(),
+                ]
+            );
+        }
+
+        if ($grade) {
+            AcademicAuditLog::updateOrCreate(
+                [
+                    'action' => 'grade.created',
+                    'auditable_type' => Grade::class,
+                    'auditable_id' => $grade->id,
+                ],
+                [
+                    'user_id' => $adminId,
+                    'summary' => 'Grade created',
+                    'metadata' => [
+                        'subject_enrollment_id' => $grade->subject_enrollment_id,
+                        'academic_period_id' => $periods['grading']->id,
+                        'after' => [
+                            'partial_1' => $grade->partial_1,
+                            'partial_2' => $grade->partial_2,
+                            'partial_3' => $grade->partial_3,
+                            'activities' => $grade->activities,
+                            'attendance' => $grade->attendance,
+                            'final_grade' => $grade->final_grade,
+                            'grade_status_id' => $grade->grade_status_id,
+                        ],
+                    ],
+                    'created_at' => now(),
+                ]
+            );
+        }
+
+        AcademicAuditLog::updateOrCreate(
+            [
+                'action' => 'academic_period.transitioned',
+                'auditable_type' => AcademicPeriod::class,
+                'auditable_id' => $periods['grading']->id,
+            ],
+            [
+                'user_id' => $adminId,
+                'summary' => 'Academic period transitioned from enrollment_closed to in_progress',
+                'metadata' => [
+                    'from' => 'enrollment_closed',
+                    'to' => 'in_progress',
+                ],
+                'created_at' => now()->subDays(3),
             ]
         );
     }

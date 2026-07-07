@@ -96,7 +96,7 @@ const mappedStudents = computed(() => {
           <InfoItem label="Elective">
             <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="subject.elective
               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-              : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+              : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
               ">
               {{ subject.elective ? "YES" : "NO" }}
             </span>

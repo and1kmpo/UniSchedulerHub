@@ -182,10 +182,52 @@ class ProfessorController extends Controller
             ]);
         }
 
-        $groups = ClassGroup::with([
+        $groups = $this->currentProfessorGroups($period);
+
+        return Inertia::render('Professors/MySubjects', [
+            'groups' => $groups,
+            'period' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+                'can_edit_grades' => $period->canEditGrades(),
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'students' => $groups->sum('subject_enrollments_count'),
+                'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
+            ],
+            'systemState' => 'ready',
+        ]);
+    }
+
+    public function schedule()
+    {
+        $period = AcademicPeriod::active()->with('status')->first();
+        $groups = $period ? $this->currentProfessorGroups($period) : collect();
+        $currentSchedules = $this->professorSchedulePayload($groups);
+
+        return Inertia::render('Professors/Schedule', [
+            'currentSchedules' => $currentSchedules,
+            'currentPeriod' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ] : null,
+            'summary' => [
+                'groups' => $groups->count(),
+                'blocks' => $currentSchedules->count(),
+                'students' => $groups->sum('subject_enrollments_count'),
+            ],
+        ]);
+    }
+
+    private function currentProfessorGroups(AcademicPeriod $period)
+    {
+        return ClassGroup::with([
             'subject',
             'academicPeriod',
-            'schedules.classroom',
+            'schedules.classroom.building',
             'subjectEnrollments' => fn($query) => $query->whereHas(
                 'status',
                 fn($status) => $status->whereIn('code', config('enrollment.active_status_codes'))
@@ -209,7 +251,8 @@ class ProfessorController extends Controller
                 'modality' => $group->modality,
                 'shift' => $group->shift,
                 'subject_enrollments_count' => $group->subject_enrollments_count,
-                'can_manage_grades' => $period?->canEditGrades() && $group->status !== ClassGroup::STATUS_CANCELLED,
+                'can_view_grades' => auth()->user()->can('manageGrades', $group),
+                'can_edit_grades' => auth()->user()->can('editGrades', $group),
                 'subject' => [
                     'id' => $group->subject?->id,
                     'name' => $group->subject?->name,
@@ -223,6 +266,7 @@ class ProfessorController extends Controller
                     'start_time' => $schedule->start_time,
                     'end_time' => $schedule->end_time,
                     'classroom' => $schedule->classroom?->name,
+                    'classroom_location' => $this->classroomLocation($schedule->classroom),
                     'status' => $schedule->status,
                 ])->values(),
                 'subject_enrollments' => $group->subjectEnrollments->map(fn($enrollment) => [
@@ -240,22 +284,52 @@ class ProfessorController extends Controller
                     ] : null,
                 ])->values(),
             ]);
+    }
 
-        return Inertia::render('Professors/MySubjects', [
-            'groups' => $groups,
-            'period' => $period ? [
-                'id' => $period->id,
-                'name' => $period->name,
-                'state' => $period->state()?->value,
-                'can_edit_grades' => $period->canEditGrades(),
-            ] : null,
-            'summary' => [
-                'groups' => $groups->count(),
-                'students' => $groups->sum('subject_enrollments_count'),
-                'credits' => $groups->sum(fn($group) => $group['subject']['credits'] ?? 0),
-            ],
-            'systemState' => 'ready',
-        ]);
+    private function professorSchedulePayload($groups)
+    {
+        return $groups
+            ->flatMap(fn($group) => collect($group['schedules'])
+                ->where('status', '!=', 'cancelled')
+                ->map(fn($schedule) => [
+                    'id' => $schedule['id'],
+                    'day' => strtolower($schedule['day']),
+                    'start_time' => $schedule['start_time'],
+                    'end_time' => $schedule['end_time'],
+                    'subject' => [
+                        'id' => $group['subject']['id'],
+                        'code' => $group['subject']['code'],
+                        'name' => $group['subject']['name'],
+                    ],
+                    'group' => [
+                        'id' => $group['id'],
+                        'code' => $group['code'],
+                        'name' => $group['name'],
+                        'modality' => $group['modality'],
+                        'shift' => $group['shift'],
+                    ],
+                    'professor' => 'You',
+                    'classroom' => $schedule['classroom'],
+                    'classroom_location' => $schedule['classroom_location'],
+                    'status' => $group['status'],
+                ]))
+            ->values();
+    }
+
+    private function classroomLocation($classroom): ?string
+    {
+        if (! $classroom) {
+            return null;
+        }
+
+        return collect([
+            $classroom->name,
+            $classroom->building?->name,
+            $classroom->building?->code,
+        ])
+            ->filter()
+            ->unique()
+            ->join(' - ');
     }
 
     public function viewAllStudents(Subject $subject)

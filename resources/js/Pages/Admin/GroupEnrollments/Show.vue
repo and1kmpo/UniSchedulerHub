@@ -212,41 +212,41 @@ watch(selectedStudent, validateEnrollment);
                 <SectionCard>
                     <div class="grid gap-4 p-6 md:grid-cols-3">
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Subject
                             </p>
 
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-semibold text-ink dark:text-white">
                                 {{ classGroup.subject }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Professor
                             </p>
 
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-semibold text-ink dark:text-white">
                                 {{ classGroup.professor ?? "Unassigned" }}
                             </p>
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Capacity
                             </p>
 
-                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                            <p class="mt-1 font-mono font-semibold text-ink dark:text-white">
                                 {{ classGroup.subject_enrollments_count }} / {{ classGroup.capacity ?? "Unlimited" }}
                             </p>
                         </div>
 
                         <div class="md:col-span-3">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">
                                 Schedule
                             </p>
 
-                            <p class="mt-1 text-gray-900 dark:text-white">
+                            <p class="mt-1 font-mono text-ink dark:text-white">
                                 {{ scheduleSummary }}
                             </p>
                         </div>
@@ -254,12 +254,12 @@ watch(selectedStudent, validateEnrollment);
                 </SectionCard>
 
                 <SectionCard>
-                    <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div class="border-b border-border-light p-6 dark:border-border-dark">
+                        <h2 class="text-lg font-semibold text-ink dark:text-white">
                             Enrolled Students
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">
                             Active enrollment records for this class group.
                         </p>
                     </div>

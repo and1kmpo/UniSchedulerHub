@@ -1,4 +1,5 @@
 <script setup>
+import BaseButton from "@/Components/UI/Base/BaseButton.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 
 defineProps({
@@ -29,17 +30,17 @@ defineEmits(["enroll"]);
         <div class="flex items-start gap-4">
 
             <div
-                class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
                 <i class="fa-solid fa-brain" />
             </div>
 
             <div>
 
-                <h3 class="text-lg font-semibold">
+                <h3 class="text-lg font-semibold text-ink dark:text-white">
                     Smart Enrollment Assistant
                 </h3>
 
-                <div class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <div class="mt-4 space-y-2 text-sm text-slate-600 dark:text-zinc-300">
 
                     <p>
                         • Monitor schedule conflicts
@@ -59,28 +60,11 @@ defineEmits(["enroll"]);
 
                 </div>
 
-                <button type="button" :disabled="!selectedStudent || !validationResult.allowed || loading"
-                    @click="$emit('enroll')" class="
-                        mt-6
-                        inline-flex
-                        w-full
-                        items-center
-                        justify-center
-                        rounded-xl
-                        bg-indigo-600
-                        px-4
-                        py-2
-                        text-sm
-                        font-semibold
-                        text-white
-                        transition
-                        hover:bg-indigo-700
-                        disabled:cursor-not-allowed
-                        disabled:opacity-50
-                    ">
+                <BaseButton type="button" class="mt-6 w-full" :disabled="!selectedStudent || !validationResult.allowed || loading"
+                    @click="$emit('enroll')">
                     <i class="fa-solid fa-user-plus mr-2" />
                     Confirm Enrollment
-                </button>
+                </BaseButton>
 
             </div>
 
@@ -89,3 +73,4 @@ defineEmits(["enroll"]);
     </SectionCard>
 
 </template>
+

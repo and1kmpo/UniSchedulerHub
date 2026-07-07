@@ -14,8 +14,9 @@ defineProps({
     <Dropdown class="mt-[18px]">
         <template #trigger>
             <span :class="{
-                'bg-indigo-600 text-white': active,
-            }" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 hover:text-gray-700 hover:bg-indigo-400 transition ease-in-out duration-150">
+                'border-brand bg-brand text-white': active,
+                'border-transparent text-slate-600 hover:border-border-light hover:bg-slate-100 hover:text-ink dark:text-zinc-300 dark:hover:border-border-dark dark:hover:bg-zinc-900 dark:hover:text-white': !active,
+            }" class="inline-flex items-center rounded-lg border px-3 py-2 text-sm font-medium leading-4 transition duration-150">
                 {{ label }}
                 <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                     viewBox="0 0 20 20">

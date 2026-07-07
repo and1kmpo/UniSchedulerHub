@@ -241,7 +241,7 @@ const deleteSubject = async (subject) => {
 
                         <Link :href="route('subjects.edit', row.id)">
 
-                            <TableActionButton icon="fa-solid fa-pen" label="Edit subject" color="indigo" />
+                            <TableActionButton icon="fa-solid fa-pen" label="Edit subject" color="brand" />
 
                         </Link>
 
@@ -282,3 +282,5 @@ const deleteSubject = async (subject) => {
 
     </CrudPageLayout>
 </template>
+
+

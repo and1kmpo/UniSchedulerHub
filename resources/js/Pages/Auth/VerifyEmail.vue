@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
+import BaseButton from '@/Components/UI/Base/BaseButton.vue';
 
 const props = defineProps({
     status: String,
@@ -26,24 +26,24 @@ const verificationLinkSent = computed(() => props.status === 'verification-link-
             <AuthenticationCardLogo />
         </template>
 
-        <div class="mb-4 text-sm text-gray-600">
+        <div class="mb-4 text-sm text-slate-600 dark:text-zinc-300">
             Before continuing, could you verify your email address by clicking on the link we just emailed to you? If you didn't receive the email, we will gladly send you another.
         </div>
 
-        <div v-if="verificationLinkSent" class="mb-4 font-medium text-sm text-green-600">
+        <div v-if="verificationLinkSent" class="mb-4 text-sm font-medium text-success">
             A new verification link has been sent to the email address you provided in your profile settings.
         </div>
 
         <form @submit.prevent="submit">
             <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <BaseButton type="submit" :disabled="form.processing">
                     Resend Verification Email
-                </PrimaryButton>
+                </BaseButton>
 
                 <div>
                     <Link
                         :href="route('profile.show')"
-                        class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        class="rounded-lg text-sm text-slate-600 underline transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 dark:text-zinc-300 dark:hover:text-white dark:focus:ring-offset-dark-bg"
                     >
                         Edit Profile</Link>
 
@@ -51,7 +51,7 @@ const verificationLinkSent = computed(() => props.status === 'verification-link-
                         :href="route('logout')"
                         method="post"
                         as="button"
-                        class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ms-2"
+                        class="ms-2 rounded-lg text-sm text-slate-600 underline transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 dark:text-zinc-300 dark:hover:text-white dark:focus:ring-offset-dark-bg"
                     >
                         Log Out
                     </Link>

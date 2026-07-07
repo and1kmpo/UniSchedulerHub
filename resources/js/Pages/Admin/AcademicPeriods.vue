@@ -5,13 +5,16 @@ import axios from "axios";
 
 import CrudPageLayout from "@/Layouts/CrudPageLayout.vue";
 import BaseButton from "@/Components/UI/Base/BaseButton.vue";
+import BaseCheckbox from "@/Components/UI/Base/BaseCheckbox.vue";
 import BaseInput from "@/Components/UI/Base/BaseInput.vue";
 import DataTable from "@/Components/UI/Table/DataTable.vue";
+import TableActionButton from "@/Components/UI/Table/TableActionButton.vue";
 import EmptyState from "@/Components/UI/Feedback/EmptyState.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
 import StatusBadge from "@/Components/UI/Badges/StatusBadge.vue";
 import TablePagination from "@/Components/UI/Table/TablePagination.vue";
 import { useAlert } from "@/Components/Composables/useAlert";
+import { formatDate, toDateInput } from "@/Components/Composables/useDateTimeFormatter";
 
 const { confirm, toastSuccess, toastError } = useAlert();
 
@@ -211,23 +214,6 @@ function statusLabel(period) {
     return period.status?.name || period.status?.code || "No status";
 }
 
-function formatDate(value) {
-    if (!value) {
-        return "-";
-    }
-
-    return new Date(value).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-    });
-}
-
-function toDateInput(value) {
-    return value ? String(value).slice(0, 10) : "";
-}
-
 function firstError(field) {
     return Array.isArray(errors.value[field]) ? errors.value[field][0] : errors.value[field];
 }
@@ -239,24 +225,24 @@ function firstError(field) {
         <div class="space-y-6">
             <div class="grid gap-4 md:grid-cols-3">
                 <SectionCard class="p-5">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Periods</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.total }}</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">Total Periods</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ summary.total }}</p>
                 </SectionCard>
 
                 <SectionCard class="p-5">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Period</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.active }}</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">Active Period</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ summary.active }}</p>
                 </SectionCard>
 
                 <SectionCard class="p-5">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">In Progress</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.inProgress }}</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-zinc-400">In Progress</p>
+                    <p class="mt-2 font-mono text-2xl font-semibold text-ink dark:text-white">{{ summary.inProgress }}</p>
                 </SectionCard>
             </div>
 
             <SectionCard>
-                <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <div class="border-b border-border-light p-6 dark:border-border-dark">
+                    <h2 class="text-lg font-semibold text-ink dark:text-white">
                         {{ editingId ? "Edit Period" : "Create Period" }}
                     </h2>
                 </div>
@@ -273,13 +259,11 @@ function firstError(field) {
                     <BaseInput v-model="form.unenrollment_deadline" label="Unenrollment Deadline" type="date"
                         :error="firstError('unenrollment_deadline')" />
 
-                    <div class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
-                        <input id="is_active" v-model="form.is_active" type="checkbox"
-                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                        <label for="is_active" class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                            Mark as active
-                        </label>
-                    </div>
+                    <BaseCheckbox
+                        v-model="form.is_active"
+                        label="Institutional active period"
+                        description="Used by enrollment, schedules and grade workflows."
+                    />
 
                     <div class="flex flex-wrap gap-3 md:col-span-2 xl:col-span-3">
                         <BaseButton type="submit" :disabled="isSubmitting">
@@ -294,19 +278,19 @@ function firstError(field) {
             </SectionCard>
 
             <SectionCard>
-                <div class="border-b border-gray-200 p-6 dark:border-gray-800">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Lifecycle Board</h2>
+                <div class="border-b border-border-light p-6 dark:border-border-dark">
+                    <h2 class="text-lg font-semibold text-ink dark:text-white">Lifecycle Board</h2>
                 </div>
 
                 <DataTable v-if="rows.length" :columns="columns" :rows="rows">
                     <template #cell-date_range="{ row }">
-                        <div class="font-medium text-gray-900 dark:text-white">{{ formatDate(row.start_date) }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(row.end_date) }}</div>
+                        <div class="font-mono font-medium text-ink dark:text-white">{{ formatDate(row.start_date) }}</div>
+                        <div class="font-mono text-xs text-slate-500 dark:text-zinc-400">{{ formatDate(row.end_date) }}</div>
                     </template>
 
                     <template #cell-deadlines="{ row }">
                         <div>Enroll: {{ formatDate(row.enrollment_deadline) }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                        <div class="font-mono text-xs text-slate-500 dark:text-zinc-400">
                             Unenroll: {{ formatDate(row.unenrollment_deadline) }}
                         </div>
                     </template>
@@ -315,7 +299,7 @@ function firstError(field) {
                         <div class="flex flex-col gap-2">
                             <StatusBadge :label="statusLabel(row)" :variant="statusVariant(row)" />
                             <span class="text-xs font-medium"
-                                :class="row.is_active ? 'text-emerald-600' : 'text-gray-500 dark:text-gray-400'">
+                                :class="row.is_active ? 'text-success' : 'text-slate-500 dark:text-zinc-400'">
                                 {{ row.is_active ? "Active" : "Inactive" }}
                             </span>
                         </div>
@@ -323,16 +307,22 @@ function firstError(field) {
 
                     <template #cell-activity="{ row }">
                         <div>{{ row.class_groups_count ?? 0 }} groups</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                        <div class="text-xs text-slate-500 dark:text-zinc-400">
                             {{ row.subject_enrollments_count ?? 0 }} enrollments
                         </div>
                     </template>
 
                     <template #actions="{ row }">
                         <div class="flex flex-wrap justify-center gap-2">
-                            <BaseButton v-if="!row.is_active && !['academically_closed', 'archived'].includes(row.status?.code)"
-                                type="button" size="sm" variant="secondary" @click="activate(row)">
-                                Activate
+                            <BaseButton
+                                v-if="!row.is_active && !['academically_closed', 'archived'].includes(row.status?.code)"
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                @click="activate(row)"
+                            >
+                                <i class="fa-solid fa-toggle-on mr-2 text-accent" />
+                                Set Active
                             </BaseButton>
 
                             <BaseButton v-for="action in actionsFor(row)" :key="action.key" type="button" size="sm"
@@ -340,15 +330,20 @@ function firstError(field) {
                                 {{ action.label }}
                             </BaseButton>
 
-                            <BaseButton type="button" size="sm" variant="secondary" @click="edit(row)">
-                                Edit
-                            </BaseButton>
+                            <TableActionButton
+                                icon="fa-solid fa-pen"
+                                label="Edit period"
+                                color="brand"
+                                @click="edit(row)"
+                            />
 
-                            <BaseButton type="button" size="sm" variant="danger"
+                            <TableActionButton
+                                icon="fa-solid fa-trash"
+                                label="Delete period"
+                                color="danger"
                                 :disabled="(row.class_groups_count ?? 0) > 0 || (row.subject_enrollments_count ?? 0) > 0"
-                                @click="destroy(row)">
-                                Delete
-                            </BaseButton>
+                                @click="destroy(row)"
+                            />
                         </div>
                     </template>
                 </DataTable>

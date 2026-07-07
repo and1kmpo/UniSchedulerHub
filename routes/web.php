@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\AcademicAuditLogController;
+use App\Http\Controllers\AcademicReportController;
+use App\Http\Controllers\AcademicRequestController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\ClassGroupController;
@@ -12,22 +14,32 @@ use App\Http\Controllers\CurriculumSubjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GroupEnrollmentController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProgramController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\Scheduling\SmartSchedulerController as SchedulingSmartSchedulerController;
-use App\Http\Controllers\SmartSchedulerController;
+use App\Http\Controllers\Scheduling\SmartSchedulerController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectEnrollmentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => redirect()->route('login'));
-Route::get('/favicon.ico', fn() => redirect('/favicon.svg'));
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+Route::get('/', fn() => Inertia::render('Welcome', [
+    'canLogin' => Route::has('login'),
+    'canRegister' => Route::has('register'),
+]));
+Route::get('/favicon.ico', fn() => redirect('/favicon.svg?v=tarraya-20260612'));
+Route::post('/locale', function (Request $request) {
+    $validated = $request->validate([
+        'locale' => ['required', 'in:en,es'],
+    ]);
+
+    $request->session()->put('locale', $validated['locale']);
+
+    return back();
+})->name('locale.update');
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
@@ -44,6 +56,24 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         return redirect('/');
     });
+
+    Route::get('/user-assignments', function (Request $request) {
+        $user = $request->user();
+
+        if ($user->hasRole('student')) {
+            return redirect()->route('student.subjects');
+        }
+
+        if ($user->hasRole('professor')) {
+            return redirect()->route('professor.subjects');
+        }
+
+        if ($user->hasAnyRole(['admin', 'academic_coordinator'])) {
+            return redirect()->route('reports.student-assignments.index');
+        }
+
+        return redirect()->route('dashboard');
+    })->name('user.assignments');
 
     /*
      * Shared staff workspace.
@@ -74,6 +104,20 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             ->can('manageGrades', 'classGroup');
     });
 
+    Route::middleware(['role:admin|academic_coordinator|student'])->group(function () {
+        Route::get('/academic-requests', [AcademicRequestController::class, 'index'])->name('academic-requests.index');
+    });
+
+    Route::middleware(['role:student'])->group(function () {
+        Route::get('/academic-requests/create', [AcademicRequestController::class, 'create'])->name('academic-requests.create');
+        Route::post('/academic-requests', [AcademicRequestController::class, 'store'])->name('academic-requests.store');
+    });
+
+    Route::middleware(['role:admin|academic_coordinator'])->group(function () {
+        Route::patch('/academic-requests/{academicRequest}/approve', [AcademicRequestController::class, 'approve'])->name('academic-requests.approve');
+        Route::patch('/academic-requests/{academicRequest}/reject', [AcademicRequestController::class, 'reject'])->name('academic-requests.reject');
+    });
+
     /*
      * Admin-only security administration.
      */
@@ -81,10 +125,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('/users', UserController::class);
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+        Route::patch('/users/{user}/reset-temporary-password', [UserController::class, 'resetTemporaryPassword'])->name('users.reset-password');
 
-        Route::resource('/roles', RoleController::class);
-        Route::resource('/permissions', PermissionController::class);
-        Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
+        Route::redirect('/roles', '/users')->name('roles.index');
+        Route::redirect('/permissions', '/users')->name('permissions.index');
     });
 
     /*
@@ -95,6 +139,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::resource('subjects', SubjectController::class);
         Route::resource('/professors', ProfessorController::class);
         Route::resource('/students', StudentController::class);
+        Route::get('/students/{student}/academic-record', [StudentController::class, 'academicRecordForStudent'])->name('students.academic-record');
         Route::resource('curricula', CurriculumController::class);
 
         Route::resource('/class-groups', ClassGroupController::class)->names('class-groups');
@@ -112,6 +157,19 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/academic-periods/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('academic-periods.archive');
         Route::resource('academic-periods', AcademicPeriodController::class)->except(['create', 'show', 'edit']);
         Route::get('/academic-audit-logs', [AcademicAuditLogController::class, 'index'])->name('academic-audit-logs.index');
+        Route::get('/reports', [AcademicReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/student-assignments', [AcademicReportController::class, 'studentAssignments'])->name('reports.student-assignments.index');
+        Route::get('/reports/student-assignments/export', [AcademicReportController::class, 'exportStudentAssignments'])->name('reports.student-assignments.export');
+        Route::get('/reports/professor-load', [AcademicReportController::class, 'professorLoad'])->name('reports.professor-load.index');
+        Route::get('/reports/professor-load/export', [AcademicReportController::class, 'exportProfessorLoad'])->name('reports.professor-load.export');
+        Route::get('/reports/classroom-occupancy', [AcademicReportController::class, 'classroomOccupancy'])->name('reports.classroom-occupancy.index');
+        Route::get('/reports/classroom-occupancy/export', [AcademicReportController::class, 'exportClassroomOccupancy'])->name('reports.classroom-occupancy.export');
+        Route::get('/reports/group-capacity-conflicts', [AcademicReportController::class, 'groupCapacityConflicts'])->name('reports.group-capacity-conflicts.index');
+        Route::get('/reports/group-capacity-conflicts/export', [AcademicReportController::class, 'exportGroupCapacityConflicts'])->name('reports.group-capacity-conflicts.export');
+        Route::get('/reports/grade-operations', [AcademicReportController::class, 'gradeOperations'])->name('reports.grade-operations.index');
+        Route::get('/reports/grade-operations/export', [AcademicReportController::class, 'exportGradeOperations'])->name('reports.grade-operations.export');
+        Route::get('/reports/academic-events', [AcademicReportController::class, 'academicEvents'])->name('reports.academic-events.index');
+        Route::get('/reports/academic-events/export', [AcademicReportController::class, 'exportAcademicEvents'])->name('reports.academic-events.export');
 
         Route::resource('buildings', BuildingController::class);
         Route::post('/buildings/{id}/restore', [BuildingController::class, 'restore'])->name('buildings.restore');
@@ -125,10 +183,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
         Route::prefix('smart-scheduler')->name('smart-scheduler.')->group(function () {
             Route::post('/generate', [SmartSchedulerController::class, 'generate'])->name('generate');
-            Route::post('/optimize', [SchedulingSmartSchedulerController::class, 'optimize'])->name('optimize');
+            Route::post('/optimize', [SmartSchedulerController::class, 'optimize'])->name('optimize');
         });
 
-        Route::get('/user-assignments', [UserController::class, 'getUserAssignments'])->name('user.assignments');
     });
 
     /*
@@ -136,6 +193,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
      */
     Route::middleware(['role:professor'])->group(function () {
         Route::get('/professor/subjects', [ProfessorController::class, 'mySubjects'])->name('professor.subjects');
+        Route::get('/professor/schedule', [ProfessorController::class, 'schedule'])->name('professor.schedule');
         Route::get('/subjects/{subject}/students', [ProfessorController::class, 'viewAllStudents'])->name('subjects.students.view');
     });
 
@@ -144,6 +202,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
      */
     Route::middleware(['role:student'])->group(function () {
         Route::get('/student/subjects', [StudentController::class, 'mySubjects'])->name('student.subjects');
+        Route::get('/student/schedule', [StudentController::class, 'schedule'])->name('student.schedule');
+        Route::get('/student/academic-record', [StudentController::class, 'academicRecord'])->name('student.academic-record');
         Route::get('/student/{subject}/grades', [StudentController::class, 'viewGrades'])->name('student.subject.grades');
         Route::get('/student/{subject}/grades-json', [StudentController::class, 'getGradeJson'])->name('student.subject.grades.json');
         Route::get('/student/grades-summary', [StudentController::class, 'gradesSummary'])->name('student.grades.summary');

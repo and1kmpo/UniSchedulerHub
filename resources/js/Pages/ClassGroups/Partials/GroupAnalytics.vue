@@ -20,11 +20,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm text-gray-500">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Capacity
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ classGroup.capacity }}
             </h3>
 
@@ -32,11 +32,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm text-gray-500">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Enrolled Students
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{
                     classGroup.subject_enrollments_count
                 }}
@@ -46,11 +46,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm text-gray-500">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Occupancy
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{ occupancy }}%
             </h3>
 
@@ -58,11 +58,11 @@ const occupancy = Math.round(
 
         <SectionCard class="p-6">
 
-            <p class="text-sm text-gray-500">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
                 Schedules
             </p>
 
-            <h3 class="mt-2 text-3xl font-bold">
+            <h3 class="mt-2 text-3xl font-bold text-ink dark:text-white">
                 {{
                     classGroup.schedules.length
                 }}
@@ -73,3 +73,4 @@ const occupancy = Math.round(
     </div>
 
 </template>
+

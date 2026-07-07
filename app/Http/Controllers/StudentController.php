@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\AcademicRecordBuilder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +111,18 @@ class StudentController extends Controller
         ]);
     }
 
+    public function academicRecordForStudent(Student $student)
+    {
+        $student->load(['user', 'program', 'curriculum']);
+
+        return Inertia::render('Students/AcademicRecord', [
+            'student' => $student,
+            'record' => AcademicRecordBuilder::forStudent($student),
+            'backRoute' => 'students.show',
+            'backRouteParams' => [$student->id],
+        ]);
+    }
+
     public function edit(Student $student)
     {
         $student->load(['user', 'program', 'curriculum']);
@@ -197,7 +210,7 @@ class StudentController extends Controller
                 'subject',
                 'status',
                 'classGroup.professor',
-                'classGroup.schedules.classroom',
+                'classGroup.schedules.classroom.building',
                 'grade.state',
                 'academicPeriod',
             ])
@@ -224,6 +237,7 @@ class StudentController extends Controller
                         'start_time' => $schedule->start_time,
                         'end_time' => $schedule->end_time,
                         'classroom' => $schedule->classroom?->name,
+                        'classroom_location' => $this->classroomLocation($schedule->classroom),
                     ])->values()
                     : [],
                 'grade' => $enrollment->grade,
@@ -252,6 +266,34 @@ class StudentController extends Controller
                     && in_array($student->academic_status, Student::ENROLLABLE_STATUSES, true)
                     && filled($student->curriculum_id),
             ] : null,
+        ]);
+    }
+
+    public function schedule()
+    {
+        $student = auth()->user()->student;
+        $period = AcademicPeriod::active()->with('status')->first();
+
+        return Inertia::render('Students/Schedule', [
+            'currentSchedules' => $this->currentSchedulePayload($student, $period),
+            'currentPeriod' => $period ? [
+                'id' => $period->id,
+                'name' => $period->name,
+                'state' => $period->state()?->value,
+            ] : null,
+        ]);
+    }
+
+    public function academicRecord()
+    {
+        $student = auth()->user()->student;
+        $student->load(['user', 'program', 'curriculum']);
+
+        return Inertia::render('Students/AcademicRecord', [
+            'student' => $student,
+            'record' => AcademicRecordBuilder::forStudent($student),
+            'backRoute' => 'student.subjects',
+            'backRouteParams' => [],
         ]);
     }
 
@@ -316,6 +358,72 @@ class StudentController extends Controller
             ]);
 
         return response()->json(['grades' => $gradesSummary]);
+    }
+
+    private function currentSchedulePayload(Student $student, ?AcademicPeriod $period)
+    {
+        if (! $period) {
+            return collect();
+        }
+
+        return $student
+            ->enrollments()
+            ->with([
+                'status',
+                'subject:id,code,name',
+                'classGroup:id,code,name,subject_id,professor_id,modality,shift',
+                'classGroup.professor:id,name',
+                'classGroup.schedules.classroom.building:id,code,name',
+            ])
+            ->where('academic_period_id', $period->id)
+            ->whereHas(
+                'status',
+                fn($query) => $query->whereIn('code', config('enrollment.active_status_codes'))
+            )
+            ->get()
+            ->flatMap(fn($enrollment) => $enrollment->classGroup?->schedules
+                ? $enrollment->classGroup->schedules
+                    ->where('status', '!=', 'cancelled')
+                    ->map(fn($schedule) => [
+                        'id' => $schedule->id,
+                        'day' => strtolower($schedule->day),
+                        'start_time' => $schedule->start_time,
+                        'end_time' => $schedule->end_time,
+                        'subject' => [
+                            'id' => $enrollment->subject?->id,
+                            'code' => $enrollment->subject?->code,
+                            'name' => $enrollment->subject?->name,
+                        ],
+                        'group' => [
+                            'id' => $enrollment->classGroup?->id,
+                            'code' => $enrollment->classGroup?->code,
+                            'name' => $enrollment->classGroup?->name,
+                            'modality' => $enrollment->classGroup?->modality,
+                            'shift' => $enrollment->classGroup?->shift,
+                        ],
+                        'professor' => $enrollment->classGroup?->professor?->name,
+                        'classroom' => $schedule->classroom?->name,
+                        'classroom_location' => $this->classroomLocation($schedule->classroom),
+                        'status' => $enrollment->status?->code,
+                    ])
+                : collect())
+            ->values();
+    }
+
+    private function classroomLocation($classroom): ?string
+    {
+        if (! $classroom) {
+            return null;
+        }
+
+        return collect([
+            $classroom->name,
+            $classroom->building?->name,
+            $classroom->building?->code,
+        ])
+            ->filter()
+            ->unique()
+            ->join(' - ');
     }
 
     private function formOptions(): array

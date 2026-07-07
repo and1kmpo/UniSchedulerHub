@@ -64,7 +64,7 @@ defineEmits(["submit"]);
         </div>
 
         <template #actions>
-            <PrimaryButton class="bg-indigo-700 hover:bg-indigo-600 rounded p-2 px-4 text-white">
+            <PrimaryButton>
                 {{ updating ? "Update" : "Create" }}
             </PrimaryButton>
             <DangerButton @click="handleCancel" class="ml-2">Cancel</DangerButton>

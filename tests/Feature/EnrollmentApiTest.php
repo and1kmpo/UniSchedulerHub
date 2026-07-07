@@ -121,6 +121,39 @@ class EnrollmentApiTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_professor_cannot_use_student_enrollment_api_by_typing_url(): void
+    {
+        [, $subject, $group] = $this->academicFixture();
+
+        $this->actingAs($this->professor)
+            ->getJson(route('api.enrollments.index'))
+            ->assertForbidden();
+
+        $this->actingAs($this->professor)
+            ->getJson(route('api.subjects.available-groups', $subject))
+            ->assertForbidden();
+
+        $this->actingAs($this->professor)
+            ->postJson(route('api.class-groups.enrollments.store', $group))
+            ->assertForbidden();
+    }
+
+    public function test_student_user_without_student_profile_cannot_use_enrollment_api(): void
+    {
+        [, $subject, $group] = $this->academicFixture();
+        $orphanStudentUser = $this->userWithRole('student', [
+            'email' => 'orphan.student@example.test',
+        ]);
+
+        $this->actingAs($orphanStudentUser)
+            ->getJson(route('api.subjects.available-groups', $subject))
+            ->assertForbidden();
+
+        $this->actingAs($orphanStudentUser)
+            ->postJson(route('api.class-groups.enrollments.store', $group))
+            ->assertForbidden();
+    }
+
     public function test_enrollment_api_changes_group_when_student_selects_same_subject_group(): void
     {
         [$student, , $currentGroup] = $this->academicFixture();

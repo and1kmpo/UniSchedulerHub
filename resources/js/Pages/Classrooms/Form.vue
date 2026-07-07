@@ -83,7 +83,7 @@ watch(
 </script>
 
 <template>
-    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-2xl bg-white shadow dark:bg-gray-900">
+    <form @submit.prevent="$emit('submit')" class="overflow-hidden rounded-lg border border-border-light bg-surface shadow-sm dark:border-border-dark dark:bg-surface-dark">
         <FormSection :title="updating ? 'Update Classroom' : 'Create Classroom'" :description="updating
             ? 'Update classroom capacity, status and metadata.'
             : 'Create a classroom using the building and floor naming convention.'
@@ -92,7 +92,7 @@ watch(
                 <BaseSelect v-model="form.building_id" label="Building" placeholder="Select building"
                     :options="buildingOptions" :error="form.errors.building_id" required />
 
-                <BaseInput v-model="form.floor" type="number" label="Floor" placeholder="2"
+                <BaseInput v-model="form.floor" type="number" label="Floor" placeholder="2" min="-5"
                     :error="form.errors.floor" required />
 
                 <BaseInput v-model="form.capacity" type="number" label="Capacity" placeholder="35"
@@ -108,12 +108,12 @@ watch(
                 </div>
             </FormGrid>
 
-            <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-                <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <div class="mt-6 rounded-lg border border-border-light bg-slate-50 p-4 dark:border-border-dark dark:bg-zinc-950">
+                <p class="text-xs font-medium uppercase text-slate-500 dark:text-zinc-400">
                     Classroom name
                 </p>
 
-                <p class="mt-1 font-mono text-lg font-semibold text-indigo-700 dark:text-indigo-300">
+                <p class="mt-1 font-mono text-lg font-semibold text-brand dark:text-brand">
                     {{ updating ? form.name : previewName || "Select building and floor" }}
                 </p>
             </div>
@@ -132,3 +132,5 @@ watch(
         </FormActions>
     </form>
 </template>
+
+
