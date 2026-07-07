@@ -87,7 +87,7 @@ class AcademicRequestController extends Controller
 
         return redirect()
             ->route('academic-requests.index')
-            ->with('success', 'Academic request submitted for review.');
+            ->with('success', __('ui.academic_requests.submitted_success'));
     }
 
     public function approve(Request $request, AcademicRequest $academicRequest, AcademicAuditService $audit)
@@ -141,7 +141,7 @@ class AcademicRequestController extends Controller
 
         return redirect()
             ->route('academic-requests.index')
-            ->with('success', 'Academic request decision saved.');
+            ->with('success', __('ui.academic_requests.decision_success'));
     }
 
     private function payload(AcademicRequest $academicRequest): array
@@ -149,9 +149,9 @@ class AcademicRequestController extends Controller
         return [
             'id' => $academicRequest->id,
             'type' => $academicRequest->type,
-            'type_label' => AcademicRequest::TYPES[$academicRequest->type] ?? $academicRequest->type,
+            'type_label' => __("ui.academic_requests.types.{$academicRequest->type}"),
             'status' => $academicRequest->status,
-            'status_label' => AcademicRequest::STATUSES[$academicRequest->status] ?? $academicRequest->status,
+            'status_label' => __("ui.academic_requests.statuses.{$academicRequest->status}"),
             'title' => $academicRequest->title,
             'description' => $academicRequest->description,
             'decision_reason' => $academicRequest->decision_reason,
@@ -173,7 +173,10 @@ class AcademicRequestController extends Controller
     private function options(array $items): array
     {
         return collect($items)
-            ->map(fn($label, $value) => compact('value', 'label'))
+            ->map(fn($label, $value) => [
+                'value' => $value,
+                'label' => __("ui.academic_requests.types.{$value}"),
+            ])
             ->values()
             ->all();
     }

@@ -125,6 +125,7 @@ class RoleNavigation
     {
         return [
             'label' => $label,
+            'display_label' => __("ui.nav.{$label}"),
             'route' => $routeName,
         ];
     }
@@ -133,6 +134,7 @@ class RoleNavigation
     {
         return [
             'label' => $label,
+            'display_label' => __("ui.nav.{$label}"),
             'children' => $children,
         ];
     }

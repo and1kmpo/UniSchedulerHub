@@ -30,6 +30,15 @@ Route::get('/', fn() => Inertia::render('Welcome', [
     'canRegister' => Route::has('register'),
 ]));
 Route::get('/favicon.ico', fn() => redirect('/favicon.svg?v=tarraya-20260612'));
+Route::post('/locale', function (Request $request) {
+    $validated = $request->validate([
+        'locale' => ['required', 'in:en,es'],
+    ]);
+
+    $request->session()->put('locale', $validated['locale']);
+
+    return back();
+})->name('locale.update');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 

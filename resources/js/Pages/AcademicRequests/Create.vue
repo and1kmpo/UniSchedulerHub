@@ -10,6 +10,7 @@ import BaseSelect from "@/Components/UI/Base/BaseSelect.vue";
 import BaseTextarea from "@/Components/UI/Base/BaseTextarea.vue";
 import ContextHelp from "@/Components/UI/Feedback/ContextHelp.vue";
 import SectionCard from "@/Components/UI/Layout/SectionCard.vue";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 defineProps({
     typeOptions: {
@@ -17,6 +18,8 @@ defineProps({
         default: () => [],
     },
 });
+
+const { t } = useTranslations();
 
 const form = useForm({
     type: "",
@@ -31,8 +34,8 @@ function submit() {
 
 <template>
     <CrudPageLayout
-        title="New Academic Request"
-        subtitle="Submit a reviewed academic petition instead of forcing a direct system change"
+        :title="t('academic_requests.create_title')"
+        :subtitle="t('academic_requests.create_subtitle')"
     >
         <template #actions>
             <BaseButton
@@ -41,7 +44,7 @@ function submit() {
                 :href="route('academic-requests.index')"
             >
                 <i class="fa-solid fa-arrow-left mr-2" />
-                Academic Requests
+                {{ t("academic_requests.back") }}
             </BaseButton>
         </template>
 
@@ -49,36 +52,36 @@ function submit() {
             <SectionCard>
                 <form class="space-y-6 p-6" @submit.prevent="submit">
                     <ContextHelp
-                        title="Before submitting"
-                        description="Use this flow for exceptions that need human review, such as a late withdrawal, group change, enrollment exception or grade review. Immediate enrollment actions still happen from Subject Enrollment."
+                        :title="t('academic_requests.before_title')"
+                        :description="t('academic_requests.before_description')"
                         icon="fa-solid fa-circle-info"
                     />
 
                     <div class="grid gap-5 md:grid-cols-2">
                         <BaseSelect
                             v-model="form.type"
-                            label="Request type"
+                            :label="t('academic_requests.request_type')"
                             required
                             :options="typeOptions"
-                            placeholder="Select request type"
+                            :placeholder="t('academic_requests.select_type')"
                             :error="form.errors.type"
                         />
 
                         <BaseInput
                             v-model="form.title"
-                            label="Title"
+                            :label="t('academic_requests.form_title')"
                             required
-                            placeholder="Short request summary"
+                            :placeholder="t('academic_requests.title_placeholder')"
                             :error="form.errors.title"
                         />
                     </div>
 
                     <BaseTextarea
                         v-model="form.description"
-                        label="Request details"
+                        :label="t('academic_requests.details')"
                         required
                         :rows="7"
-                        placeholder="Explain the academic context, expected outcome and any relevant subject, group or period."
+                        :placeholder="t('academic_requests.details_placeholder')"
                         :error="form.errors.description"
                     />
 
@@ -88,7 +91,7 @@ function submit() {
                             variant="secondary"
                             :href="route('academic-requests.index')"
                         >
-                            Cancel
+                            {{ t("academic_requests.cancel") }}
                         </BaseButton>
 
                         <BaseButton
@@ -96,7 +99,7 @@ function submit() {
                             :disabled="form.processing"
                         >
                             <i class="fa-solid fa-paper-plane mr-2" />
-                            Submit request
+                            {{ t("academic_requests.submit") }}
                         </BaseButton>
                     </div>
                 </form>

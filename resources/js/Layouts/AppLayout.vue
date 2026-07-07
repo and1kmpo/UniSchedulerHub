@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import ApplicationCompactMark from "@/Components/ApplicationCompactMark.vue";
+import { useTranslations } from "@/Components/Composables/useTranslations";
 
 defineProps({
     title: {
@@ -12,6 +13,7 @@ defineProps({
 
 // Acceso a la página actual de Inertia
 const page = usePage();
+const { t } = useTranslations();
 
 const darkMode = ref(false);
 const sidebarOpen = ref(false);
@@ -49,21 +51,9 @@ const iconMap = {
     Profile: "fa-solid fa-id-card",
 };
 
-const navHelp = {
-    Core: "Academic master data: programs, subjects, people and class groups.",
-    Sync: "Operational workflows that synchronize enrollment, academic periods and schedules.",
-    Rooms: "Campus infrastructure, buildings, classrooms and room capacity.",
-    Insights: "Dashboards, reports and audit evidence for institutional decisions.",
-    Admin: "Technical access management, user status and role assignment.",
-    "Enrollment Management": "Staff workspace to enroll, validate and review students by class group.",
-    "Academic Requests": "Formal student petitions for exceptions, withdrawals, grade reviews or group changes.",
-    "Subject Enrollment": "Student flow to select subjects and compare available class groups.",
-    "Class Groups": "Course offerings for a period: subject, professor, schedule, capacity and enrollment rules.",
-    "Audit Logs": "Institutional trace of critical academic actions and who performed them.",
-    "Academic Record": "Transcript preview with periods, credits, grades and academic progress.",
-};
-
 const navGroups = computed(() => page.props.navigation?.main ?? []);
+const currentLocale = computed(() => page.props.i18n?.locale ?? "en");
+const supportedLocales = computed(() => page.props.i18n?.supported ?? []);
 const activePeriod = computed(() => page.props.academicContext?.activePeriod ?? null);
 const notifications = computed(() => page.props.notifications?.items ?? []);
 const notificationCount = computed(() => page.props.notifications?.unread_count ?? notifications.value.length);
@@ -98,6 +88,18 @@ const isRouteActive = (routeName) => {
 const logout = () => {
     router.post(route("logout"));
 };
+
+function switchLocale(locale) {
+    if (locale === currentLocale.value) return;
+
+    router.post(
+        route("locale.update"),
+        { locale },
+        {
+            preserveScroll: true,
+        }
+    );
+}
 
 function toggleDarkMode() {
     darkMode.value = !darkMode.value;
@@ -180,7 +182,7 @@ onBeforeUnmount(() => {
                         TARRAYA
                     </Link>
                     <p class="mt-2 font-mono text-[9px] uppercase leading-3 tracking-wider text-slate-500">
-                        The next-generation academic operating system
+                        {{ t("layout.brand_descriptor") }}
                     </p>
                 </div>
             </div>
@@ -191,9 +193,9 @@ onBeforeUnmount(() => {
                         <i :class="[iconMap[group.label] || 'fa-solid fa-circle-nodes', 'w-4 text-xs text-slate-500']" />
                         <p
                             class="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500"
-                            :title="navHelp[group.label]"
+                            :title="t(`nav_help.${group.label}`, '')"
                         >
-                            {{ group.label }}
+                            {{ group.display_label || group.label }}
                         </p>
                     </div>
 
@@ -202,7 +204,7 @@ onBeforeUnmount(() => {
                             v-for="child in group.children || [group]"
                             :key="child.route ?? child.label"
                             :href="child.route ? route(child.route) : '#'"
-                            :title="navHelp[child.label]"
+                            :title="t(`nav_help.${child.label}`, '')"
                             :class="[
                                 'group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition',
                                 isRouteActive(child.route)
@@ -212,7 +214,7 @@ onBeforeUnmount(() => {
                             @click="sidebarOpen = false"
                         >
                             <i :class="[iconMap[child.label] || iconMap[group.label] || 'fa-regular fa-circle', 'w-4 text-sm']" />
-                            <span>{{ child.label }}</span>
+                            <span>{{ child.display_label || child.label }}</span>
                         </Link>
                     </div>
                 </div>
@@ -228,7 +230,7 @@ onBeforeUnmount(() => {
                         @click="sidebarOpen = true"
                     >
                         <i class="fa-solid fa-bars" />
-                        <span class="sr-only">Open navigation</span>
+                        <span class="sr-only">{{ t("layout.open_navigation") }}</span>
                     </button>
 
                     <div class="hidden min-w-0 flex-1 md:block">
@@ -239,8 +241,8 @@ onBeforeUnmount(() => {
                             <input
                                 type="search"
                                 disabled
-                                placeholder="Global search is not enabled yet"
-                                title="Global search will be connected when the cross-module search index exists."
+                                :placeholder="t('layout.global_search_disabled')"
+                                :title="t('layout.global_search_title')"
                                 class="w-full cursor-not-allowed rounded-lg border border-border-light bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-500 outline-none transition placeholder:text-slate-400 dark:border-border-dark dark:bg-surface-dark dark:text-zinc-500 dark:placeholder:text-zinc-600"
                             />
                         </label>
@@ -252,7 +254,7 @@ onBeforeUnmount(() => {
                                 id="notification-button"
                                 type="button"
                                 class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
-                                aria-label="Notifications"
+                                :aria-label="t('layout.notifications')"
                                 @click="notificationDropdownOpen = !notificationDropdownOpen"
                             >
                                 <i class="fa-regular fa-bell" />
@@ -271,9 +273,9 @@ onBeforeUnmount(() => {
                                     class="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border-light bg-surface dark:border-border-dark dark:bg-surface-dark sm:w-96"
                                 >
                                     <div class="border-b border-border-light px-4 py-3 dark:border-border-dark">
-                                        <p class="text-sm font-semibold text-ink dark:text-white">Operational notifications</p>
+                                        <p class="text-sm font-semibold text-ink dark:text-white">{{ t("layout.operational_notifications") }}</p>
                                         <p class="mt-1 font-mono text-[11px] text-slate-500 dark:text-zinc-400">
-                                            Academic network signals by role
+                                            {{ t("layout.academic_network_signals") }}
                                         </p>
                                     </div>
 
@@ -316,9 +318,9 @@ onBeforeUnmount(() => {
                                         <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600/10 text-brand-600 dark:text-brand-300">
                                             <i class="fa-solid fa-check" />
                                         </div>
-                                        <p class="mt-3 text-sm font-semibold text-ink dark:text-white">Network synchronized</p>
+                                        <p class="mt-3 text-sm font-semibold text-ink dark:text-white">{{ t("layout.network_synchronized") }}</p>
                                         <p class="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-                                            No operational alerts for your role.
+                                            {{ t("layout.no_operational_alerts") }}
                                         </p>
                                     </div>
                                 </div>
@@ -329,10 +331,28 @@ onBeforeUnmount(() => {
                             @click="toggleDarkMode"
                             type="button"
                             class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-light text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:border-border-dark dark:text-zinc-400 dark:hover:bg-brand-500/10"
-                            :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                            :aria-label="darkMode ? t('layout.switch_to_light') : t('layout.switch_to_dark')"
                         >
                             <i :class="darkMode ? 'fas fa-moon' : 'fas fa-sun'" />
                         </button>
+
+                        <div class="hidden items-center rounded-lg border border-border-light bg-surface p-1 dark:border-border-dark dark:bg-surface-dark sm:flex">
+                            <button
+                                v-for="localeOption in supportedLocales"
+                                :key="localeOption.code"
+                                type="button"
+                                :title="t('language.switch_to')"
+                                :class="[
+                                    'rounded-md px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition',
+                                    currentLocale === localeOption.code
+                                        ? 'bg-brand-600 text-white'
+                                        : 'text-slate-500 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-white',
+                                ]"
+                                @click="switchLocale(localeOption.code)"
+                            >
+                                {{ localeOption.code }}
+                            </button>
+                        </div>
 
                         <Link
                             v-if="activePeriod && canManagePeriods"
@@ -360,7 +380,7 @@ onBeforeUnmount(() => {
                             class="hidden h-10 items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 font-mono text-xs font-medium text-warning transition hover:border-warning sm:inline-flex"
                         >
                             <i class="fa-solid fa-calendar-xmark" />
-                            No active period
+                            {{ t("layout.no_active_period") }}
                         </Link>
 
                         <div class="relative">
@@ -383,12 +403,12 @@ onBeforeUnmount(() => {
                                     <ul class="py-2 text-sm text-slate-700 dark:text-zinc-200">
                                         <li>
                                             <Link :href="route('profile.show')" class="block px-4 py-2 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
-                                                Profile
+                                                {{ t("layout.profile") }}
                                             </Link>
                                         </li>
                                         <li>
                                             <button @click="logout" class="block w-full px-4 py-2 text-left hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-white">
-                                                Sign out
+                                                {{ t("layout.sign_out") }}
                                             </button>
                                         </li>
                                     </ul>
